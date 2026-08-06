@@ -9,12 +9,12 @@ import math
 import re
 from typing import Any
 
-from langchain_community.vectorstores import Chroma
 from langchain_core.documents import Document
 from langchain_core.retrievers import BaseRetriever
-from pydantic import ConfigDict, PrivateAttr
+from pydantic import ConfigDict, PrivateAttr, SkipValidation
 
 from local_rag_chatbot.observability import metrics
+from local_rag_chatbot.vectorstores import VectorStoreBackend
 
 
 logger = logging.getLogger(__name__)
@@ -299,7 +299,8 @@ class CrossEncoderReranker:
 class HybridRetriever(BaseRetriever):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    vectorstore: Chroma
+    vector_backend: SkipValidation[VectorStoreBackend]
+    namespace: str
     documents: list[Document]
     tuning: RetrievalTuning = RetrievalTuning()
     reranking_mode: str = "auto"
@@ -442,15 +443,15 @@ class HybridRetriever(BaseRetriever):
         k: int | None = None,
         fetch_k: int | None = None,
     ) -> list[Document]:
-        retriever = self.vectorstore.as_retriever(
-            search_type="mmr",
-            search_kwargs={
-                "k": k or self.tuning.dense_k,
-                "fetch_k": fetch_k or self.tuning.dense_fetch_k,
-                "lambda_mult": self.tuning.dense_lambda_mult,
-            },
+        results = self.vector_backend.search(
+            self.namespace,
+            query,
+            k=k or self.tuning.dense_k,
+            fetch_k=fetch_k or self.tuning.dense_fetch_k,
+            strategy="mmr",
+            lambda_mult=self.tuning.dense_lambda_mult,
         )
-        return list(retriever.invoke(query))
+        return [result.document for result in results]
 
     def _fuse_candidates(
         self,

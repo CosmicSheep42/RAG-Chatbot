@@ -4,6 +4,7 @@ services:
       context: .
       args:
         INSTALL_RERANKER: ${INSTALL_RERANKER:-false}
+        VECTOR_STORE_PROVIDER: ${VECTOR_STORE_PROVIDER:-chroma}
     env_file:
       - .env
     ports:
@@ -16,9 +17,20 @@ services:
       DOCUMENTS_DIR: /app/knowledge-base
       DATA_DIR: /app/data
       WEB_DIR: /app/web
+      VECTOR_STORE_PROVIDER: ${VECTOR_STORE_PROVIDER:-chroma}
       CHROMA_DB_DIR: /app/data/rag_data
       ROUTER_STORE_DIR: /app/data/router_data
       CHROMA_TELEMETRY_ENABLED: "FALSE"
+      PGVECTOR_DSN: ${PGVECTOR_DSN:-postgresql+psycopg://rag_chatbot:rag_chatbot@postgres:5432/rag_chatbot}
+      PGVECTOR_SCHEMA: ${PGVECTOR_SCHEMA:-rag}
+      PGVECTOR_TABLE: ${PGVECTOR_TABLE:-vector_documents}
+      PGVECTOR_COLLECTION_TABLE: ${PGVECTOR_COLLECTION_TABLE:-vector_collections}
+      PGVECTOR_DISTANCE_STRATEGY: ${PGVECTOR_DISTANCE_STRATEGY:-cosine}
+      PGVECTOR_INDEX_TYPE: ${PGVECTOR_INDEX_TYPE:-hnsw}
+      PGVECTOR_CREATE_EXTENSION: ${PGVECTOR_CREATE_EXTENSION:-true}
+      PGVECTOR_CONNECT_MAX_ATTEMPTS: ${PGVECTOR_CONNECT_MAX_ATTEMPTS:-12}
+      PGVECTOR_CONNECT_RETRY_SECONDS: ${PGVECTOR_CONNECT_RETRY_SECONDS:-2}
+      PGVECTOR_CONNECT_TIMEOUT_SECONDS: ${PGVECTOR_CONNECT_TIMEOUT_SECONDS:-5}
     volumes:
       - ./knowledge-base:/app/knowledge-base:ro
       - rag-data:/app/data

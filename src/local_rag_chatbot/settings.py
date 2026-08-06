@@ -4,6 +4,7 @@ from dataclasses import dataclass, replace
 from functools import lru_cache
 from pathlib import Path
 import os
+import re
 import warnings
 from urllib.parse import urlparse
 from typing import Any
@@ -18,6 +19,21 @@ from local_rag_chatbot.app_errors import ConfigurationError
 from local_rag_chatbot.resource_refs import ConfigResource, resource_from_optional_path
 
 DEFAULT_RUNTIME_ROOT = Path.home() / ".local" / "share" / "local-rag-chatbot"
+SQL_IDENTIFIER_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+@dataclass(frozen=True)
+class PgVectorStoreSettings:
+    dsn: str
+    schema_name: str
+    table_name: str
+    collection_table_name: str
+    distance_strategy: str
+    index_type: str
+    create_extension: bool
+    connect_max_attempts: int = 12
+    connect_retry_seconds: float = 2.0
+    connect_timeout_seconds: int = 5
 
 
 @dataclass(frozen=True)
@@ -26,8 +42,19 @@ class AppSettings:
     documents_dir: Path
     data_dir: Path
     web_dir: Path | None
+    vector_store_provider: str
     chroma_db_dir: Path
     router_store_dir: Path
+    pgvector_dsn: str
+    pgvector_schema: str
+    pgvector_table: str
+    pgvector_collection_table: str
+    pgvector_distance_strategy: str
+    pgvector_index_type: str
+    pgvector_create_extension: bool
+    pgvector_connect_max_attempts: int
+    pgvector_connect_retry_seconds: float
+    pgvector_connect_timeout_seconds: int
     routing_dir: ConfigResource
     master_prompt_file: ConfigResource
     tool_calling_config_file: ConfigResource
@@ -135,6 +162,17 @@ class AppSettings:
         for field_name in ("documents_dir", "data_dir", "web_dir", "chroma_db_dir", "router_store_dir"):
             if field_name in normalized and normalized[field_name] is not None:
                 normalized[field_name] = Path(normalized[field_name]).expanduser()
+        if "vector_store_provider" in normalized and normalized["vector_store_provider"] is not None:
+            normalized["vector_store_provider"] = str(normalized["vector_store_provider"]).strip().lower()
+        for field_name in (
+            "pgvector_schema",
+            "pgvector_table",
+            "pgvector_collection_table",
+            "pgvector_distance_strategy",
+            "pgvector_index_type",
+        ):
+            if field_name in normalized and normalized[field_name] is not None:
+                normalized[field_name] = str(normalized[field_name]).strip().lower()
         return normalized
 
     def input_cleaner_config(self) -> dict[str, Any]:
@@ -152,6 +190,28 @@ class AppSettings:
         errors: list[str] = []
         if self.app_env not in {"dev", "test", "prod"}:
             errors.append("APP_ENV must be one of dev, test, prod.")
+        if not self.vector_store_provider:
+            errors.append("VECTOR_STORE_PROVIDER must not be empty.")
+        if self.vector_store_provider not in {"chroma", "pgvector"}:
+            errors.append(
+                f"Unsupported VECTOR_STORE_PROVIDER: {self.vector_store_provider}. Supported values: chroma, pgvector."
+            )
+        if self.vector_store_provider == "pgvector" and not self.pgvector_dsn.strip():
+            errors.append("PGVECTOR_DSN is required when VECTOR_STORE_PROVIDER=pgvector.")
+        for field_name in ("pgvector_schema", "pgvector_table", "pgvector_collection_table"):
+            value = getattr(self, field_name)
+            if not SQL_IDENTIFIER_PATTERN.match(value):
+                errors.append(f"{field_name.upper()} must match {SQL_IDENTIFIER_PATTERN.pattern}.")
+        if self.pgvector_distance_strategy not in {"cosine", "l2", "inner_product"}:
+            errors.append("PGVECTOR_DISTANCE_STRATEGY must be one of: cosine, l2, inner_product.")
+        if self.pgvector_index_type not in {"none", "hnsw", "ivfflat"}:
+            errors.append("PGVECTOR_INDEX_TYPE must be one of: none, hnsw, ivfflat.")
+        if self.pgvector_connect_max_attempts <= 0:
+            errors.append("PGVECTOR_CONNECT_MAX_ATTEMPTS must be > 0.")
+        if self.pgvector_connect_retry_seconds < 0:
+            errors.append("PGVECTOR_CONNECT_RETRY_SECONDS must be >= 0.")
+        if self.pgvector_connect_timeout_seconds <= 0:
+            errors.append("PGVECTOR_CONNECT_TIMEOUT_SECONDS must be > 0.")
         if self.chunk_size <= 0:
             errors.append("CHUNK_SIZE must be > 0.")
         if self.chunk_overlap < 0 or self.chunk_overlap >= self.chunk_size:
@@ -205,6 +265,8 @@ class AppSettings:
 
     def effective_configuration(self) -> dict[str, Any]:
         result = dict(self.__dict__)
+        if result.get("pgvector_dsn"):
+            result["pgvector_dsn"] = _sanitize_url(str(result["pgvector_dsn"]))
         for field_name in ("master_prompt_file", "tool_calling_config_file", "routing_dir"):
             resource = result.get(field_name)
             if isinstance(resource, ConfigResource):
@@ -225,6 +287,20 @@ class AppSettings:
             "request_timeout_seconds": self.request_timeout_seconds,
             "rate_limit_max_buckets": self.rate_limit_max_buckets,
         }
+
+    def pgvector_settings(self) -> PgVectorStoreSettings:
+        return PgVectorStoreSettings(
+            dsn=self.pgvector_dsn,
+            schema_name=self.pgvector_schema,
+            table_name=self.pgvector_table,
+            collection_table_name=self.pgvector_collection_table,
+            distance_strategy=self.pgvector_distance_strategy,
+            index_type=self.pgvector_index_type,
+            create_extension=self.pgvector_create_extension,
+            connect_max_attempts=self.pgvector_connect_max_attempts,
+            connect_retry_seconds=self.pgvector_connect_retry_seconds,
+            connect_timeout_seconds=self.pgvector_connect_timeout_seconds,
+        )
 
 
 @lru_cache(maxsize=1)
@@ -283,8 +359,19 @@ def get_settings() -> AppSettings:
         documents_dir=documents_dir,
         data_dir=data_dir,
         web_dir=web_dir,
+        vector_store_provider=os.getenv("VECTOR_STORE_PROVIDER", "chroma").strip().lower(),
         chroma_db_dir=chroma_db_dir,
         router_store_dir=router_store_dir,
+        pgvector_dsn=os.getenv("PGVECTOR_DSN", ""),
+        pgvector_schema=os.getenv("PGVECTOR_SCHEMA", "rag").strip().lower(),
+        pgvector_table=os.getenv("PGVECTOR_TABLE", "vector_documents").strip().lower(),
+        pgvector_collection_table=os.getenv("PGVECTOR_COLLECTION_TABLE", "vector_collections").strip().lower(),
+        pgvector_distance_strategy=os.getenv("PGVECTOR_DISTANCE_STRATEGY", "cosine").strip().lower(),
+        pgvector_index_type=os.getenv("PGVECTOR_INDEX_TYPE", "hnsw").strip().lower(),
+        pgvector_create_extension=_env_bool("PGVECTOR_CREATE_EXTENSION", "true"),
+        pgvector_connect_max_attempts=int(os.getenv("PGVECTOR_CONNECT_MAX_ATTEMPTS", "12")),
+        pgvector_connect_retry_seconds=float(os.getenv("PGVECTOR_CONNECT_RETRY_SECONDS", "2")),
+        pgvector_connect_timeout_seconds=int(os.getenv("PGVECTOR_CONNECT_TIMEOUT_SECONDS", "5")),
         routing_dir=routing_dir,
         master_prompt_file=master_prompt_file,
         tool_calling_config_file=tool_calling_config_file,
@@ -363,3 +450,11 @@ def get_settings() -> AppSettings:
     )
     settings.validate()
     return settings
+
+
+def _sanitize_url(value: str) -> str:
+    parsed = urlparse(value)
+    if not parsed.password:
+        return value
+    netloc = parsed.netloc.replace(f":{parsed.password}@", ":[redacted]@")
+    return parsed._replace(netloc=netloc).geturl()

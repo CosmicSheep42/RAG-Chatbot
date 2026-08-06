@@ -24,6 +24,7 @@ from local_rag_chatbot.rag.retrieval_policy import RetrievalPolicyResolver
 from local_rag_chatbot.rag.tool_registry import ToolRegistry
 from local_rag_chatbot.router import EmbeddingRouter
 from local_rag_chatbot.settings import AppSettings
+from local_rag_chatbot.vectorstores import VectorStoreBackend, create_vector_store_backend
 
 
 @dataclass
@@ -49,7 +50,12 @@ class ApplicationServices:
     query_rewriter: QueryRewriter
 
 
-def create_indexing_services(settings: AppSettings, *, embeddings: object | None = None) -> IndexingServices:
+def create_indexing_services(
+    settings: AppSettings,
+    *,
+    embeddings: object | None = None,
+    vector_backend: VectorStoreBackend | None = None,
+) -> IndexingServices:
     if embeddings is None:
         from langchain_ollama import OllamaEmbeddings
 
@@ -57,6 +63,7 @@ def create_indexing_services(settings: AppSettings, *, embeddings: object | None
             model=settings.embedding_model,
             base_url=settings.ollama_base_url,
         )
+    vector_backend = vector_backend or create_vector_store_backend(settings, embeddings)
     loader_registry = _create_loader_registry(settings)
     document_repository = DocumentRepository(
         settings.documents_dir,
@@ -82,6 +89,7 @@ def create_indexing_services(settings: AppSettings, *, embeddings: object | None
         hash_manager=HashManager(settings.data_dir / "rag_hash.json"),
         manifest=IndexManifest(settings.data_dir / "rag_manifest.json").load(),
         embeddings=embeddings,
+        vector_backend=vector_backend,
         retrieval_tuning=_retrieval_tuning(settings),
         confidence_estimator=RetrievalConfidenceEstimator(),
     )
@@ -100,8 +108,9 @@ def create_application_services(
     embeddings: object | None = None,
     conversation_store: ConversationStore | None = None,
     tool_registry: ToolRegistry | None = None,
+    vector_backend: VectorStoreBackend | None = None,
 ) -> ApplicationServices:
-    indexing = create_indexing_services(settings, embeddings=embeddings)
+    indexing = create_indexing_services(settings, embeddings=embeddings, vector_backend=vector_backend)
     input_pipeline = TextPreprocessorPipeline(config=settings.input_cleaner_config())
     if chat_model is None:
         from local_rag_chatbot.rag.ollama_tool_client import OllamaToolCallingClient
@@ -159,6 +168,7 @@ def create_application_services(
     router = EmbeddingRouter(
         settings=settings,
         embeddings=indexing.index_manager.embeddings,
+        vector_backend=indexing.index_manager.vector_backend,
         input_pipeline=input_pipeline,
     )
     return ApplicationServices(

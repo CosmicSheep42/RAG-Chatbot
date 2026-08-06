@@ -1,12 +1,14 @@
 FROM python:3.12-slim
 
 ARG INSTALL_RERANKER=false
+ARG VECTOR_STORE_PROVIDER=chroma
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     DOCUMENTS_DIR=/app/knowledge-base \
     DATA_DIR=/app/data \
     WEB_DIR=/app/web \
+    VECTOR_STORE_PROVIDER=${VECTOR_STORE_PROVIDER} \
     RERANKING_MODE=auto
 
 WORKDIR /app
@@ -19,10 +21,15 @@ RUN useradd --create-home --uid 10001 appuser
 
 COPY pyproject.toml README.md /app/
 COPY src /app/src
-RUN if [ "$INSTALL_RERANKER" = "true" ]; then \
-      pip install --no-cache-dir -e "/app[rerank]"; \
+RUN set -eu; \
+    case "$VECTOR_STORE_PROVIDER" in \
+      chroma|pgvector) ;; \
+      *) echo "Unsupported VECTOR_STORE_PROVIDER: $VECTOR_STORE_PROVIDER" >&2; exit 1 ;; \
+    esac; \
+    if [ "$INSTALL_RERANKER" = "true" ]; then \
+      pip install --no-cache-dir -e "/app[$VECTOR_STORE_PROVIDER,rerank]"; \
     else \
-      pip install --no-cache-dir -e /app; \
+      pip install --no-cache-dir -e "/app[$VECTOR_STORE_PROVIDER]"; \
     fi
 
 COPY web /app/web

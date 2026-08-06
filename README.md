@@ -7,7 +7,7 @@
 
 A local Retrieval-Augmented Generation chatbot built as both a portfolio project and a reusable Python package.
 
-The project demonstrates a complete RAG workflow with Ollama, ChromaDB, hybrid retrieval, citations, optional reranking, temporary conversation memory, query rewriting, and tool calling. It can run as a standalone FastAPI application or be embedded into another Python system.
+The project demonstrates a complete RAG workflow with Ollama, pluggable vector storage, hybrid retrieval, citations, optional reranking, temporary conversation memory, query rewriting, and tool calling. It can run as a standalone FastAPI application or be embedded into another Python system.
 
 > This is a learning-oriented prototype for local demonstrations and trusted environments. It is not a production-ready hosted service.
 
@@ -15,7 +15,7 @@ The project demonstrates a complete RAG workflow with Ollama, ChromaDB, hybrid r
 
 - Local generation and embeddings through Ollama.
 - Hybrid retrieval with dense vector search and lexical matching.
-- Persistent ChromaDB indexes.
+- Pluggable vector storage with local Chroma or PostgreSQL/pgvector.
 - Citations linked to retrieved document passages.
 - Optional cross-encoder reranking.
 - Temporary conversation memory and follow-up query rewriting.
@@ -79,7 +79,7 @@ Open `http://127.0.0.1:8000`.
 
 ```powershell
 py -m venv .venv
-.venv\Scripts\python.exe -m pip install -e .
+.venv\Scripts\python.exe -m pip install -e ".[chroma]"
 Copy-Item .env.sample .env
 
 ollama pull llama3.2:3b
@@ -96,6 +96,17 @@ docker compose up --build
 ```
 
 Docker Compose starts Ollama, downloads the configured models, and runs the application. The published port is bound to `127.0.0.1` by default.
+
+For PGVector with Docker Compose:
+
+```bash
+VECTOR_STORE_PROVIDER=pgvector docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.pgvector.yml \
+  up --build
+```
+
+Changing `VECTOR_STORE_PROVIDER` requires rebuilding the image because the selected optional dependency extra is installed at build time.
 
 ## Python Usage
 
@@ -175,6 +186,17 @@ Copy `.env.sample` to `.env` and change only the settings required by your envir
 | `EMBEDDING_MODEL` | Embedding model | `nomic-embed-text` |
 | `DOCUMENTS_DIR` | Knowledge-base directory | demo: `./knowledge-base` |
 | `DATA_DIR` | Generated indexes and runtime data | demo: `./data` |
+| `VECTOR_STORE_PROVIDER` | Vector-store backend provider: `chroma` or `pgvector`. | `chroma` |
+| `PGVECTOR_DSN` | SQLAlchemy-style PostgreSQL DSN for PGVector. Required only for `pgvector`. | empty |
+| `PGVECTOR_SCHEMA` | PostgreSQL schema for vector tables. | `rag` |
+| `PGVECTOR_TABLE` | Shared document table for PGVector namespaces. | `vector_documents` |
+| `PGVECTOR_COLLECTION_TABLE` | PGVector namespace/generation table. | `vector_collections` |
+| `PGVECTOR_DISTANCE_STRATEGY` | PGVector distance metric: `cosine`, `l2`, or `inner_product`. | `cosine` |
+| `PGVECTOR_INDEX_TYPE` | Optional PGVector index: `hnsw`, `ivfflat`, or `none`. | `hnsw` |
+| `PGVECTOR_CREATE_EXTENSION` | Whether the app tries `CREATE EXTENSION IF NOT EXISTS vector`. | `true` |
+| `PGVECTOR_CONNECT_MAX_ATTEMPTS` | Maximum PGVector connection attempts for transient startup failures. | `12` |
+| `PGVECTOR_CONNECT_RETRY_SECONDS` | Delay between transient PGVector connection attempts. | `2` |
+| `PGVECTOR_CONNECT_TIMEOUT_SECONDS` | Timeout for each PGVector connection attempt. | `5` |
 | `WEB_DIR` | Optional static frontend | demo: `./web` |
 | `SERVER_HOST` | Standalone server host | `127.0.0.1` |
 | `SERVER_PORT` | Standalone server port | `8000` |
@@ -186,7 +208,27 @@ Copy `.env.sample` to `.env` and change only the settings required by your envir
 
 `TOOL_CALLING_MODEL` and `QUERY_REWRITING_MODEL` use `GENERATION_MODEL` unless configured separately.
 
-Legacy timeout variables remain accepted for compatibility, but new configurations should use `REPLY_TIMEOUT_SECONDS`.
+## Vector Store Backends
+
+The project supports two optional vector-store backends:
+
+```bash
+# Local Chroma
+pip install -e ".[chroma]"
+
+# PostgreSQL with pgvector
+pip install -e ".[pgvector]"
+```
+
+Select the backend in `.env`:
+
+```env
+VECTOR_STORE_PROVIDER=chroma
+```
+
+Use `pgvector` instead of `chroma` to connect to PostgreSQL. In that case, configure `PGVECTOR_DSN` and ensure the PostgreSQL `vector` extension is available.
+
+`./run.sh` reads `VECTOR_STORE_PROVIDER` and installs the corresponding optional dependency. When using Docker, follow the commands in the Docker section above.
 
 ## Optional Reranking
 
@@ -208,7 +250,8 @@ Reranking may improve difficult searches, but it increases installation size, me
 - Do not expose the standalone application directly to the public internet.
 - The standalone demo does not include chatbot-managed authentication.
 - Embedded deployments must use the host application's security model.
-- Do not expose Ollama or ChromaDB directly to untrusted networks.
+- Do not expose Ollama, ChromaDB files, or PostgreSQL/pgvector directly to untrusted networks.
+- Do not log or commit real PostgreSQL DSNs with credentials.
 - Conversation history is temporary and stored in memory.
 - The demo frontend renders responses as plain text.
 - Ollama is currently the only included model provider.
