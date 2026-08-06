@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Local RAG Chatbot</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <script defer src="/static/app.js"></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="chat-panel" aria-label="Chat panel">
+        <header class="panel-header">
+          <div>
+            <div class="eyebrow">Portfolio RAG assistant</div>
+            <h1>Local RAG Chatbot</h1>
+          </div>
+          <div class="status-group">
+            <span id="status-badge" class="status-badge status-warm">Starting</span>
+            <span id="status-text" class="status-text">Waiting for the backend.</span>
+            <details id="feature-status" class="feature-status">
+              <summary>Features</summary>
+              <div id="feature-list" class="feature-list">
+                <div>Memory: checking</div>
+                <div>Query rewriting: checking</div>
+                <div>Tool calling: checking</div>
+                <div>Reranking: checking</div>
+              </div>
+              <p id="reranking-note" class="feature-note"></p>
+            </details>
+          </div>
+        </header>
+
+        <div id="messages" class="messages" aria-live="polite"></div>
+
+        <form id="chat-form" class="composer">
+          <label class="sr-only" for="query">Message</label>
+          <input
+            id="query"
+            name="query"
+            type="text"
+            placeholder="Type a message..."
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <button id="send-button" type="submit">Send</button>
+          <div id="input-counter" class="input-counter" aria-live="polite">0 / 1000</div>
+        </form>
+      </section>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,84 @@
+services:
+  app:
+    build:
+      context: .
+      args:
+        INSTALL_RERANKER: ${INSTALL_RERANKER:-false}
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:${SERVER_PORT:-8000}:${SERVER_PORT:-8000}"
+    environment:
+      # Container-only addresses and paths override the host-oriented .env.
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: ${SERVER_PORT:-8000}
+      OLLAMA_BASE_URL: http://ollama:11434
+      DOCUMENTS_DIR: /app/knowledge-base
+      DATA_DIR: /app/data
+      WEB_DIR: /app/web
+      CHROMA_DB_DIR: /app/data/rag_data
+      ROUTER_STORE_DIR: /app/data/router_data
+      CHROMA_TELEMETRY_ENABLED: "FALSE"
+    volumes:
+      - ./knowledge-base:/app/knowledge-base:ro
+      - rag-data:/app/data
+    depends_on:
+      ollama:
+        condition: service_healthy
+      ollama-init:
+        condition: service_completed_successfully
+
+  ollama:
+    image: ollama/ollama:0.32.1
+    volumes:
+      - ollama:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  ollama-init:
+    image: ollama/ollama:0.32.1
+    env_file:
+      - .env
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    volumes:
+      - ollama:/root/.ollama
+    depends_on:
+      ollama:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+
+        until ollama list >/dev/null 2>&1; do
+          sleep 2
+        done
+
+        generation_model="$${GENERATION_MODEL:-llama3.2:3b}"
+        embedding_model="$${EMBEDDING_MODEL:-nomic-embed-text}"
+        tool_model="$${TOOL_CALLING_MODEL:-$$generation_model}"
+        rewriting_model="$${QUERY_REWRITING_MODEL:-$$generation_model}"
+
+        pulled_models=""
+        for model in \
+          "$$generation_model" \
+          "$$embedding_model" \
+          "$$tool_model" \
+          "$$rewriting_model"
+        do
+          case " $$pulled_models " in
+            *" $$model "*) continue ;;
+          esac
+
+          ollama pull "$$model"
+          pulled_models="$$pulled_models $$model"
+        done
+
+volumes:
+  ollama:
+  rag-data:

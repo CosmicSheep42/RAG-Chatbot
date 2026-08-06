@@ -1,0 +1,6 @@
+{
+  "priorities": {
+    "deny": 1,
+    "simple": 2
+  }
+}

@@ -1,0 +1,86 @@
+# Python bytecode and caches
+**pycache**/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.pyright/
+.ruff_cache/
+.cache/
+.ipynb_checkpoints/
+
+# Test coverage
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Python packaging and build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+pip-wheel-metadata/
+
+.venv/
+venv/
+env/
+ENV/
+.python-version
+.env
+*.log
+*.pid
+*.seed
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+
+# Generated RAG, Chroma and local database files
+data/*
+*.pickle
+*.pkl
+chroma.sqlite3
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# RAG manifests, hashes, locks, staging and recovery artifacts
+*_manifest.json
+*_hash.json
+*.lock
+*.staging
+*.backup
+rag_index_transaction.json
+router_index_hash.json
+
+
+# Docker local overrides and generated files
+docker-compose.override.yml
+compose.override.yml
+
+# IDE and editor files
+.idea/
+.vscode/
+*.code-workspace
+
+# Operating system files
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+Desktop.ini
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Miscellaneous local files
+local/
+tmp/
+temp/

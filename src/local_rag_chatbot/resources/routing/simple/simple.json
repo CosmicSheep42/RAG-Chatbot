@@ -1,0 +1,101 @@
+{
+"threshold": 0.78,
+"intents": [
+{
+"key": "greeting",
+"examples": [
+"hi",
+"hello",
+"good morning",
+"good afternoon",
+"good evening",
+"hey there"
+],
+"responses": [
+"Hello. How can I help you today?",
+"Hi. What can I assist you with?",
+"Hello. I'm ready to answer your questions."
+]
+},
+{
+"key": "how_to_use",
+"examples": [
+"how do i use this",
+"can you explain how this works",
+"how do i get started",
+"what can you do",
+"how does this assistant work",
+"what is this system for"
+],
+"responses": [
+"I can answer simple questions, block restricted requests, and search the available local documents.",
+"You can ask questions about the documents you add to the configured document directory.",
+"This assistant uses static routing for simple requests and document retrieval for knowledge-based questions."
+]
+},
+{
+"key": "assistant_identity",
+"examples": [
+"who are you",
+"what are you",
+"what is your role",
+"tell me about yourself",
+"are you a chatbot",
+"what kind of assistant are you"
+],
+"responses": [
+"I am a document-aware chatbot for a user-provided local collection.",
+"I help answer questions using the configured local documents.",
+"I am a retrieval-augmented assistant designed to provide grounded answers from available documents."
+]
+},
+{
+"key": "gratitude",
+"examples": [
+"thank you",
+"thanks",
+"thanks a lot",
+"i appreciate it",
+"that helped",
+"much appreciated"
+],
+"responses": [
+"You're welcome.",
+"Happy to help.",
+"Glad I could assist."
+]
+},
+{
+"key": "farewell",
+"examples": [
+"goodbye",
+"bye",
+"see you later",
+"have a nice day",
+"talk to you later",
+"farewell"
+],
+"responses": [
+"Goodbye.",
+"Have a great day.",
+"See you next time."
+]
+},
+{
+"key": "system_status",
+"examples": [
+"is the system working",
+"what is the status of the assistant",
+"is everything operational",
+"how is the platform doing",
+"is the chatbot online",
+"what is the current status"
+],
+"responses": [
+"The assistant is operational and ready to answer questions.",
+"All core services appear to be functioning normally.",
+"The system is currently available for requests."
+]
+}
+]
+}
