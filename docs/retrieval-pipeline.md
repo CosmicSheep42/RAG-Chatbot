@@ -5,7 +5,7 @@ Document-grounded requests follow this path:
 1. Input preprocessing.
 2. Static embedding-based routing.
 3. Optional query rewriting using recent conversation memory.
-4. Hybrid retrieval with dense Chroma search and lexical matching.
+4. Hybrid retrieval with dense vector-store search and lexical matching.
 5. Optional cross-encoder reranking of retrieved candidates.
 6. Context expansion and assembly.
 7. Retrieval confidence assessment, with an optional retry using a broader policy.
@@ -13,6 +13,11 @@ Document-grounded requests follow this path:
 9. Answer generation, including optional document-search tool calls.
 
 Generated indexes are stored under `data/` and can be rebuilt from the configured knowledge base.
+
+Dense retrieval is provider-neutral. `HybridRetriever` asks the configured vector backend for similarity or MMR results
+within the `rag` namespace, then combines those results with BM25 scores. Backend adapters normalize dense relevance
+scores to the shared convention `0.0 = least relevant` and `1.0 = most relevant`, so retrieval thresholds and router
+thresholds do not depend on whether Chroma or PGVector is selected.
 
 The retriever annotates candidates with retrieval metadata such as `retrieval_score`, `retrieval_rank`, dense/sparse
 scores, reranker scores, and exact-match flags. Context assembly marks retrieved candidates as `context_role="hit"` and
@@ -36,3 +41,12 @@ Only hits in the selected final context count as independent retrieval evidence.
 auxiliary context do not increase confidence by themselves. If legacy context lacks `context_role`, the estimator falls
 back to documents that carry real retrieval metadata. Empty hit sets still represent no evidence, and invalid numeric
 scores are treated defensively as zero.
+
+Static routing uses the same vector-store contract with separate namespaces such as `router:deny`, `router:simple`, and
+`router:<category>`. The router fingerprint includes routing content, embedding identity, input normalization settings,
+and the backend fingerprint payload, but never stores DSNs or secrets.
+
+PGVector connection startup is bounded by `PGVECTOR_CONNECT_MAX_ATTEMPTS`,
+`PGVECTOR_CONNECT_RETRY_SECONDS`, and `PGVECTOR_CONNECT_TIMEOUT_SECONDS`.
+Only connection-establishment failures classified as transient are retried;
+credential, schema, extension, and SQL configuration errors fail fast.

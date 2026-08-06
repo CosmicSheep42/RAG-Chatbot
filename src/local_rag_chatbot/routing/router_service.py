@@ -3,27 +3,25 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-import shutil
 from hashlib import sha1
 from importlib.abc import Traversable
-from pathlib import Path
 from typing import Any
 
-from langchain_community.vectorstores import Chroma
+from langchain_core.documents import Document
 
 from local_rag_chatbot.documents.hash_manager import HashManager
 from local_rag_chatbot.file_lock import FileLock, FileLockTimeoutError
 from local_rag_chatbot.input_cleaner import TextPreprocessorPipeline
 from local_rag_chatbot.routing.routing_config_loader import RoutingConfigLoader
 from local_rag_chatbot.routing.routing_order_resolver import RoutingOrderResolver
-from local_rag_chatbot.routing.routing_store_factory import RoutingStoreFactory
 from local_rag_chatbot.resource_refs import ConfigResource
 from local_rag_chatbot.settings import AppSettings
+from local_rag_chatbot.vectorstores import VectorStoreBackend
 
 
 logger = logging.getLogger(__name__)
 ROUTER_INDEX_SCHEMA_VERSION = "router-index-v2"
-ROUTER_INDEX_STRATEGY_VERSION = "static-examples-chroma-v1"
+ROUTER_INDEX_STRATEGY_VERSION = "static-examples-v2"
 ROUTER_LOCK_TIMEOUT_SECONDS = 60.0
 
 
@@ -33,18 +31,19 @@ class EmbeddingRouter:
         *,
         settings: AppSettings,
         embeddings: object,
+        vector_backend: VectorStoreBackend,
         input_pipeline: TextPreprocessorPipeline,
         hash_manager: HashManager | None = None,
     ) -> None:
         self.settings = settings
         self.embeddings = embeddings
+        self.vector_backend = vector_backend
         self.configs: dict[str, dict[str, Any]] = {}
-        self.stores: dict[str, Chroma] = {}
+        self.stores: dict[str, str] = {}
         self.ordered_categories: list[str] = []
         self.ready = False
         self.config_loader = RoutingConfigLoader(routing_dir=self.settings.routing_dir)
         self.order_resolver = RoutingOrderResolver()
-        self.store_factory = RoutingStoreFactory(self.embeddings)
         self.input_pipeline = input_pipeline
         self.hash_manager = hash_manager or HashManager(self.settings.data_dir / "router_hash.json")
         self.routing_hash_key = "routing_documents"
@@ -73,15 +72,10 @@ class EmbeddingRouter:
                     self.hash_manager.save_hash(self.routing_fingerprint_key, current_fingerprint)
 
                 for category in self.ordered_categories:
-                    config = self.configs[category]
-                    persist_directory = self.settings.router_store_dir / category
-                    collection_name = f"router_{category}"
-                    self.stores[category] = self.store_factory.build_store(
-                        config=config,
-                        persist_directory=persist_directory,
-                        collection_name=collection_name,
-                        force_rebuild=False,
-                    )
+                    namespace = self._namespace_for_category(category)
+                    if not self.vector_backend.index_exists(namespace):
+                        self.vector_backend.replace_documents(namespace, self._documents_for_category(category))
+                    self.stores[category] = namespace
         except FileLockTimeoutError as exc:
             raise RuntimeError(
                 "Timed out waiting for the router index lock. Another process may be indexing this data directory."
@@ -135,6 +129,9 @@ class EmbeddingRouter:
         payload = {
             "schema_version": ROUTER_INDEX_SCHEMA_VERSION,
             "index_strategy_version": ROUTER_INDEX_STRATEGY_VERSION,
+            "vector_backend_provider": self.vector_backend.provider_id,
+            "vector_backend_schema_version": self.vector_backend.schema_version,
+            "vector_backend": self.vector_backend.fingerprint_payload(),
             "routing_files_hash": routing_files_hash,
             "embedding_provider": self._embedding_provider_identifier(),
             "embedding_model": self._embedding_model_identifier(),
@@ -167,61 +164,11 @@ class EmbeddingRouter:
         return None
 
     def _replace_routing_stores_atomically(self) -> None:
-        persist_directory = self.settings.router_store_dir
-        staging_directory = persist_directory.with_name(f"{persist_directory.name}.staging")
-        backup_directory = persist_directory.with_name(f"{persist_directory.name}.backup")
-        self._cleanup_abandoned_router_artifacts(staging_directory, backup_directory, persist_directory)
-
-        try:
-            for category in self.ordered_categories:
-                config = self.configs[category]
-                collection_name = f"router_{category}"
-                store = self.store_factory.build_store_in_directory(
-                    config=config,
-                    persist_directory=staging_directory / category,
-                    collection_name=collection_name,
-                )
-                self._validate_routing_store(store, collection_name)
-
-            moved_current = False
-            try:
-                if persist_directory.exists():
-                    persist_directory.replace(backup_directory)
-                    moved_current = True
-                staging_directory.replace(persist_directory)
-                if backup_directory.exists():
-                    shutil.rmtree(backup_directory)
-            except Exception:
-                if staging_directory.exists():
-                    shutil.rmtree(staging_directory, ignore_errors=True)
-                if moved_current and backup_directory.exists() and not persist_directory.exists():
-                    backup_directory.replace(persist_directory)
-                raise
-        except Exception:
-            if staging_directory.exists():
-                shutil.rmtree(staging_directory, ignore_errors=True)
-            raise
-
-    def _cleanup_abandoned_router_artifacts(
-        self,
-        staging_directory: Path,
-        backup_directory: Path,
-        persist_directory: Path,
-    ) -> None:
-        if staging_directory.exists():
-            logger.warning("Removing abandoned router index staging directory", extra={"path": str(staging_directory)})
-            shutil.rmtree(staging_directory)
-        if backup_directory.exists() and persist_directory.exists():
-            logger.warning("Removing stale router index backup directory", extra={"path": str(backup_directory)})
-            shutil.rmtree(backup_directory)
-        elif backup_directory.exists() and not persist_directory.exists():
-            logger.warning("Restoring router index backup because active directory is missing", extra={"path": str(backup_directory)})
-            backup_directory.replace(persist_directory)
-
-    def _validate_routing_store(self, store: Chroma, collection_name: str) -> None:
-        collection = getattr(store, "_collection", None)
-        if collection is None or collection.count() <= 0:
-            raise RuntimeError(f"Routing store validation failed for {collection_name}: no examples indexed.")
+        for category in self.ordered_categories:
+            namespace = self._namespace_for_category(category)
+            self.vector_backend.replace_documents(namespace, self._documents_for_category(category))
+            if self.vector_backend.count(namespace) <= 0:
+                raise RuntimeError(f"Routing store validation failed for {namespace}: no examples indexed.")
 
     def _compute_traversable_hash(self, directory: Traversable) -> str:
         if not directory.exists():
@@ -246,13 +193,15 @@ class EmbeddingRouter:
                 resources.append((item_name, item))
         return resources
 
-    def _best_match(self, store: Chroma, query: str) -> dict[str, Any] | None:
-        results = store.similarity_search_with_relevance_scores(query, k=3)
+    def _best_match(self, namespace: str, query: str) -> dict[str, Any] | None:
+        results = self.vector_backend.search(namespace, query, k=3, strategy="similarity")
         if not results:
             return None
 
         grouped: dict[str, dict[str, Any]] = {}
-        for document, score in results:
+        for result in results:
+            document = result.document
+            score = result.score
             intent_key = document.metadata.get("intent_key")
             if intent_key is None:
                 continue
@@ -291,6 +240,28 @@ class EmbeddingRouter:
             "score": sum(selected_bucket["scores"]) / len(selected_bucket["scores"]),
             "intent_key": selected_intent_key,
         }
+
+    def _namespace_for_category(self, category: str) -> str:
+        return f"router:{category}"
+
+    def _documents_for_category(self, category: str) -> list[Document]:
+        config = self.configs[category]
+        documents: list[Document] = []
+        for intent in config["intents"]:
+            intent_key = intent["key"]
+            for example in intent.get("examples", []):
+                documents.append(
+                    Document(
+                        page_content=str(example),
+                        metadata={
+                            "intent_key": intent_key,
+                            "collection": f"router_{category}",
+                        },
+                    )
+                )
+        if not documents:
+            raise ValueError(f"No examples found for router category '{category}'.")
+        return documents
 
     def _pick_variant(self, query: str, variants: list[str], salt: str) -> str:
         if not variants:

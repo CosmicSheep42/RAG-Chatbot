@@ -7,8 +7,6 @@ import hashlib
 import json
 import logging
 from pathlib import Path
-import shutil
-import copy
 import os
 import tempfile
 from typing import Any, TYPE_CHECKING
@@ -25,12 +23,14 @@ if TYPE_CHECKING:
     from local_rag_chatbot.rag.retrieval_confidence import RetrievalConfidenceEstimator
     from local_rag_chatbot.rag.retrieval_service import RetrievalService
     from local_rag_chatbot.settings import AppSettings
+    from local_rag_chatbot.vectorstores import VectorStoreBackend
 
 logger = logging.getLogger(__name__)
 PARSER_VERSION = "loaders-v2"
 CHUNKER_VERSION = "structural-v2"
 INDEX_LOCK_TIMEOUT_SECONDS = 60.0
 TRANSACTION_VERSION = 1
+RAG_VECTOR_NAMESPACE = "rag"
 
 
 class RAGIndexStatus(str, Enum):
@@ -56,6 +56,7 @@ class IndexManager:
         hash_manager: HashManager,
         manifest: IndexManifest,
         embeddings: Any,
+        vector_backend: VectorStoreBackend,
         retrieval_tuning: RetrievalTuning,
         confidence_estimator: RetrievalConfidenceEstimator | None = None,
     ) -> None:
@@ -65,13 +66,13 @@ class IndexManager:
         self.hash_manager = hash_manager
         self.manifest = manifest
         self.embeddings = embeddings
+        self.vector_backend = vector_backend
         self.retrieval_tuning = retrieval_tuning
         if confidence_estimator is None:
             from local_rag_chatbot.rag.retrieval_confidence import RetrievalConfidenceEstimator
 
             confidence_estimator = RetrievalConfidenceEstimator()
         self.confidence_estimator = confidence_estimator
-        self.vectorstore: Any | None = None
         self.documents: list[Any] = []
         self.retriever: HybridRetriever | None = None
         self.context_assembler: DocumentContextAssembler | None = None
@@ -168,7 +169,6 @@ class IndexManager:
         return self.prepare()
 
     def _mark_empty_corpus(self) -> None:
-        self.vectorstore = None
         self.documents = []
         self.retriever = None
         self.context_assembler = None
@@ -193,19 +193,13 @@ class IndexManager:
         return splits
 
     def _load_vectorstore(self) -> bool:
-        persist_directory = self.settings.chroma_db_dir
-        if not (persist_directory.exists() and (persist_directory / "chroma.sqlite3").exists()):
+        if not self.vector_backend.index_exists(RAG_VECTOR_NAMESPACE):
             return False
-        from langchain_community.vectorstores import Chroma
-
-        self.vectorstore = Chroma(
-            persist_directory=str(persist_directory),
-            embedding_function=self.embeddings,
-        )
+        self.vector_backend.healthcheck()
         return True
 
     def _build_retrieval_stack(self, splits: list[Any], *, update_manifest: bool = True) -> None:
-        if self.vectorstore is None:
+        if not self.vector_backend.index_exists(RAG_VECTOR_NAMESPACE):
             raise RuntimeError("Vector store is not initialized.")
         from local_rag_chatbot.rag.context_assembler import DocumentContextAssembler
         from local_rag_chatbot.rag.hybrid_retriever import HybridRetriever
@@ -214,7 +208,8 @@ class IndexManager:
         self.documents = list(splits)
         self.context_assembler = DocumentContextAssembler(self.documents)
         self.retriever = HybridRetriever(
-            vectorstore=self.vectorstore,
+            vector_backend=self.vector_backend,
+            namespace=RAG_VECTOR_NAMESPACE,
             documents=self.documents,
             tuning=self.retrieval_tuning,
             reranking_mode=self.settings.reranking_mode,
@@ -254,7 +249,7 @@ class IndexManager:
                 parser_version=PARSER_VERSION,
                 chunker_version=self._chunker_signature(),
                 embedding_model=self.settings.embedding_model,
-                embedding_config=json.dumps({"model": self.settings.embedding_model}, sort_keys=True),
+                embedding_config=self._embedding_signature(),
                 indexed_chunk_ids=[str((getattr(chunk, "metadata", {}) or {}).get("chunk_id", "")) for chunk in chunks],
                 indexed_at=datetime.now(timezone.utc).isoformat(),
             )
@@ -269,6 +264,41 @@ class IndexManager:
             },
             sort_keys=True,
         )
+
+    def _embedding_signature(self) -> str:
+        return json.dumps(
+            {
+                "backend_provider": self.vector_backend.provider_id,
+                "backend_schema_version": self.vector_backend.schema_version,
+                "backend": self.vector_backend.fingerprint_payload(),
+                "embedding_provider": self._embedding_provider_identifier(),
+                "embedding_model": self._embedding_model_identifier(),
+                "embedding_dimensions": self._embedding_dimensions(),
+                "embedding_normalization": "provider_default",
+            },
+            sort_keys=True,
+        )
+
+    def _embedding_provider_identifier(self) -> str:
+        provider_type = type(self.embeddings)
+        return f"{provider_type.__module__}.{provider_type.__qualname__}"
+
+    def _embedding_model_identifier(self) -> str:
+        for attribute in ("model", "model_name", "embedding_model"):
+            value = getattr(self.embeddings, attribute, None)
+            if value:
+                return str(value)
+        return self.settings.embedding_model
+
+    def _embedding_dimensions(self) -> int | None:
+        for attribute in ("dimensions", "embedding_dimensions"):
+            value = getattr(self.embeddings, attribute, None)
+            if value is not None:
+                try:
+                    return int(value)
+                except (TypeError, ValueError):
+                    return None
+        return None
 
     def _save_manifest(self, discovered: dict[str, ManifestEntry]) -> None:
         changes = self.manifest.classify(discovered)
@@ -303,109 +333,43 @@ class IndexManager:
         splits: list[Any],
         discovered: dict[str, ManifestEntry],
     ) -> None:
-        persist_directory = self.settings.chroma_db_dir
         manifest_path = self.manifest.path
-        staging_directory = persist_directory.with_name(f"{persist_directory.name}.staging")
-        backup_directory = persist_directory.with_name(f"{persist_directory.name}.backup")
         staging_manifest = manifest_path.with_name(f"{manifest_path.name}.staging")
         backup_manifest = manifest_path.with_name(f"{manifest_path.name}.backup")
         journal_path = self._transaction_journal_path()
 
         self._recover_index_transaction()
-        self._cleanup_abandoned_index_artifacts(
-            staging_directory,
-            backup_directory,
-            persist_directory,
-            staging_manifest,
-            backup_manifest,
-            manifest_path,
-        )
+        self._cleanup_abandoned_index_artifacts(staging_manifest, backup_manifest, manifest_path)
 
-        from langchain_community.vectorstores import Chroma
-
-        Chroma.from_documents(
-            documents=self._documents_for_vectorstore(splits),
-            embedding=self.embeddings,
-            persist_directory=str(staging_directory),
-        )
-        self._validate_vectorstore(staging_directory)
+        self.vector_backend.replace_documents(RAG_VECTOR_NAMESPACE, splits)
+        self.vector_backend.validate_index(RAG_VECTOR_NAMESPACE)
         self._write_manifest(staging_manifest, discovered)
         self._validate_manifest_file(staging_manifest)
 
         try:
             self._write_transaction_journal(
                 "prepared",
-                active_index=persist_directory,
-                staging_index=staging_directory,
-                backup_index=backup_directory,
-                active_manifest=manifest_path,
-                staging_manifest=staging_manifest,
-                backup_manifest=backup_manifest,
-            )
-            if persist_directory.exists():
-                persist_directory.replace(backup_directory)
-            self._write_transaction_journal(
-                "index_backed_up",
-                active_index=persist_directory,
-                staging_index=staging_directory,
-                backup_index=backup_directory,
                 active_manifest=manifest_path,
                 staging_manifest=staging_manifest,
                 backup_manifest=backup_manifest,
             )
             if manifest_path.exists():
                 manifest_path.replace(backup_manifest)
-            self._write_transaction_journal(
-                "manifest_backed_up",
-                active_index=persist_directory,
-                staging_index=staging_directory,
-                backup_index=backup_directory,
-                active_manifest=manifest_path,
-                staging_manifest=staging_manifest,
-                backup_manifest=backup_manifest,
-            )
-            self._write_transaction_journal(
-                "old_backed_up",
-                active_index=persist_directory,
-                staging_index=staging_directory,
-                backup_index=backup_directory,
-                active_manifest=manifest_path,
-                staging_manifest=staging_manifest,
-                backup_manifest=backup_manifest,
-            )
-            staging_directory.replace(persist_directory)
-            self._write_transaction_journal(
-                "index_promoted",
-                active_index=persist_directory,
-                staging_index=staging_directory,
-                backup_index=backup_directory,
-                active_manifest=manifest_path,
-                staging_manifest=staging_manifest,
-                backup_manifest=backup_manifest,
-            )
             staging_manifest.replace(manifest_path)
             self._write_transaction_journal(
                 "new_promoted",
-                active_index=persist_directory,
-                staging_index=staging_directory,
-                backup_index=backup_directory,
                 active_manifest=manifest_path,
                 staging_manifest=staging_manifest,
                 backup_manifest=backup_manifest,
             )
-            self._validate_vectorstore(persist_directory)
+            self.vector_backend.healthcheck()
             self._validate_manifest_file(manifest_path)
             self._write_transaction_journal(
                 "validated",
-                active_index=persist_directory,
-                staging_index=staging_directory,
-                backup_index=backup_directory,
                 active_manifest=manifest_path,
                 staging_manifest=staging_manifest,
                 backup_manifest=backup_manifest,
             )
-            if backup_directory.exists():
-                shutil.rmtree(backup_directory)
             if backup_manifest.exists():
                 backup_manifest.unlink()
             if journal_path.exists():
@@ -414,10 +378,6 @@ class IndexManager:
             self._recover_index_transaction()
             raise
 
-        self.vectorstore = Chroma(
-            persist_directory=str(persist_directory),
-            embedding_function=self.embeddings,
-        )
         self.manifest.entries = discovered
         self.manifest.corrupt = False
 
@@ -433,13 +393,11 @@ class IndexManager:
             with FileLock(lock_path, timeout_seconds=INDEX_LOCK_TIMEOUT_SECONDS):
                 self._recover_index_transaction()
                 self._cleanup_abandoned_index_artifacts(
-                    self.settings.chroma_db_dir.with_name(f"{self.settings.chroma_db_dir.name}.staging"),
-                    self.settings.chroma_db_dir.with_name(f"{self.settings.chroma_db_dir.name}.backup"),
-                    self.settings.chroma_db_dir,
                     self.manifest.path.with_name(f"{self.manifest.path.name}.staging"),
                     self.manifest.path.with_name(f"{self.manifest.path.name}.backup"),
                     self.manifest.path,
                 )
+                self.vector_backend.cleanup_namespace_artifacts(RAG_VECTOR_NAMESPACE)
                 needs_rebuild = force_rebuild or self.manifest.has_incompatible_changes(discovered)
                 if not needs_rebuild:
                     changes = self.manifest.classify(discovered)
@@ -461,44 +419,19 @@ class IndexManager:
 
     def _cleanup_abandoned_index_artifacts(
         self,
-        staging_directory: Path,
-        backup_directory: Path,
-        persist_directory: Path,
         staging_manifest: Path | None = None,
         backup_manifest: Path | None = None,
         manifest_path: Path | None = None,
     ) -> None:
-        if staging_directory.exists():
-            logger.warning("Removing abandoned RAG index staging directory", extra={"path": str(staging_directory)})
-            shutil.rmtree(staging_directory)
         if staging_manifest is not None and staging_manifest.exists():
             logger.warning("Removing abandoned RAG manifest staging file", extra={"path": str(staging_manifest)})
             staging_manifest.unlink()
-        if backup_directory.exists() and persist_directory.exists() and (
-            backup_manifest is None or manifest_path is None or manifest_path.exists()
-        ):
-            logger.warning("Removing stale RAG index backup directory", extra={"path": str(backup_directory)})
-            shutil.rmtree(backup_directory)
-            if backup_manifest is not None and backup_manifest.exists():
-                backup_manifest.unlink()
-        elif backup_directory.exists() and not persist_directory.exists():
-            logger.warning("Restoring RAG index backup because active directory is missing", extra={"path": str(backup_directory)})
-            backup_directory.replace(persist_directory)
-            if backup_manifest is not None and manifest_path is not None and backup_manifest.exists():
-                backup_manifest.replace(manifest_path)
-
-    def _validate_vectorstore(self, persist_directory: Path) -> None:
-        if not (persist_directory.exists() and (persist_directory / "chroma.sqlite3").exists()):
-            raise RuntimeError("Staged vector store was not created.")
-        from langchain_community.vectorstores import Chroma
-
-        store = Chroma(
-            persist_directory=str(persist_directory),
-            embedding_function=self.embeddings,
-        )
-        collection = getattr(store, "_collection", None)
-        if collection is None or collection.count() <= 0:
-            raise RuntimeError("Staged vector store validation failed: no indexed chunks found.")
+        if backup_manifest is not None and manifest_path is not None and backup_manifest.exists() and manifest_path.exists():
+            logger.warning("Removing stale RAG manifest backup file", extra={"path": str(backup_manifest)})
+            backup_manifest.unlink()
+        elif backup_manifest is not None and manifest_path is not None and backup_manifest.exists() and not manifest_path.exists():
+            logger.warning("Restoring RAG manifest backup because active manifest is missing", extra={"path": str(backup_manifest)})
+            backup_manifest.replace(manifest_path)
 
     def _validate_manifest_file(self, manifest_path: Path) -> None:
         manifest = IndexManifest(manifest_path).load()
@@ -542,227 +475,38 @@ class IndexManager:
         if payload.get("transaction_version") != TRANSACTION_VERSION:
             raise RuntimeError("Unsupported RAG index transaction journal version.")
 
-        state = str(payload.get("state", ""))
-        active_index = Path(payload["active_index"])
-        staging_index = Path(payload["staging_index"])
-        backup_index = Path(payload["backup_index"])
         active_manifest = Path(payload["active_manifest"])
         staging_manifest = Path(payload["staging_manifest"])
         backup_manifest = Path(payload["backup_manifest"])
 
-        if not backup_index.exists() and not backup_manifest.exists():
-            if (
-                staging_index.exists()
-                and staging_manifest.exists()
-                and not active_index.exists()
-                and not active_manifest.exists()
-            ):
-                self._promote_first_indexing_staging_pair(
-                    active_index=active_index,
-                    active_manifest=active_manifest,
-                    staging_index=staging_index,
-                    staging_manifest=staging_manifest,
-                    journal_path=journal_path,
-                )
-                return
-            if active_index.exists() and staging_manifest.exists() and not active_manifest.exists():
-                self._promote_first_indexing_staging_manifest(
-                    active_index=active_index,
-                    active_manifest=active_manifest,
-                    staging_index=staging_index,
-                    staging_manifest=staging_manifest,
-                    journal_path=journal_path,
-                )
-                return
-
-        if backup_index.exists() and active_manifest.exists() and not active_index.exists() and not backup_manifest.exists():
-            backup_index.replace(active_index)
-            if staging_index.exists():
-                shutil.rmtree(staging_index)
-            if staging_manifest.exists():
-                staging_manifest.unlink()
-            journal_path.unlink()
-            self.manifest.load()
-            return
-
-        if state in {"new_promoted", "validated"} and active_index.exists() and active_manifest.exists():
+        if active_manifest.exists():
             try:
-                self._validate_vectorstore(active_index)
                 self._validate_manifest_file(active_manifest)
             except Exception:
-                if backup_index.exists() and backup_manifest.exists():
-                    self._restore_backup_pair(
-                        active_index=active_index,
-                        active_manifest=active_manifest,
-                        backup_index=backup_index,
-                        backup_manifest=backup_manifest,
-                        staging_index=staging_index,
-                        staging_manifest=staging_manifest,
-                        journal_path=journal_path,
-                    )
-                    return
-                raise
-            if backup_index.exists():
-                shutil.rmtree(backup_index)
-            if backup_manifest.exists():
-                backup_manifest.unlink()
-            if staging_index.exists():
-                shutil.rmtree(staging_index)
-            if staging_manifest.exists():
-                staging_manifest.unlink()
+                if not backup_manifest.exists():
+                    raise
+                active_manifest.unlink(missing_ok=True)
+                backup_manifest.replace(active_manifest)
+            staging_manifest.unlink(missing_ok=True)
+            backup_manifest.unlink(missing_ok=True)
             journal_path.unlink()
             self.manifest.load()
             return
 
-        if state == "index_backed_up" and backup_index.exists() and active_manifest.exists() and not active_index.exists():
-            backup_index.replace(active_index)
-            if staging_index.exists():
-                shutil.rmtree(staging_index)
-            if staging_manifest.exists():
-                staging_manifest.unlink()
-            journal_path.unlink()
-            self.manifest.load()
-            return
-
-        if state == "index_promoted" and active_index.exists() and staging_manifest.exists():
-            if active_manifest.exists() and backup_manifest.exists():
-                active_manifest.unlink()
+        if staging_manifest.exists():
+            self._validate_manifest_file(staging_manifest)
             staging_manifest.replace(active_manifest)
-            self._write_transaction_journal(
-                "new_promoted",
-                active_index=active_index,
-                staging_index=staging_index,
-                backup_index=backup_index,
-                active_manifest=active_manifest,
-                staging_manifest=staging_manifest,
-                backup_manifest=backup_manifest,
-            )
-            self._recover_index_transaction()
-            return
-
-        if backup_index.exists() and backup_manifest.exists():
-            self._restore_backup_pair(
-                active_index=active_index,
-                active_manifest=active_manifest,
-                backup_index=backup_index,
-                backup_manifest=backup_manifest,
-                staging_index=staging_index,
-                staging_manifest=staging_manifest,
-                journal_path=journal_path,
-            )
-            return
-
-        if active_index.exists() and active_manifest.exists():
-            if staging_index.exists():
-                shutil.rmtree(staging_index)
-            if staging_manifest.exists():
-                staging_manifest.unlink()
+            backup_manifest.unlink(missing_ok=True)
             journal_path.unlink()
             self.manifest.load()
             return
 
-        raise RuntimeError("RAG index transaction recovery failed: no consistent index/manifest pair is available.")
-
-    def _promote_first_indexing_staging_pair(
-        self,
-        *,
-        active_index: Path,
-        active_manifest: Path,
-        staging_index: Path,
-        staging_manifest: Path,
-        journal_path: Path,
-    ) -> None:
-        try:
-            self._validate_vectorstore(staging_index)
-            self._validate_manifest_file(staging_manifest)
-        except Exception:
-            self._discard_first_indexing_artifacts(
-                active_index=active_index,
-                active_manifest=active_manifest,
-                staging_index=staging_index,
-                staging_manifest=staging_manifest,
-                journal_path=journal_path,
-            )
+        if backup_manifest.exists():
+            backup_manifest.replace(active_manifest)
+            journal_path.unlink()
+            self.manifest.load()
             return
 
-        staging_index.replace(active_index)
-        staging_manifest.replace(active_manifest)
-        self._validate_vectorstore(active_index)
-        self._validate_manifest_file(active_manifest)
-        journal_path.unlink()
-        self.manifest.load()
-
-    def _promote_first_indexing_staging_manifest(
-        self,
-        *,
-        active_index: Path,
-        active_manifest: Path,
-        staging_index: Path,
-        staging_manifest: Path,
-        journal_path: Path,
-    ) -> None:
-        try:
-            self._validate_vectorstore(active_index)
-            self._validate_manifest_file(staging_manifest)
-        except Exception:
-            self._discard_first_indexing_artifacts(
-                active_index=active_index,
-                active_manifest=active_manifest,
-                staging_index=staging_index,
-                staging_manifest=staging_manifest,
-                journal_path=journal_path,
-            )
-            return
-
-        staging_manifest.replace(active_manifest)
-        if staging_index.exists():
-            shutil.rmtree(staging_index)
-        self._validate_vectorstore(active_index)
-        self._validate_manifest_file(active_manifest)
-        journal_path.unlink()
-        self.manifest.load()
-
-    def _discard_first_indexing_artifacts(
-        self,
-        *,
-        active_index: Path,
-        active_manifest: Path,
-        staging_index: Path,
-        staging_manifest: Path,
-        journal_path: Path,
-    ) -> None:
-        if active_index.exists() and not active_manifest.exists():
-            shutil.rmtree(active_index)
-        if active_manifest.exists() and not active_index.exists():
-            active_manifest.unlink()
-        if staging_index.exists():
-            shutil.rmtree(staging_index)
-        if staging_manifest.exists():
-            staging_manifest.unlink()
-        journal_path.unlink()
-        self.manifest.load()
-
-    def _restore_backup_pair(
-        self,
-        *,
-        active_index: Path,
-        active_manifest: Path,
-        backup_index: Path,
-        backup_manifest: Path,
-        staging_index: Path,
-        staging_manifest: Path,
-        journal_path: Path,
-    ) -> None:
-        if active_index.exists():
-            shutil.rmtree(active_index)
-        if active_manifest.exists():
-            active_manifest.unlink()
-        backup_index.replace(active_index)
-        backup_manifest.replace(active_manifest)
-        if staging_index.exists():
-            shutil.rmtree(staging_index)
-        if staging_manifest.exists():
-            staging_manifest.unlink()
         journal_path.unlink()
         self.manifest.load()
 
@@ -772,25 +516,3 @@ class IndexManager:
             for chunk in iter(lambda: handle.read(1024 * 1024), b""):
                 hasher.update(chunk)
         return hasher.hexdigest()
-
-    def _documents_for_vectorstore(self, documents: list[Any]) -> list[Any]:
-        vector_documents: list[Any] = []
-        for document in documents:
-            vector_document = copy.copy(document)
-            vector_document.metadata = self._chroma_metadata(getattr(document, "metadata", {}) or {})
-            vector_documents.append(vector_document)
-        return vector_documents
-
-    def _chroma_metadata(self, metadata: dict[str, Any]) -> dict[str, str | int | float | bool]:
-        chroma_metadata: dict[str, str | int | float | bool] = {}
-        for key, value in metadata.items():
-            if isinstance(value, (str, int, float, bool)):
-                chroma_metadata[key] = value
-            elif value is None:
-                continue
-            elif isinstance(value, (list, tuple)):
-                if value:
-                    chroma_metadata[key] = " > ".join(str(item) for item in value)
-            else:
-                chroma_metadata[key] = str(value)
-        return chroma_metadata
