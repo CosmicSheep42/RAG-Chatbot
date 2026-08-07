@@ -82,7 +82,13 @@ def create_app(
             return response
         except AppError as exc:
             status_code = exc.status_code
-            response = JSONResponse({"error": exc.public_message, "request_id": request_id}, status_code=exc.status_code)
+            retry_after = getattr(exc, "retry_after", None)
+            headers = {"Retry-After": str(max(1, int(retry_after)))} if retry_after is not None else None
+            response = JSONResponse(
+                {"error": exc.public_message, "request_id": request_id},
+                status_code=exc.status_code,
+                headers=headers,
+            )
             return response
         except Exception:
             logger.exception("Unhandled request error")

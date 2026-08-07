@@ -13,6 +13,7 @@ from local_rag_chatbot.api.auth import (
     SessionResolver,
     resolve_request_conversation_id,
 )
+from local_rag_chatbot.app_errors import AppError
 from local_rag_chatbot.engine import ChatbotEngine
 from local_rag_chatbot.models import (
     ChatRequest,
@@ -170,6 +171,10 @@ def create_chat_router(
                 status_code=503,
                 headers={"Retry-After": str(max(1, int(exc.retry_after)))},
             )
+        except AppError as exc:
+            retry_after = getattr(exc, "retry_after", None)
+            headers = {"Retry-After": str(max(1, int(retry_after)))} if retry_after is not None else None
+            return JSONResponse({"error": exc.public_message}, status_code=exc.status_code, headers=headers)
         except TimeoutError:
             return JSONResponse({"error": "Request timed out."}, status_code=504)
         except Exception:

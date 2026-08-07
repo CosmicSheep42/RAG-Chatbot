@@ -4,20 +4,10 @@ import asyncio
 from dataclasses import dataclass
 import json
 import re
-from typing import Any, Protocol
+from typing import Any
 
 from local_rag_chatbot.conversation.conversation_memory import ConversationMessage
-
-
-class ChatClient(Protocol):
-    def chat(
-        self,
-        messages: list[dict[str, Any]],
-        tools: list[Any] | None = None,
-        *,
-        model: str | None = None,
-    ) -> Any:
-        ...
+from local_rag_chatbot.providers.llm.contracts import ChatModel as ChatClient
 
 
 @dataclass(frozen=True)

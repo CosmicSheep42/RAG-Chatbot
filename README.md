@@ -7,13 +7,13 @@
 
 A local Retrieval-Augmented Generation chatbot built as both a portfolio project and a reusable Python package.
 
-The project demonstrates a complete RAG workflow with Ollama, pluggable vector storage, hybrid retrieval, citations, optional reranking, temporary conversation memory, query rewriting, and tool calling. It can run as a standalone FastAPI application or be embedded into another Python system.
+The project demonstrates a complete RAG workflow with pluggable generation, embedding, and vector-storage providers, hybrid retrieval, citations, optional reranking, temporary conversation memory, query rewriting, and tool calling. It can run as a standalone FastAPI application or be embedded into another Python system.
 
 > This is a learning-oriented prototype for local demonstrations and trusted environments. It is not a production-ready hosted service.
 
 ## Features
 
-- Local generation and embeddings through Ollama.
+- Pluggable generation and embedding providers: Ollama (fully local) or OpenAI (server-side API).
 - Hybrid retrieval with dense vector search and lexical matching.
 - Pluggable vector storage with local Chroma or PostgreSQL/pgvector.
 - Citations linked to retrieved document passages.
@@ -44,13 +44,31 @@ Python caller or FastAPI adapter
 
 The installed package contains the reusable chatbot code and its default prompt, routing, and tool-calling resources. The demo frontend, knowledge base, generated indexes, Docker configuration, and documentation remain repository resources.
 
+Generation, embeddings, and vector storage are three independent, swappable boundaries:
+
+```text
+AppSettings
+    |
+    +--> create_chat_model()        --> Ollama or OpenAI      (LLM_PROVIDER)
+    +--> create_embeddings()        --> Ollama or OpenAI       (EMBEDDING_PROVIDER)
+    +--> create_vector_store_backend() --> Chroma or PGVector  (VECTOR_STORE_PROVIDER)
+            |
+            v
+    create_application_services() --> ChatModel + Embeddings + VectorStoreBackend
+            |
+            v
+        ChatbotEngine
+```
+
+`local_rag_chatbot/providers/llm/` and `local_rag_chatbot/providers/embeddings/` hold the provider contracts, factories, and adapters (`ollama.py`, `openai.py`). Domain code (`RAGChatbot`, `AnswerService`, `QueryRewriter`, `IndexManager`, the vector-store backends) only depends on the provider-neutral `ChatModel`/`Embeddings` contracts — it never imports an Ollama or OpenAI type directly. `ChatbotEngine(config=..., chat_model=..., embeddings=...)` still accepts explicit dependency injection, which always takes precedence over the provider selected by configuration.
+
 ## Requirements
 
 - Python 3.11 or newer.
-- Ollama installed and running.
-- Enough local memory for the selected models.
+- Either Ollama installed and running locally, or an OpenAI API key — see [LLM & Embedding Providers](#llm--embedding-providers).
+- Enough local memory for the selected models when running Ollama.
 
-Default models:
+Default models (Ollama):
 
 ```text
 llama3.2:3b
@@ -79,7 +97,7 @@ Open `http://127.0.0.1:8000`.
 
 ```powershell
 py -m venv .venv
-.venv\Scripts\python.exe -m pip install -e ".[chroma]"
+.venv\Scripts\python.exe -m pip install -e ".[chroma,ollama]"
 Copy-Item .env.sample .env
 
 ollama pull llama3.2:3b
@@ -95,18 +113,37 @@ cp .env.sample .env
 docker compose up --build
 ```
 
-Docker Compose starts Ollama, downloads the configured models, and runs the application. The published port is bound to `127.0.0.1` by default.
+By default (`.env.sample`'s `COMPOSE_PROFILES=ollama` and `COMPOSE_FILE=docker-compose.yml:docker-compose.ollama.yml`), this is unchanged from before: Compose starts Ollama, downloads the configured models, waits for the pull to finish, then starts `app`. The published port is bound to `127.0.0.1` by default.
 
-For PGVector with Docker Compose:
+Ollama is optional in Docker. To run with `LLM_PROVIDER=openai`/`EMBEDDING_PROVIDER=openai` and skip the Ollama containers entirely, clear the two Compose-only variables so the Ollama override file and profile aren't activated:
 
 ```bash
-VECTOR_STORE_PROVIDER=pgvector docker compose \
-  -f docker-compose.yml \
-  -f docker-compose.pgvector.yml \
-  up --build
+COMPOSE_PROFILES= COMPOSE_FILE=docker-compose.yml \
+LLM_PROVIDER=openai EMBEDDING_PROVIDER=openai \
+docker compose up --build app
 ```
 
-Changing `VECTOR_STORE_PROVIDER` requires rebuilding the image because the selected optional dependency extra is installed at build time.
+`COMPOSE_PROFILES` and `COMPOSE_FILE` are read by the Compose CLI itself (not by the application) — they control which compose files are merged and which profiles are active, so the `ollama`/`ollama-init` services are skipped and `app` no longer waits on them.
+
+For PGVector with Docker Compose (works with either LLM/embedding provider). Note that once `COMPOSE_FILE` is
+overridden on the command line, `COMPOSE_PROFILES` must be passed explicitly too — Compose stops reading it from
+`.env` as soon as `COMPOSE_FILE` comes from the shell environment instead:
+
+```bash
+VECTOR_STORE_PROVIDER=pgvector COMPOSE_PROFILES=ollama \
+COMPOSE_FILE=docker-compose.yml:docker-compose.pgvector.yml:docker-compose.ollama.yml \
+docker compose up --build
+```
+
+Or, PGVector + OpenAI, no Ollama at all:
+
+```bash
+VECTOR_STORE_PROVIDER=pgvector LLM_PROVIDER=openai EMBEDDING_PROVIDER=openai \
+COMPOSE_PROFILES= COMPOSE_FILE=docker-compose.yml:docker-compose.pgvector.yml \
+docker compose up --build app
+```
+
+Changing `VECTOR_STORE_PROVIDER`, `LLM_PROVIDER`, or `EMBEDDING_PROVIDER` requires rebuilding the image, because the corresponding optional dependency extras are installed at build time (see [LLM & Embedding Providers](#llm--embedding-providers)).
 
 ## Python Usage
 
@@ -181,9 +218,13 @@ Copy `.env.sample` to `.env` and change only the settings required by your envir
 
 | Variable | Purpose | Default |
 | --- | --- | --- |
-| `OLLAMA_BASE_URL` | Ollama server URL | `http://localhost:11434` |
-| `GENERATION_MODEL` | Answer generation model | `llama3.2:3b` |
-| `EMBEDDING_MODEL` | Embedding model | `nomic-embed-text` |
+| `LLM_PROVIDER` | Generation provider: `ollama` or `openai`. | `ollama` |
+| `EMBEDDING_PROVIDER` | Embedding provider: `ollama` or `openai`. Independent of `LLM_PROVIDER`. | `ollama` |
+| `GENERATION_MODEL` | Answer generation model name for the selected `LLM_PROVIDER`. | `llama3.2:3b` |
+| `EMBEDDING_MODEL` | Embedding model name for the selected `EMBEDDING_PROVIDER`. | `nomic-embed-text` |
+| `OLLAMA_BASE_URL` | Ollama server URL. Only used when a provider is set to `ollama`. | `http://localhost:11434` |
+| `OPENAI_API_KEY` | OpenAI API key. Required when `LLM_PROVIDER` or `EMBEDDING_PROVIDER` is `openai`. Never logged, never returned by `/status`. | empty |
+| `OPENAI_BASE_URL` | Optional custom endpoint compatible with the OpenAI Responses API and/or Embeddings API used by the provider (not a generic OpenAI-compatible/Chat Completions endpoint). | empty (SDK default) |
 | `DOCUMENTS_DIR` | Knowledge-base directory | demo: `./knowledge-base` |
 | `DATA_DIR` | Generated indexes and runtime data | demo: `./data` |
 | `VECTOR_STORE_PROVIDER` | Vector-store backend provider: `chroma` or `pgvector`. | `chroma` |
@@ -208,6 +249,47 @@ Copy `.env.sample` to `.env` and change only the settings required by your envir
 
 `TOOL_CALLING_MODEL` and `QUERY_REWRITING_MODEL` use `GENERATION_MODEL` unless configured separately.
 
+## LLM & Embedding Providers
+
+Generation and embeddings are selected independently through `LLM_PROVIDER` and `EMBEDDING_PROVIDER`. Both extras must be installed for the providers you use:
+
+```bash
+# Ollama (fully local)
+pip install -e ".[chroma,ollama]"
+
+# OpenAI (server-side API)
+pip install -e ".[chroma,openai]"
+```
+
+"OpenAI" here means the OpenAI **API**, called server-side with the official `openai` Python SDK — it is not a dependency on the ChatGPT web app, and no request ever reaches the browser directly; the API key stays server-side and is never sent to the frontend, logged, or returned by `/status`/`/ready`.
+
+Example combinations:
+
+```env
+# Fully local
+LLM_PROVIDER=ollama
+EMBEDDING_PROVIDER=ollama
+VECTOR_STORE_PROVIDER=chroma
+```
+
+```env
+# OpenAI generation + embeddings, local vector storage
+LLM_PROVIDER=openai
+EMBEDDING_PROVIDER=openai
+VECTOR_STORE_PROVIDER=chroma
+OPENAI_API_KEY=sk-...
+```
+
+```env
+# OpenAI generation, local embeddings, PGVector storage
+LLM_PROVIDER=openai
+EMBEDDING_PROVIDER=ollama
+VECTOR_STORE_PROVIDER=pgvector
+OPENAI_API_KEY=sk-...
+```
+
+`./run.sh` and the Docker build read `LLM_PROVIDER`/`EMBEDDING_PROVIDER` and install the matching optional extras automatically. Switching `EMBEDDING_PROVIDER` (or `EMBEDDING_MODEL`) changes the index fingerprint, so the next startup or reindex safely rebuilds incompatible indexes instead of serving mismatched vectors.
+
 ## Vector Store Backends
 
 The project supports two optional vector-store backends:
@@ -228,7 +310,7 @@ VECTOR_STORE_PROVIDER=chroma
 
 Use `pgvector` instead of `chroma` to connect to PostgreSQL. In that case, configure `PGVECTOR_DSN` and ensure the PostgreSQL `vector` extension is available.
 
-`./run.sh` reads `VECTOR_STORE_PROVIDER` and installs the corresponding optional dependency. When using Docker, follow the commands in the Docker section above.
+`./run.sh` reads `VECTOR_STORE_PROVIDER` (and `LLM_PROVIDER`/`EMBEDDING_PROVIDER`) and installs the corresponding optional dependencies. When using Docker, follow the commands in the Docker section above.
 
 ## Optional Reranking
 
@@ -251,10 +333,11 @@ Reranking may improve difficult searches, but it increases installation size, me
 - The standalone demo does not include chatbot-managed authentication.
 - Embedded deployments must use the host application's security model.
 - Do not expose Ollama, ChromaDB files, or PostgreSQL/pgvector directly to untrusted networks.
-- Do not log or commit real PostgreSQL DSNs with credentials.
+- Do not log or commit real PostgreSQL DSNs or `OPENAI_API_KEY` values with credentials. `.env` is git-ignored; only empty placeholders belong in `.env.sample`.
+- All OpenAI API calls happen server-side (inside the LLM/embedding adapters); the API key is never sent to the frontend.
 - Conversation history is temporary and stored in memory.
 - The demo frontend renders responses as plain text.
-- Ollama is currently the only included model provider.
+- Ollama and OpenAI are the currently included model providers.
 - Retrieval quality depends on the selected models, source documents, and tuning.
 
 ## Documentation

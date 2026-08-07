@@ -3,17 +3,9 @@ from __future__ import annotations
 from typing import Any, Protocol
 
 from local_rag_chatbot.conversation.conversation_memory import ConversationMessage
+from local_rag_chatbot.providers.llm.contracts import ChatModel
 
-
-class ChatModel(Protocol):
-    def chat(
-        self,
-        messages: list[dict[str, Any]],
-        tools: list[Any] | None = None,
-        *,
-        model: str | None = None,
-    ) -> Any:
-        ...
+__all__ = ["ChatModel", "Retriever", "ConversationStore"]
 
 
 class Retriever(Protocol):

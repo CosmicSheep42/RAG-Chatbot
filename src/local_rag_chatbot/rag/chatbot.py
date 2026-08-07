@@ -5,14 +5,16 @@ import json
 import logging
 from typing import Any, Mapping, TYPE_CHECKING
 
+from local_rag_chatbot.app_errors import map_provider_error
 from local_rag_chatbot.documents.tool_config_repository import ToolCallingConfig, ToolDefinition
 from local_rag_chatbot.input_cleaner import TextPreprocessorPipeline
 from local_rag_chatbot.observability import metrics
+from local_rag_chatbot.providers.errors import ProviderError
 from local_rag_chatbot.rag.answer_service import AnswerService
 from local_rag_chatbot.rag.context_builder import ContextBuilder
 from local_rag_chatbot.rag.contracts import ChatModel
 from local_rag_chatbot.rag.index_manager import IndexManager, RAGIndexStatus
-from local_rag_chatbot.rag.ollama_tool_client import ToolCall, ToolSpec
+from local_rag_chatbot.providers.llm.types import ToolCall, ToolSpec
 from local_rag_chatbot.rag.retrieval_confidence import (
     RetrievalConfidenceAssessment,
     RetrievalDecision,
@@ -213,80 +215,12 @@ class RAGChatbot:
             }
         except asyncio.CancelledError:
             raise
-        except Exception:
+        except ProviderError as exc:
             logger.exception(
-                "Failed to process query",
+                "Model provider error while processing query",
                 extra=self._request_log_extra(request_context),
             )
-            return None
-
-        try:
-            with metrics.timer("retrieval_policy_seconds"):
-                policy = self.policy_resolver.resolve(retrieval_query)
-            retrieval_result = self.index_manager.retrieval_service.retrieve(
-                retrieval_query,
-                policy,
-                request_context=request_context,
-            )
-            documents = retrieval_result.documents
-            coverage = retrieval_result.coverage
-            policy = retrieval_result.policy or policy
-            confidence = retrieval_result.confidence_score
-            confidence_assessment = retrieval_result.confidence
-            if coverage is None:
-                raise RuntimeError("Retrieval did not produce coverage.")
-
-            if self._should_refuse_retrieval(retrieval_result):
-                return {
-                    "result": (
-                        "I do not have enough reliable context to answer that safely. "
-                        "Try rephrasing the question or ask about a more specific document, source, or section."
-                    ),
-                    "source_documents": [],
-                    "retrieval_confidence": confidence,
-                    "retrieval_confidence_assessment": confidence_assessment.as_debug_payload()
-                    if confidence_assessment is not None
-                    else None,
-                    "retrieval_coverage": coverage.score,
-                    "retrieval_intent": policy.intent.value,
-                    "retrieval_dominant_source": coverage.dominant_source,
-                    "retrieval_coverage_reason": coverage.reason,
-                    "refused": True,
-                    "original_query": generation_query,
-                    "standalone_query": retrieval_query,
-                    "query_rewritten": generation_query != retrieval_query,
-                }
-
-            partial_context = self._is_partial_enumeration_allowed(retrieval_result)
-            result_text, final_documents, tool_events, tool_used = self._generate_answer_with_optional_tools(
-                generation_query,
-                documents,
-                policy,
-                standalone_query=retrieval_query,
-                coverage=coverage,
-                confidence_assessment=confidence_assessment,
-                partial_context=partial_context,
-                request_context=request_context,
-            )
-            return {
-                "result": result_text,
-                "source_documents": list(final_documents),
-                "retrieval_confidence": confidence,
-                "retrieval_confidence_assessment": confidence_assessment.as_debug_payload()
-                if confidence_assessment is not None
-                else None,
-                "retrieval_coverage": coverage.score,
-                "retrieval_intent": policy.intent.value,
-                "retrieval_dominant_source": coverage.dominant_source,
-                "retrieval_coverage_reason": coverage.reason,
-                "partial_context": partial_context,
-                "tool_calls": tool_events,
-                "tool_calling_used": tool_used,
-                "refused": False,
-                "original_query": generation_query,
-                "standalone_query": retrieval_query,
-                "query_rewritten": generation_query != retrieval_query,
-            }
+            raise map_provider_error(exc) from exc
         except Exception:
             logger.exception(
                 "Failed to process query",

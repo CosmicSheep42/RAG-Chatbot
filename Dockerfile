@@ -2,6 +2,8 @@ FROM python:3.12-slim
 
 ARG INSTALL_RERANKER=false
 ARG VECTOR_STORE_PROVIDER=chroma
+ARG LLM_PROVIDER=ollama
+ARG EMBEDDING_PROVIDER=ollama
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -9,6 +11,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     DATA_DIR=/app/data \
     WEB_DIR=/app/web \
     VECTOR_STORE_PROVIDER=${VECTOR_STORE_PROVIDER} \
+    LLM_PROVIDER=${LLM_PROVIDER} \
+    EMBEDDING_PROVIDER=${EMBEDDING_PROVIDER} \
     RERANKING_MODE=auto
 
 WORKDIR /app
@@ -26,11 +30,19 @@ RUN set -eu; \
       chroma|pgvector) ;; \
       *) echo "Unsupported VECTOR_STORE_PROVIDER: $VECTOR_STORE_PROVIDER" >&2; exit 1 ;; \
     esac; \
+    case "$LLM_PROVIDER" in \
+      ollama|openai) ;; \
+      *) echo "Unsupported LLM_PROVIDER: $LLM_PROVIDER" >&2; exit 1 ;; \
+    esac; \
+    case "$EMBEDDING_PROVIDER" in \
+      ollama|openai) ;; \
+      *) echo "Unsupported EMBEDDING_PROVIDER: $EMBEDDING_PROVIDER" >&2; exit 1 ;; \
+    esac; \
+    extras="$VECTOR_STORE_PROVIDER,$LLM_PROVIDER,$EMBEDDING_PROVIDER"; \
     if [ "$INSTALL_RERANKER" = "true" ]; then \
-      pip install --no-cache-dir -e "/app[$VECTOR_STORE_PROVIDER,rerank]"; \
-    else \
-      pip install --no-cache-dir -e "/app[$VECTOR_STORE_PROVIDER]"; \
-    fi
+      extras="$extras,rerank"; \
+    fi; \
+    pip install --no-cache-dir -e "/app[$extras]"
 
 COPY web /app/web
 COPY knowledge-base /app/knowledge-base
