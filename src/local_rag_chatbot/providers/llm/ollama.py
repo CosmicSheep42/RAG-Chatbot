@@ -1,53 +1,22 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
 from typing import Any
 
 import httpx
 
-
-@dataclass(frozen=True)
-class ToolSpec:
-    name: str
-    description: str
-    parameters: dict[str, Any]
-
-
-@dataclass(frozen=True)
-class ToolCall:
-    id: str
-    name: str
-    arguments: dict[str, Any]
+from local_rag_chatbot.providers.errors import (
+    ProviderConnectionError,
+    ProviderError,
+    ProviderResponseError,
+    ProviderTimeoutError,
+)
+from local_rag_chatbot.providers.llm.types import ChatResult, ToolCall, ToolSpec
 
 
-@dataclass(frozen=True)
-class ChatResult:
-    content: str
-    tool_calls: list[ToolCall]
+class OllamaChatModel:
+    """Ollama adapter for the provider-neutral `ChatModel` contract."""
 
-
-class OllamaClientError(RuntimeError):
-    pass
-
-
-class OllamaConnectionError(OllamaClientError):
-    pass
-
-
-class OllamaTimeoutError(OllamaClientError):
-    pass
-
-
-class OllamaHTTPStatusError(OllamaClientError):
-    pass
-
-
-class OllamaInvalidResponseError(OllamaClientError):
-    pass
-
-
-class OllamaToolCallingClient:
     def __init__(
         self,
         *,
@@ -80,13 +49,13 @@ class OllamaToolCallingClient:
             with httpx.Client(timeout=timeout) as client:
                 response = client.post(f"{self.base_url}/api/chat", json=payload)
         except httpx.ConnectTimeout as exc:
-            raise OllamaTimeoutError(f"Timed out connecting to Ollama at {self.base_url}.") from exc
+            raise ProviderTimeoutError(f"Timed out connecting to Ollama at {self.base_url}.") from exc
         except httpx.ReadTimeout as exc:
-            raise OllamaTimeoutError(f"Timed out reading from Ollama at {self.base_url}.") from exc
+            raise ProviderTimeoutError(f"Timed out reading from Ollama at {self.base_url}.") from exc
         except httpx.ConnectError as exc:
-            raise OllamaConnectionError(f"Could not reach Ollama at {self.base_url}.") from exc
+            raise ProviderConnectionError(f"Could not reach Ollama at {self.base_url}.") from exc
         except httpx.HTTPError as exc:
-            raise OllamaClientError(f"Ollama request failed: {exc}") from exc
+            raise ProviderError(f"Ollama request failed: {exc}") from exc
 
         return self._parse_response(response)
 
@@ -103,13 +72,13 @@ class OllamaToolCallingClient:
             async with httpx.AsyncClient(timeout=timeout) as client:
                 response = await client.post(f"{self.base_url}/api/chat", json=payload)
         except httpx.ConnectTimeout as exc:
-            raise OllamaTimeoutError(f"Timed out connecting to Ollama at {self.base_url}.") from exc
+            raise ProviderTimeoutError(f"Timed out connecting to Ollama at {self.base_url}.") from exc
         except httpx.ReadTimeout as exc:
-            raise OllamaTimeoutError(f"Timed out reading from Ollama at {self.base_url}.") from exc
+            raise ProviderTimeoutError(f"Timed out reading from Ollama at {self.base_url}.") from exc
         except httpx.ConnectError as exc:
-            raise OllamaConnectionError(f"Could not reach Ollama at {self.base_url}.") from exc
+            raise ProviderConnectionError(f"Could not reach Ollama at {self.base_url}.") from exc
         except httpx.HTTPError as exc:
-            raise OllamaClientError(f"Ollama request failed: {exc}") from exc
+            raise ProviderError(f"Ollama request failed: {exc}") from exc
 
         return self._parse_response(response)
 
@@ -145,27 +114,27 @@ class OllamaToolCallingClient:
     def _parse_response(self, response: httpx.Response) -> ChatResult:
         raw_bytes = response.content
         if len(raw_bytes) > self.max_response_bytes:
-            raise OllamaInvalidResponseError(
+            raise ProviderResponseError(
                 f"Ollama response exceeded {self.max_response_bytes} bytes."
             )
         if not raw_bytes:
-            raise OllamaInvalidResponseError("Ollama returned an empty response body.")
+            raise ProviderResponseError("Ollama returned an empty response body.")
         if response.status_code >= 400:
             detail = raw_bytes[:1024].decode("utf-8", errors="replace")
-            raise OllamaHTTPStatusError(
+            raise ProviderResponseError(
                 f"Ollama chat request failed with status {response.status_code}: {detail}"
             )
 
         try:
             data = response.json()
         except json.JSONDecodeError as exc:
-            raise OllamaInvalidResponseError("Ollama returned malformed JSON.") from exc
+            raise ProviderResponseError("Ollama returned malformed JSON.") from exc
 
         if not isinstance(data, dict):
-            raise OllamaInvalidResponseError("Ollama returned a non-object JSON response.")
+            raise ProviderResponseError("Ollama returned a non-object JSON response.")
         message = data.get("message") or {}
         if not isinstance(message, dict):
-            raise OllamaInvalidResponseError("Ollama response message is invalid.")
+            raise ProviderResponseError("Ollama response message is invalid.")
         content = str(message.get("content") or "").strip()
         tool_calls = self._parse_tool_calls(message.get("tool_calls"))
         return ChatResult(content=content, tool_calls=tool_calls)

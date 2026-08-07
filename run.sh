@@ -43,6 +43,8 @@ PYTHON_BIN="${PYTHON_BIN:-python3}"
 VENV_DIR=".venv"
 VENV_PYTHON="$VENV_DIR/bin/python"
 VECTOR_STORE_PROVIDER="${VECTOR_STORE_PROVIDER:-chroma}"
+LLM_PROVIDER="${LLM_PROVIDER:-ollama}"
+EMBEDDING_PROVIDER="${EMBEDDING_PROVIDER:-ollama}"
 INSTALL_RERANKER="${INSTALL_RERANKER:-false}"
 
 case "$VECTOR_STORE_PROVIDER" in
@@ -53,8 +55,32 @@ case "$VECTOR_STORE_PROVIDER" in
     exit 1
     ;;
 esac
+case "$LLM_PROVIDER" in
+  ollama|openai) ;;
+  *)
+    echo "Unsupported LLM_PROVIDER: $LLM_PROVIDER" >&2
+    echo "Supported values: ollama, openai" >&2
+    exit 1
+    ;;
+esac
+case "$EMBEDDING_PROVIDER" in
+  ollama|openai) ;;
+  *)
+    echo "Unsupported EMBEDDING_PROVIDER: $EMBEDDING_PROVIDER" >&2
+    echo "Supported values: ollama, openai" >&2
+    exit 1
+    ;;
+esac
 
 extras="$VECTOR_STORE_PROVIDER"
+case "$LLM_PROVIDER" in
+  ollama) extras="$extras,ollama" ;;
+  openai) extras="$extras,openai" ;;
+esac
+case "$EMBEDDING_PROVIDER" in
+  ollama) extras="$extras,ollama" ;;
+  openai) extras="$extras,openai" ;;
+esac
 case "${INSTALL_RERANKER,,}" in
   1|true|yes|on) extras="$extras,rerank" ;;
 esac

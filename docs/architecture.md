@@ -11,7 +11,25 @@ The primary integration entry points are:
 
 `ChatbotEngine` owns composition and lifecycle for the existing services: routing, input cleaning, query rewriting, memory, retrieval, answer generation, tools, and indexing.
 
-FastAPI routes call the engine and do not construct Ollama, vector-store backends, or internal RAG services themselves.
+FastAPI routes call the engine and do not construct LLM/embedding providers, vector-store backends, or internal RAG services themselves.
+
+Generation, embeddings, and vector storage are three independent provider boundaries, each resolved from `AppSettings` by its own factory:
+
+```text
+AppSettings
+    |
+    +--> create_chat_model()           (local_rag_chatbot.providers.llm)        --> Ollama | OpenAI
+    +--> create_embeddings()           (local_rag_chatbot.providers.embeddings) --> Ollama | OpenAI
+    +--> create_vector_store_backend() (local_rag_chatbot.vectorstores)         --> Chroma | PGVector
+            |
+            v
+    create_application_services() --> ApplicationServices(chat_model, embeddings, vector_backend, ...)
+            |
+            v
+        ChatbotEngine
+```
+
+`local_rag_chatbot.providers.llm` defines the provider-neutral `ChatModel` contract (`chat`/`achat`) and the neutral `ChatResult`/`ToolSpec`/`ToolCall` types; `ollama.py` and `openai.py` are adapters that normalize their respective wire formats into those types and translate provider-specific exceptions into the shared `local_rag_chatbot.providers.errors` hierarchy (`ProviderConnectionError`, `ProviderTimeoutError`, `ProviderAuthenticationError`, `ProviderRateLimitError`, `ProviderResponseError`) so no `Ollama*`/`openai.*` exception type crosses the adapter boundary. `local_rag_chatbot.providers.embeddings` mirrors this for `embed_documents`/`embed_query`. `RAGChatbot`, `AnswerService`, and `QueryRewriter` depend only on these contracts — swapping `LLM_PROVIDER`/`EMBEDDING_PROVIDER` requires no change to retrieval, routing, citations, memory, reranking, or tool-calling logic. `create_application_services(settings, chat_model=..., embeddings=..., vector_backend=...)` only invokes a factory when the corresponding argument is `None`, so explicit dependency injection always wins over the configured provider.
 
 Authentication, conversation identity, and runtime controls are separate. The core engine can be called as
 `await engine.chat("Question")` without HTTP, authentication, or conversation state. When a caller supplies
@@ -76,3 +94,12 @@ Docker keeps the common/Chroma services in `docker-compose.yml`. The
 the database is not started or required by the Chroma command. The adapter
 also applies bounded retries for transient connection-establishment failures
 using the `PGVECTOR_CONNECT_*` settings.
+
+Ollama is likewise optional in Docker, not a fixed dependency of `app`. The `ollama`/`ollama-init` services carry
+`profiles: ["ollama"]` in `docker-compose.yml`, and `app`'s `depends_on` on them lives only in the
+`docker-compose.ollama.yml` override, not the base file. `.env.sample` sets `COMPOSE_PROFILES=ollama` and
+`COMPOSE_FILE=docker-compose.yml:docker-compose.ollama.yml` (read directly by the Compose CLI) so the default
+`docker compose up` is unchanged from before; clearing both on the command line runs `app` without ever starting
+Ollama, which is what an `LLM_PROVIDER=openai`/`EMBEDDING_PROVIDER=openai` deployment needs. `ollama-init`'s model-pull
+script itself checks `LLM_PROVIDER`/`EMBEDDING_PROVIDER` before pulling `GENERATION_MODEL` or `EMBEDDING_MODEL`, so a
+mixed setup (e.g. OpenAI generation with Ollama embeddings) does not try to `ollama pull` an OpenAI model name.

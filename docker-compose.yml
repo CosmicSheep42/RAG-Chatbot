@@ -5,6 +5,8 @@ services:
       args:
         INSTALL_RERANKER: ${INSTALL_RERANKER:-false}
         VECTOR_STORE_PROVIDER: ${VECTOR_STORE_PROVIDER:-chroma}
+        LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
+        EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-ollama}
     env_file:
       - .env
     ports:
@@ -34,14 +36,10 @@ services:
     volumes:
       - ./knowledge-base:/app/knowledge-base:ro
       - rag-data:/app/data
-    depends_on:
-      ollama:
-        condition: service_healthy
-      ollama-init:
-        condition: service_completed_successfully
 
   ollama:
     image: ollama/ollama:0.32.1
+    profiles: ["ollama"]
     volumes:
       - ollama:/root/.ollama
     healthcheck:
@@ -53,6 +51,7 @@ services:
 
   ollama-init:
     image: ollama/ollama:0.32.1
+    profiles: ["ollama"]
     env_file:
       - .env
     environment:
@@ -71,18 +70,23 @@ services:
           sleep 2
         done
 
+        llm_provider="$${LLM_PROVIDER:-ollama}"
+        embedding_provider="$${EMBEDDING_PROVIDER:-ollama}"
         generation_model="$${GENERATION_MODEL:-llama3.2:3b}"
         embedding_model="$${EMBEDDING_MODEL:-nomic-embed-text}"
         tool_model="$${TOOL_CALLING_MODEL:-$$generation_model}"
         rewriting_model="$${QUERY_REWRITING_MODEL:-$$generation_model}"
 
+        models_to_pull=""
+        if [ "$$llm_provider" = "ollama" ]; then
+          models_to_pull="$$models_to_pull $$generation_model $$tool_model $$rewriting_model"
+        fi
+        if [ "$$embedding_provider" = "ollama" ]; then
+          models_to_pull="$$models_to_pull $$embedding_model"
+        fi
+
         pulled_models=""
-        for model in \
-          "$$generation_model" \
-          "$$embedding_model" \
-          "$$tool_model" \
-          "$$rewriting_model"
-        do
+        for model in $$models_to_pull; do
           case " $$pulled_models " in
             *" $$model "*) continue ;;
           esac

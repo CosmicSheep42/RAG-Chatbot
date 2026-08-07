@@ -58,9 +58,13 @@ class AppSettings:
     routing_dir: ConfigResource
     master_prompt_file: ConfigResource
     tool_calling_config_file: ConfigResource
+    llm_provider: str
+    embedding_provider: str
     generation_model: str
     embedding_model: str
     ollama_base_url: str
+    openai_api_key: str
+    openai_base_url: str
     chunk_size: int
     chunk_overlap: int
     max_document_file_size_bytes: int
@@ -162,8 +166,9 @@ class AppSettings:
         for field_name in ("documents_dir", "data_dir", "web_dir", "chroma_db_dir", "router_store_dir"):
             if field_name in normalized and normalized[field_name] is not None:
                 normalized[field_name] = Path(normalized[field_name]).expanduser()
-        if "vector_store_provider" in normalized and normalized["vector_store_provider"] is not None:
-            normalized["vector_store_provider"] = str(normalized["vector_store_provider"]).strip().lower()
+        for field_name in ("vector_store_provider", "llm_provider", "embedding_provider"):
+            if field_name in normalized and normalized[field_name] is not None:
+                normalized[field_name] = str(normalized[field_name]).strip().lower()
         for field_name in (
             "pgvector_schema",
             "pgvector_table",
@@ -198,6 +203,14 @@ class AppSettings:
             )
         if self.vector_store_provider == "pgvector" and not self.pgvector_dsn.strip():
             errors.append("PGVECTOR_DSN is required when VECTOR_STORE_PROVIDER=pgvector.")
+        if self.llm_provider not in {"ollama", "openai"}:
+            errors.append(f"Unsupported LLM_PROVIDER: {self.llm_provider}. Supported values: ollama, openai.")
+        if self.embedding_provider not in {"ollama", "openai"}:
+            errors.append(
+                f"Unsupported EMBEDDING_PROVIDER: {self.embedding_provider}. Supported values: ollama, openai."
+            )
+        if (self.llm_provider == "openai" or self.embedding_provider == "openai") and not self.openai_api_key.strip():
+            errors.append("OPENAI_API_KEY is required when LLM_PROVIDER or EMBEDDING_PROVIDER is openai.")
         for field_name in ("pgvector_schema", "pgvector_table", "pgvector_collection_table"):
             value = getattr(self, field_name)
             if not SQL_IDENTIFIER_PATTERN.match(value):
@@ -236,26 +249,29 @@ class AppSettings:
             "inference_timeout_seconds",
             "request_timeout_seconds",
             "query_rewriting_timeout_seconds",
-            "ollama_connect_timeout_seconds",
-            "ollama_read_timeout_seconds",
         ):
             if getattr(self, name) <= 0:
                 errors.append(f"{name.upper()} must be > 0.")
         if self.query_rewriting_timeout_seconds > self.request_timeout_seconds:
             errors.append("QUERY_REWRITING_TIMEOUT_SECONDS must be <= REPLY_TIMEOUT_SECONDS.")
-        if self.ollama_connect_timeout_seconds > self.request_timeout_seconds:
-            errors.append("OLLAMA_CONNECT_TIMEOUT_SECONDS must be <= REPLY_TIMEOUT_SECONDS.")
-        if self.ollama_read_timeout_seconds > self.request_timeout_seconds:
-            errors.append("OLLAMA_READ_TIMEOUT_SECONDS must be <= REPLY_TIMEOUT_SECONDS.")
+        uses_ollama = self.llm_provider == "ollama" or self.embedding_provider == "ollama"
+        if uses_ollama:
+            for name in ("ollama_connect_timeout_seconds", "ollama_read_timeout_seconds"):
+                if getattr(self, name) <= 0:
+                    errors.append(f"{name.upper()} must be > 0.")
+            if self.ollama_connect_timeout_seconds > self.request_timeout_seconds:
+                errors.append("OLLAMA_CONNECT_TIMEOUT_SECONDS must be <= REPLY_TIMEOUT_SECONDS.")
+            if self.ollama_read_timeout_seconds > self.request_timeout_seconds:
+                errors.append("OLLAMA_READ_TIMEOUT_SECONDS must be <= REPLY_TIMEOUT_SECONDS.")
+            parsed = urlparse(self.ollama_base_url)
+            if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+                errors.append("OLLAMA_BASE_URL must be an http(s) URL.")
         if self.max_document_file_size_bytes <= 0:
             errors.append("MAX_DOCUMENT_FILE_SIZE_BYTES must be > 0.")
         if not 1 <= self.server_port <= 65535:
             errors.append("SERVER_PORT must be a valid TCP port.")
         if self.conversation_max_messages < 0 or self.conversation_max_sessions < 0:
             errors.append("Conversation max values must be >= 0.")
-        parsed = urlparse(self.ollama_base_url)
-        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
-            errors.append("OLLAMA_BASE_URL must be an http(s) URL.")
         if self.max_concurrent_inferences <= 0 or self.max_pending_inferences < 0:
             errors.append("Concurrency limits must be positive/coherent.")
         if self.max_zip_entries <= 0 or self.max_zip_uncompressed_bytes <= 0:
@@ -267,6 +283,8 @@ class AppSettings:
         result = dict(self.__dict__)
         if result.get("pgvector_dsn"):
             result["pgvector_dsn"] = _sanitize_url(str(result["pgvector_dsn"]))
+        if result.get("openai_api_key"):
+            result["openai_api_key"] = "[redacted]"
         for field_name in ("master_prompt_file", "tool_calling_config_file", "routing_dir"):
             resource = result.get(field_name)
             if isinstance(resource, ConfigResource):
@@ -375,9 +393,13 @@ def get_settings() -> AppSettings:
         routing_dir=routing_dir,
         master_prompt_file=master_prompt_file,
         tool_calling_config_file=tool_calling_config_file,
+        llm_provider=os.getenv("LLM_PROVIDER", "ollama").strip().lower(),
+        embedding_provider=os.getenv("EMBEDDING_PROVIDER", "ollama").strip().lower(),
         generation_model=os.getenv("GENERATION_MODEL", "llama3.2:3b"),
         embedding_model=os.getenv("EMBEDDING_MODEL", "nomic-embed-text"),
         ollama_base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
+        openai_api_key=os.getenv("OPENAI_API_KEY", ""),
+        openai_base_url=os.getenv("OPENAI_BASE_URL", ""),
         chunk_size=int(os.getenv("CHUNK_SIZE", "500")),
         chunk_overlap=int(os.getenv("CHUNK_OVERLAP", "100")),
         max_document_file_size_bytes=int(os.getenv("MAX_DOCUMENT_FILE_SIZE_BYTES", str(25 * 1024 * 1024))),

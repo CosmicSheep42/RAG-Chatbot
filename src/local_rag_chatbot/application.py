@@ -57,12 +57,9 @@ def create_indexing_services(
     vector_backend: VectorStoreBackend | None = None,
 ) -> IndexingServices:
     if embeddings is None:
-        from langchain_ollama import OllamaEmbeddings
+        from local_rag_chatbot.providers.embeddings import create_embeddings
 
-        embeddings = OllamaEmbeddings(
-            model=settings.embedding_model,
-            base_url=settings.ollama_base_url,
-        )
+        embeddings = create_embeddings(settings)
     vector_backend = vector_backend or create_vector_store_backend(settings, embeddings)
     loader_registry = _create_loader_registry(settings)
     document_repository = DocumentRepository(
@@ -113,17 +110,9 @@ def create_application_services(
     indexing = create_indexing_services(settings, embeddings=embeddings, vector_backend=vector_backend)
     input_pipeline = TextPreprocessorPipeline(config=settings.input_cleaner_config())
     if chat_model is None:
-        from local_rag_chatbot.rag.ollama_tool_client import OllamaToolCallingClient
+        from local_rag_chatbot.providers.llm import create_chat_model
 
-        chat_model = OllamaToolCallingClient(
-            base_url=settings.ollama_base_url,
-            default_model=settings.generation_model,
-            temperature=settings.generation_temperature,
-            num_predict=2048,
-            connect_timeout_seconds=settings.ollama_connect_timeout_seconds,
-            read_timeout_seconds=settings.ollama_read_timeout_seconds,
-            max_response_bytes=settings.ollama_max_response_bytes,
-        )
+        chat_model = create_chat_model(settings)
     context_builder = ContextBuilder()
     tool_config_repository = ToolCallingConfigRepository(settings.tool_calling_config_file)
     tool_calling_config = tool_config_repository.load()
