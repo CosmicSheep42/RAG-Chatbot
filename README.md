@@ -78,6 +78,16 @@ pytest --cov=local_rag_chatbot --cov-report=term-missing
 ruff check .
 ```
 
+## Evaluation dataset
+
+The fixed synthetic corpus and 40-example ground-truth dataset are in `evaluation/`. The dataset uses a `dev` split of 10 examples and a held-out `test` split of 30 examples; both reference the same corpus. Validate it offline with:
+
+```bash
+python evaluation/validate_dataset.py
+```
+
+Phase 3 will reuse these questions and evidence annotations to compare retrieval and generation configurations. No benchmark runner is included yet.
+
 Default models (Ollama):
 
 ```text
