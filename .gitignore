@@ -84,3 +84,4 @@ Desktop.ini
 local/
 tmp/
 temp/
+evaluation/results/*.json
