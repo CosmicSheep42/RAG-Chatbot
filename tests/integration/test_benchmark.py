@@ -104,7 +104,12 @@ def test_full_engine_records_pipeline_time_instead_of_generation_time():
 
     example = load_examples(Path("evaluation/dataset/questions.jsonl"), "dev")[0]
     result = run_end_to_end(
-        [example], None, EngineAnswerer(Engine()), configuration="full", split="dev", top_k=5
+        [example],
+        None,
+        EngineAnswerer(Engine()),
+        configuration="full",
+        split="dev",
+        top_k=5,
     )
 
     timing = result["records"][0]["timing"]
