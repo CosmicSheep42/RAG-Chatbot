@@ -68,6 +68,16 @@ AppSettings
 - Either Ollama installed and running locally, or an OpenAI API key — see [LLM & Embedding Providers](#llm--embedding-providers).
 - Enough local memory for the selected models when running Ollama.
 
+## Testing
+
+Install the test dependencies and run the checks from the repository root:
+
+```bash
+python -m pip install -e ".[test]"
+pytest --cov=local_rag_chatbot --cov-report=term-missing
+ruff check .
+```
+
 Default models (Ollama):
 
 ```text
