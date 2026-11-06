@@ -57,20 +57,18 @@ class ChatModelAnswerer:
         self.model = model
 
     def answer(self, question: str, documents: list[Document]) -> tuple[str, list[str]]:
-        context = "\n\n".join(document.page_content for document in documents)
         prompt = (
-            "Answer the question using only the supplied context. If the context is empty or insufficient, "
-            "say that the information is unavailable.\n\n"
-            f"Context:\n{context}\n\nQuestion: {question}"
+            "Answer the question using your general knowledge. If you are uncertain or do not know, "
+            "say so rather than inventing details.\n\n"
+            f"Question: {question}"
         )
-        return self.chat_model.chat([{"role": "user", "content": prompt}], model=self.model).content.strip(), [
-            str(document.metadata.get("source", "")) for document in documents
-        ]
+        return self.chat_model.chat([{"role": "user", "content": prompt}], model=self.model).content.strip(), []
 
 
 class EngineAnswerer:
     def __init__(self, engine: Any) -> None:
         self.engine = engine
+        self.timing_name = "pipeline_seconds"
         self.last_retrieved: list[str] = []
         self.last_context: list[str] = []
 
@@ -277,9 +275,9 @@ def run_end_to_end(
         try:
             documents = retriever.retrieve(example.question, top_k) if retriever else []
             retrieval_seconds = time.perf_counter() - started
-            generation_started = time.perf_counter()
+            answer_started = time.perf_counter()
             answer, citations = answerer.answer(example.question, documents)
-            generation_seconds = time.perf_counter() - generation_started
+            answer_seconds = time.perf_counter() - answer_started
         except Exception as exc:
             records.append(
                 {
@@ -298,7 +296,12 @@ def run_end_to_end(
             [str(document.metadata.get("source", "")) for document in documents],
         )
         context = getattr(answerer, "last_context", [document.page_content for document in documents])
-        retrieval_latencies.append(retrieval_seconds)
+        if not getattr(answerer, "timing_name", None):
+            retrieval_latencies.append(retrieval_seconds)
+        timing = {"retrieval_seconds": retrieval_seconds, "generation_seconds": answer_seconds}
+        timing_name = getattr(answerer, "timing_name", None)
+        if timing_name:
+            timing = {timing_name: answer_seconds}
         citation_metrics = citation_quality(citations, retrieved, example.relevant_documents)
         records.append(
             {
@@ -325,7 +328,7 @@ def run_end_to_end(
                     "required_facts": example.required_facts,
                     "retrieved_context": context,
                 },
-                "timing": {"retrieval_seconds": retrieval_seconds, "generation_seconds": generation_seconds},
+                "timing": timing,
                 "status": "success",
             }
         )
@@ -363,11 +366,13 @@ def _summary(records: list[dict[str, Any]], latencies: list[float]) -> dict[str,
         summary["correct_abstention_rate"] = abstentions.count("correct_abstention") / len(abstentions)
         summary["incorrect_refusal_rate"] = abstentions.count("incorrect_refusal") / len(abstentions)
         summary["unsupported_answer_rate"] = abstentions.count("unsupported_answer") / len(abstentions)
-    end_to_end_latencies = [
-        record["timing"]["retrieval_seconds"] + record["timing"].get("generation_seconds", 0)
-        for record in successful
-        if "timing" in record and "retrieval_seconds" in record["timing"]
-    ]
+    end_to_end_latencies = []
+    for record in successful:
+        timing = record.get("timing", {})
+        if "pipeline_seconds" in timing:
+            end_to_end_latencies.append(timing["pipeline_seconds"])
+        elif "retrieval_seconds" in timing:
+            end_to_end_latencies.append(timing["retrieval_seconds"] + timing.get("generation_seconds", 0))
     if latencies:
         summary["retrieval_latency_p50_seconds"] = statistics.median(latencies)
         summary["retrieval_latency_p95_seconds"] = _percentile(latencies, 0.95)
@@ -482,6 +487,38 @@ def _run_live(args: argparse.Namespace, examples: list[BenchmarkExample]) -> dic
     from local_rag_chatbot.engine import ChatbotEngine
 
     initialization_started = time.perf_counter()
+    if args.configuration == "full":
+        engine = ChatbotEngine(config=settings)
+        asyncio.run(engine.initialize())
+        initialization_seconds = time.perf_counter() - initialization_started
+        metadata = experiment_metadata(args.dataset, args.corpus, args.split, args.top_k, args.configuration)
+        metadata.update(
+            {
+                "provider": settings.llm_provider,
+                "generation_model": settings.generation_model,
+                "embedding_provider": settings.embedding_provider,
+                "embedding_model": settings.embedding_model,
+                "vector_store_provider": settings.vector_store_provider,
+                "reranker_model": settings.reranker_model,
+                "initialization_seconds": initialization_seconds,
+                "timing_note": "full mode records total engine query time as pipeline_seconds; component timings are not exposed by the public engine API",
+            }
+        )
+        try:
+            result = run_end_to_end(
+                examples,
+                None,
+                EngineAnswerer(engine),
+                configuration=args.configuration,
+                split=args.split,
+                top_k=args.top_k,
+                metadata=metadata,
+            )
+        finally:
+            asyncio.run(engine.shutdown())
+        result["metadata"] = metadata
+        return result
+
     embeddings = create_embeddings(settings)
     indexing = create_indexing_services(settings, embeddings=embeddings)
     if not indexing.index_manager.prepare():
@@ -502,57 +539,45 @@ def _run_live(args: argparse.Namespace, examples: list[BenchmarkExample]) -> dic
         }
     )
 
-    if args.configuration == "full":
-        engine = ChatbotEngine(config=settings)
-        asyncio.run(engine.initialize())
+    retriever = build_retriever(
+        args.configuration,
+        documents,
+        vector_backend=indexing.index_manager.vector_backend,
+        tuning=indexing.index_manager.retrieval_tuning,
+    )
+    if args.end_to_end:
+        chat_model = create_chat_model(settings)
+        services = create_application_services(
+            settings,
+            chat_model=chat_model,
+            embeddings=embeddings,
+            vector_backend=indexing.index_manager.vector_backend,
+        )
+        answerer: Answerer = AnswerServiceAdapter(
+            services.answer_service,
+            RetrievalPolicyResolver(
+                default_candidate_k=settings.hybrid_candidate_k,
+                default_final_k=settings.hybrid_final_k,
+            ),
+        )
         result = run_end_to_end(
             examples,
-            None,
-            EngineAnswerer(engine),
+            retriever,
+            answerer,
             configuration=args.configuration,
             split=args.split,
             top_k=args.top_k,
+            metadata=metadata,
         )
     else:
-        retriever = build_retriever(
-            args.configuration,
-            documents,
-            vector_backend=indexing.index_manager.vector_backend,
-            tuning=indexing.index_manager.retrieval_tuning,
+        result = run_retrieval(
+            examples,
+            retriever,
+            configuration=args.configuration,
+            split=args.split,
+            top_k=args.top_k,
+            metadata=metadata,
         )
-        if args.end_to_end:
-            chat_model = create_chat_model(settings)
-            services = create_application_services(
-                settings,
-                chat_model=chat_model,
-                embeddings=embeddings,
-                vector_backend=indexing.index_manager.vector_backend,
-            )
-            answerer: Answerer = AnswerServiceAdapter(
-                services.answer_service,
-                RetrievalPolicyResolver(
-                    default_candidate_k=settings.hybrid_candidate_k,
-                    default_final_k=settings.hybrid_final_k,
-                ),
-            )
-            result = run_end_to_end(
-                examples,
-                retriever,
-                answerer,
-                configuration=args.configuration,
-                split=args.split,
-                top_k=args.top_k,
-                metadata=metadata,
-            )
-        else:
-            result = run_retrieval(
-                examples,
-                retriever,
-                configuration=args.configuration,
-                split=args.split,
-                top_k=args.top_k,
-                metadata=metadata,
-            )
     result["metadata"] = metadata
     return result
 

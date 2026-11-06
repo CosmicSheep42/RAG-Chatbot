@@ -6,6 +6,7 @@ import pytest
 from evaluation.benchmark import (
     BM25Retriever,
     ChatModelAnswerer,
+    EngineAnswerer,
     build_retriever,
     load_corpus,
     load_examples,
@@ -67,7 +68,7 @@ def test_benchmark_does_not_mislabel_unavailable_reranking_or_full_pipeline(docu
         build_retriever("full", documents, vector_backend=Backend())
 
 
-def test_standalone_answerer_uses_an_empty_context():
+def test_standalone_answerer_does_not_include_retrieval_context():
     class Model:
         def __init__(self):
             self.messages = None
@@ -77,9 +78,36 @@ def test_standalone_answerer_uses_an_empty_context():
             return type("Result", (), {"content": "standalone answer"})()
 
     model = Model()
-    answer, citations = ChatModelAnswerer(model, "test-model").answer("What is the limit?", [])
+    answer, citations = ChatModelAnswerer(model, "test-model").answer(
+        "What is the limit?", [type("Document", (), {"page_content": "hidden corpus context"})()]
+    )
 
     assert answer == "standalone answer"
     assert citations == []
-    assert "Context:" in model.messages[0]["content"]
+    assert "hidden corpus context" not in model.messages[0]["content"]
+    assert "general knowledge" in model.messages[0]["content"]
     assert "Question: What is the limit?" in model.messages[0]["content"]
+
+
+def test_full_engine_records_pipeline_time_instead_of_generation_time():
+    class Engine:
+        async def chat(self, question):
+            return type(
+                "Response",
+                (),
+                {
+                    "result": "pipeline answer",
+                    "sources": [type("Source", (), {"source": "guide.md", "snippet": "evidence"})()],
+                    "citations": [type("Citation", (), {"source_name": "guide.md"})()],
+                },
+            )()
+
+    example = load_examples(Path("evaluation/dataset/questions.jsonl"), "dev")[0]
+    result = run_end_to_end(
+        [example], None, EngineAnswerer(Engine()), configuration="full", split="dev", top_k=5
+    )
+
+    timing = result["records"][0]["timing"]
+    assert timing["pipeline_seconds"] >= 0
+    assert "generation_seconds" not in timing
+    assert "retrieval_latency_p50_seconds" not in result["summary"]
