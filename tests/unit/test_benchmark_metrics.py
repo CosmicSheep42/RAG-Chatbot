@@ -3,6 +3,7 @@ import math
 from evaluation.metrics import (
     abstention_result,
     citation_quality,
+    citation_support,
     complete_evidence_retrieval,
     fact_coverage,
     ndcg_at_k,
@@ -28,6 +29,7 @@ def test_metrics_handle_empty_and_unanswerable_inputs():
     assert recall_at_k([], [], 5) != recall_at_k([], [], 5)
     assert math.isnan(recall_at_k([], [], 5))
     assert reciprocal_rank_at_k([], ["guide.md"], 5) == 0.0
+    assert complete_evidence_retrieval([], [], 5) is None
     assert not complete_evidence_retrieval([], ["guide.md"], 5)
     assert abstention_result("I do not have enough reliable context.", False) == "correct_abstention"
     assert abstention_result("The answer is 42.", False) == "unsupported_answer"
@@ -40,3 +42,4 @@ def test_answer_and_citation_metrics_are_separate():
         "validity": 0.5,
         "relevance": 0.5,
     }
+    assert citation_support([{"source": "guide.md"}, {"source": "missing.md"}], ["guide.md"]) == 0.5

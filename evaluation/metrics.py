@@ -29,13 +29,19 @@ def recall_at_k(results: Sequence[Mapping[str, object] | str], relevant: Iterabl
     return len(found & required) / len(required)
 
 
-def complete_evidence_retrieval(results: Sequence[Mapping[str, object] | str], relevant: Iterable[str], k: int) -> bool:
+def complete_evidence_retrieval(
+    results: Sequence[Mapping[str, object] | str], relevant: Iterable[str], k: int
+) -> bool | None:
     required = set(_unique(relevant))
-    return bool(required) and required.issubset(_document_ids(results[: max(k, 0)]))
+    if not required:
+        return None
+    return required.issubset(_document_ids(results[: max(k, 0)]))
 
 
 def reciprocal_rank_at_k(results: Sequence[Mapping[str, object] | str], relevant: Iterable[str], k: int) -> float:
     required = set(_unique(relevant))
+    if not required:
+        return math.nan
     for rank, document_id in enumerate(_document_ids(results[: max(k, 0)]), start=1):
         if document_id in required:
             return 1.0 / rank
@@ -70,6 +76,22 @@ def citation_quality(
         "validity": len(cited & retrieved) / len(cited) if cited else 0.0,
         "relevance": len(cited & relevant) / len(cited) if cited else 0.0,
     }
+
+
+def citation_support(
+    citations: Iterable[Mapping[str, object] | str],
+    evidence_documents: Iterable[str],
+) -> float:
+    """Measure source-level evidence support, not claim-level groundedness."""
+    evidence = set(_unique(evidence_documents))
+    cited = []
+    for citation in citations:
+        if isinstance(citation, str):
+            cited.append(citation)
+        else:
+            cited.append(str(citation.get("document_id") or citation.get("source") or ""))
+    cited = [value for value in _unique(cited) if value]
+    return sum(value in evidence for value in cited) / len(cited) if cited else 0.0
 
 
 def is_abstention(answer: str) -> bool:

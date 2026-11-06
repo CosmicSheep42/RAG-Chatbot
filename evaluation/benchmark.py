@@ -31,6 +31,7 @@ from local_rag_chatbot.vectorstores.contracts import VectorStoreBackend
 from .metrics import (
     abstention_result,
     citation_quality,
+    citation_support,
     complete_evidence_retrieval,
     fact_coverage,
     ndcg_at_k,
@@ -98,16 +99,23 @@ def build_retriever(
         raise ValueError(f"{configuration} requires an injected vector-store backend")
     if configuration == "dense":
         return DenseRetriever(vector_backend, namespace)
-    if configuration in {"hybrid", "hybrid-rerank", "full"}:
-        return ExistingRetrieverAdapter(
-            HybridRetriever(
-                vector_backend=vector_backend,
-                namespace=namespace,
-                documents=documents,
-                tuning=tuning or RetrievalTuning(),
-                reranking_mode="true" if configuration == "hybrid-rerank" else "false",
-            )
+    if configuration == "full":
+        raise ValueError(
+            "full requires the production ChatbotEngine pipeline; use an injected engine adapter rather than "
+            "the retrieval-only builder"
         )
+    if configuration in {"hybrid", "hybrid-rerank"}:
+        production_retriever = HybridRetriever(
+            vector_backend=vector_backend,
+            namespace=namespace,
+            documents=documents,
+            tuning=tuning or RetrievalTuning(),
+            reranking_mode="true" if configuration == "hybrid-rerank" else "false",
+        )
+        if configuration == "hybrid-rerank" and not production_retriever.reranking_active:
+            status = production_retriever.reranking_status
+            raise ValueError(f"hybrid-rerank is unavailable: {status['reason'] or status['status']}")
+        return ExistingRetrieverAdapter(production_retriever)
     raise ValueError(f"Unknown benchmark configuration: {configuration}")
 
 
@@ -165,7 +173,20 @@ def run_retrieval(
     retrieval_latencies = []
     for example in examples:
         started = time.perf_counter()
-        documents = retriever.retrieve(example.question, top_k)
+        try:
+            documents = retriever.retrieve(example.question, top_k)
+        except Exception as exc:
+            records.append(
+                {
+                    "question_id": example.id,
+                    "configuration": configuration,
+                    "split": split,
+                    "status": "failed",
+                    "error": str(exc),
+                    "timing": {"retrieval_seconds": time.perf_counter() - started},
+                }
+            )
+            continue
         latency = time.perf_counter() - started
         retrieval_latencies.append(latency)
         ranked = [
@@ -180,7 +201,7 @@ def run_retrieval(
                 "retrieved_documents": ranked,
                 "metrics": {
                     "recall_at_k": _json_metric(recall_at_k(ranked, example.relevant_documents, top_k)),
-                    "mrr_at_k": reciprocal_rank_at_k(ranked, example.relevant_documents, top_k),
+                    "mrr_at_k": _json_metric(reciprocal_rank_at_k(ranked, example.relevant_documents, top_k)),
                     "ndcg_at_k": _json_metric(ndcg_at_k(ranked, example.relevant_documents, top_k)),
                     "complete_evidence": complete_evidence_retrieval(ranked, example.relevant_documents, top_k),
                 },
@@ -207,14 +228,29 @@ def run_end_to_end(
     top_k: int,
 ) -> dict[str, Any]:
     records = []
+    retrieval_latencies = []
     for example in examples:
         started = time.perf_counter()
-        documents = retriever.retrieve(example.question, top_k) if retriever else []
-        retrieval_seconds = time.perf_counter() - started
-        generation_started = time.perf_counter()
-        answer, citations = answerer.answer(example.question, documents)
-        generation_seconds = time.perf_counter() - generation_started
+        try:
+            documents = retriever.retrieve(example.question, top_k) if retriever else []
+            retrieval_seconds = time.perf_counter() - started
+            generation_started = time.perf_counter()
+            answer, citations = answerer.answer(example.question, documents)
+            generation_seconds = time.perf_counter() - generation_started
+        except Exception as exc:
+            records.append(
+                {
+                    "question_id": example.id,
+                    "configuration": configuration,
+                    "split": split,
+                    "status": "failed",
+                    "error": str(exc),
+                    "timing": {"retrieval_seconds": time.perf_counter() - started},
+                }
+            )
+            continue
         retrieved = [str(document.metadata.get("source", "")) for document in documents]
+        retrieval_latencies.append(retrieval_seconds)
         citation_metrics = citation_quality(citations, retrieved, example.relevant_documents)
         records.append(
             {
@@ -226,30 +262,77 @@ def run_end_to_end(
                 "citations": citations,
                 "metrics": {
                     "fact_coverage": fact_coverage(answer, example.required_facts) if example.answerable else None,
-                    "grounded_fact_coverage": fact_coverage(
+                    "evidence_availability": fact_coverage(
                         " ".join(d.page_content for d in documents), example.required_facts
                     ),
                     "citation_validity": citation_metrics["validity"],
                     "citation_relevance": citation_metrics["relevance"],
+                    "citation_support": citation_support(citations, example.relevant_documents),
+                    "groundedness": "manual_review_required",
                     "abstention": abstention_result(answer, example.answerable),
+                },
+                "manual_review": {
+                    "answer": answer,
+                    "reference_answer": example.reference_answer,
+                    "required_facts": example.required_facts,
+                    "retrieved_context": [document.page_content for document in documents],
                 },
                 "timing": {"retrieval_seconds": retrieval_seconds, "generation_seconds": generation_seconds},
                 "status": "success",
             }
         )
-    return {"configuration": configuration, "split": split, "records": records, "summary": _summary(records, [])}
+    return {
+        "configuration": configuration,
+        "split": split,
+        "records": records,
+        "summary": _summary(records, retrieval_latencies),
+    }
 
 
 def _summary(records: list[dict[str, Any]], latencies: list[float]) -> dict[str, Any]:
-    metric_names = ("recall_at_k", "mrr_at_k", "ndcg_at_k", "fact_coverage", "citation_validity")
+    metric_names = (
+        "recall_at_k",
+        "mrr_at_k",
+        "ndcg_at_k",
+        "complete_evidence",
+        "fact_coverage",
+        "citation_validity",
+        "citation_relevance",
+        "citation_support",
+        "evidence_availability",
+    )
     summary = {}
     for name in metric_names:
         values = [record["metrics"][name] for record in records if record["metrics"].get(name) is not None]
         if values:
             summary[name] = statistics.mean(values)
+    successful = [record for record in records if record.get("status") == "success"]
+    summary["successful_count"] = len(successful)
+    summary["failed_count"] = sum(record.get("status") == "failed" for record in records)
+    abstentions = [record["metrics"]["abstention"] for record in successful if "abstention" in record["metrics"]]
+    if abstentions:
+        summary["correct_abstention_rate"] = abstentions.count("correct_abstention") / len(abstentions)
+        summary["incorrect_refusal_rate"] = abstentions.count("incorrect_refusal") / len(abstentions)
+        summary["unsupported_answer_rate"] = abstentions.count("unsupported_answer") / len(abstentions)
+    end_to_end_latencies = [
+        record["timing"]["retrieval_seconds"] + record["timing"].get("generation_seconds", 0)
+        for record in successful
+        if "timing" in record and "retrieval_seconds" in record["timing"]
+    ]
     if latencies:
         summary["retrieval_latency_p50_seconds"] = statistics.median(latencies)
         summary["retrieval_latency_p95_seconds"] = _percentile(latencies, 0.95)
+    if end_to_end_latencies:
+        summary["end_to_end_latency_p50_seconds"] = statistics.median(end_to_end_latencies)
+        summary["end_to_end_latency_p95_seconds"] = _percentile(end_to_end_latencies, 0.95)
+    generation_latencies = [
+        record["timing"]["generation_seconds"]
+        for record in successful
+        if "generation_seconds" in record.get("timing", {})
+    ]
+    if generation_latencies:
+        summary["generation_latency_p50_seconds"] = statistics.median(generation_latencies)
+        summary["generation_latency_p95_seconds"] = _percentile(generation_latencies, 0.95)
     return summary
 
 
