@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from evaluation.benchmark import (
     BM25Retriever,
     build_retriever,
@@ -49,3 +51,16 @@ def test_existing_vector_store_contract_selects_dense_and_hybrid_adapters(docume
     backend = Backend()
     assert build_retriever("dense", documents, vector_backend=backend).retrieve("billing", 1)
     assert build_retriever("hybrid", documents, vector_backend=backend).retrieve("billing", 1)
+
+
+def test_benchmark_does_not_mislabel_unavailable_reranking_or_full_pipeline(document):
+    documents = [document("billing policy", source="guide.md")]
+
+    class Backend:
+        def search(self, *_args, **_kwargs):
+            return [ScoredDocument(documents[0], 1.0)]
+
+    with pytest.raises(ValueError, match="hybrid-rerank is unavailable"):
+        build_retriever("hybrid-rerank", documents, vector_backend=Backend())
+    with pytest.raises(ValueError, match="production ChatbotEngine pipeline"):
+        build_retriever("full", documents, vector_backend=Backend())

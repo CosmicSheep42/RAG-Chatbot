@@ -65,7 +65,7 @@ class ContextBuilder:
                 "document_id": document_id,
                 "chunk_id": chunk_id,
                 "source": source,
-                "source_name": metadata.get("source_name"),
+                "source_name": metadata.get("source_name") or source,
                 "file_type": metadata.get("file_type"),
                 "page_number": metadata.get("page_number"),
                 "slide_number": metadata.get("slide_number"),

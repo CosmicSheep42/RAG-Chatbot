@@ -93,6 +93,7 @@ python -m evaluation.benchmark --configuration bm25 --split dev --output evaluat
 ```
 
 The runner records per-question retrieval metrics and reproducibility metadata. The deterministic BM25 mode is CI-safe; dense, hybrid, reranking, full-pipeline, and live LLM experiments require explicit provider adapters and are not run by default.
+End-to-end records keep factual coverage, source-level citation support, abstention outcomes, and a manual-review payload separate; retrieved evidence presence is not treated as automatic groundedness.
 
 Default models (Ollama):
 
