@@ -101,6 +101,7 @@ python -m evaluation.benchmark --live --configuration hybrid --split dev --end-t
 
 Standalone, dense, hybrid, reranking, and full-pipeline modes initialize their requested providers explicitly and fail when a required component is unavailable. Live experiments are never run by default in CI.
 End-to-end records keep factual coverage, source-level citation support, abstention outcomes, and a manual-review payload separate; retrieved evidence presence is not treated as automatic groundedness.
+Measured results are recorded in [evaluation/RESULTS.md](evaluation/RESULTS.md); it currently contains the reproducible BM25 baseline only.
 
 Default models (Ollama):
 
@@ -115,6 +116,7 @@ From the repository root:
 
 ```bash
 cp .env.sample .env
+# Set DOCUMENTS_DIR=./evaluation/corpus in .env to use the demonstration corpus.
 
 ollama pull llama3.2:3b
 ollama pull nomic-embed-text
