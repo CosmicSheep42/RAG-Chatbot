@@ -5,7 +5,6 @@ from pathlib import Path
 import json
 import os
 import tempfile
-from typing import Any
 
 
 SCHEMA_VERSION = 1

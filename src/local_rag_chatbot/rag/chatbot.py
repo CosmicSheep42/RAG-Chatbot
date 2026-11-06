@@ -20,7 +20,7 @@ from local_rag_chatbot.rag.retrieval_confidence import (
     RetrievalDecision,
     RetrievalReason,
 )
-from local_rag_chatbot.rag.retrieval_policy import QueryIntent, RetrievalPolicy, RetrievalPolicyResolver
+from local_rag_chatbot.rag.retrieval_policy import RetrievalPolicy, RetrievalPolicyResolver
 from local_rag_chatbot.rag.retrieval_result import RetrievalResult
 from local_rag_chatbot.rag.tool_registry import ToolRegistry
 from local_rag_chatbot.request_context import RequestContext
