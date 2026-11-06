@@ -9,9 +9,15 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
+    name: test
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -19,7 +25,17 @@ jobs:
           python-version: "3.11"
           cache: pip
       - run: python -m pip install --upgrade pip
-      - run: python -m pip install -e ".[test]"
+      - run: python -m pip install -e ".[test]" build pip-audit
       - run: ruff check .
+      - run: ruff format --check evaluation tests
       - run: python evaluation/validate_dataset.py
-      - run: pytest --cov=local_rag_chatbot --cov-report=term-missing --cov-report=xml
+      - run: pytest --cov=local_rag_chatbot --cov-report=term-missing --cov-report=xml --cov-fail-under=35
+      - name: Build and smoke-test package
+        run: |
+          python -m build --outdir "$RUNNER_TEMP/package"
+          python -m pip install --force-reinstall --no-deps "$RUNNER_TEMP"/package/*.whl
+          cd "$RUNNER_TEMP"
+          python -c 'from importlib.resources import files; from local_rag_chatbot import ChatbotEngine; assert files("local_rag_chatbot").joinpath("resources/prompts/master_prompt.json").is_file(); assert files("local_rag_chatbot").joinpath("resources/routing/priorities.json").is_file(); print("package smoke passed")'
+      - name: Dependency audit (informational until baseline remediation)
+        continue-on-error: true
+        run: pip-audit --progress-spinner off

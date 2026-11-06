@@ -50,14 +50,8 @@ def _error(index: int, message: str) -> str:
 
 def validate_dataset(corpus_dir: Path, dataset_path: Path) -> list[str]:
     errors: list[str] = []
-    documents = {
-        path.relative_to(corpus_dir).as_posix(): path
-        for path in sorted(corpus_dir.rglob("*.md"))
-    }
-    corpus_sections = {
-        source: _sections(path.read_text(encoding="utf-8"))
-        for source, path in documents.items()
-    }
+    documents = {path.relative_to(corpus_dir).as_posix(): path for path in sorted(corpus_dir.rglob("*.md"))}
+    corpus_sections = {source: _sections(path.read_text(encoding="utf-8")) for source, path in documents.items()}
     seen_ids: set[str] = set()
     seen_questions: set[str] = set()
 
@@ -117,7 +111,9 @@ def validate_dataset(corpus_dir: Path, dataset_path: Path) -> list[str]:
             errors.append(_error(index, "answerable examples need a reference_answer"))
         if not answerable and reference_answer is not None:
             errors.append(_error(index, "unanswerable examples must have a null reference_answer"))
-        if not isinstance(required_facts, list) or any(not isinstance(fact, str) or not fact.strip() for fact in required_facts):
+        if not isinstance(required_facts, list) or any(
+            not isinstance(fact, str) or not fact.strip() for fact in required_facts
+        ):
             errors.append(_error(index, "required_facts must be a list of nonempty strings"))
         elif answerable and not required_facts:
             errors.append(_error(index, "answerable examples need required_facts"))
