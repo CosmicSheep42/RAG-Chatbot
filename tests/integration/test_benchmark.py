@@ -5,6 +5,7 @@ import pytest
 
 from evaluation.benchmark import (
     BM25Retriever,
+    ChatModelAnswerer,
     build_retriever,
     load_corpus,
     load_examples,
@@ -64,3 +65,21 @@ def test_benchmark_does_not_mislabel_unavailable_reranking_or_full_pipeline(docu
         build_retriever("hybrid-rerank", documents, vector_backend=Backend())
     with pytest.raises(ValueError, match="production ChatbotEngine pipeline"):
         build_retriever("full", documents, vector_backend=Backend())
+
+
+def test_standalone_answerer_uses_an_empty_context():
+    class Model:
+        def __init__(self):
+            self.messages = None
+
+        def chat(self, messages, *, model):
+            self.messages = messages
+            return type("Result", (), {"content": "standalone answer"})()
+
+    model = Model()
+    answer, citations = ChatModelAnswerer(model, "test-model").answer("What is the limit?", [])
+
+    assert answer == "standalone answer"
+    assert citations == []
+    assert "Context:" in model.messages[0]["content"]
+    assert "Question: What is the limit?" in model.messages[0]["content"]

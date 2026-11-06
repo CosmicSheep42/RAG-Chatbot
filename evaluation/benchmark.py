@@ -7,6 +7,7 @@ never initializes a model, vector store, or network client.
 from __future__ import annotations
 
 import argparse
+import asyncio
 import hashlib
 import json
 import math
@@ -48,6 +49,47 @@ class Retriever(Protocol):
 
 class Answerer(Protocol):
     def answer(self, question: str, documents: list[Document]) -> tuple[str, list[str]]: ...
+
+
+class ChatModelAnswerer:
+    def __init__(self, chat_model: Any, model: str) -> None:
+        self.chat_model = chat_model
+        self.model = model
+
+    def answer(self, question: str, documents: list[Document]) -> tuple[str, list[str]]:
+        context = "\n\n".join(document.page_content for document in documents)
+        prompt = (
+            "Answer the question using only the supplied context. If the context is empty or insufficient, "
+            "say that the information is unavailable.\n\n"
+            f"Context:\n{context}\n\nQuestion: {question}"
+        )
+        return self.chat_model.chat([{"role": "user", "content": prompt}], model=self.model).content.strip(), [
+            str(document.metadata.get("source", "")) for document in documents
+        ]
+
+
+class EngineAnswerer:
+    def __init__(self, engine: Any) -> None:
+        self.engine = engine
+        self.last_retrieved: list[str] = []
+        self.last_context: list[str] = []
+
+    def answer(self, question: str, documents: list[Document]) -> tuple[str, list[str]]:
+        response = asyncio.run(self.engine.chat(question))
+        self.last_retrieved = [source.source for source in response.sources]
+        self.last_context = [source.snippet or "" for source in response.sources]
+        return response.result, [citation.source_name or "" for citation in response.citations]
+
+
+class AnswerServiceAdapter:
+    def __init__(self, answer_service: Any, policy_resolver: Any) -> None:
+        self.answer_service = answer_service
+        self.policy_resolver = policy_resolver
+
+    def answer(self, question: str, documents: list[Document]) -> tuple[str, list[str]]:
+        policy = self.policy_resolver.resolve(question)
+        answer = self.answer_service.generate(question, documents, policy)
+        return answer, []
 
 
 class BM25Retriever:
@@ -226,6 +268,7 @@ def run_end_to_end(
     configuration: str,
     split: str,
     top_k: int,
+    metadata: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     records = []
     retrieval_latencies = []
@@ -249,7 +292,12 @@ def run_end_to_end(
                 }
             )
             continue
-        retrieved = [str(document.metadata.get("source", "")) for document in documents]
+        retrieved = getattr(
+            answerer,
+            "last_retrieved",
+            [str(document.metadata.get("source", "")) for document in documents],
+        )
+        context = getattr(answerer, "last_context", [document.page_content for document in documents])
         retrieval_latencies.append(retrieval_seconds)
         citation_metrics = citation_quality(citations, retrieved, example.relevant_documents)
         records.append(
@@ -275,13 +323,14 @@ def run_end_to_end(
                     "answer": answer,
                     "reference_answer": example.reference_answer,
                     "required_facts": example.required_facts,
-                    "retrieved_context": [document.page_content for document in documents],
+                    "retrieved_context": context,
                 },
                 "timing": {"retrieval_seconds": retrieval_seconds, "generation_seconds": generation_seconds},
                 "status": "success",
             }
         )
     return {
+        "metadata": metadata or {},
         "configuration": configuration,
         "split": split,
         "records": records,
@@ -382,31 +431,169 @@ def _git_commit() -> str | None:
         return None
 
 
+def _run_live(args: argparse.Namespace, examples: list[BenchmarkExample]) -> dict[str, Any]:
+    from local_rag_chatbot.providers.llm import create_chat_model
+    from local_rag_chatbot.settings import get_settings
+
+    settings = get_settings()
+    overrides: dict[str, Any] = {
+        "documents_dir": args.corpus,
+        "data_dir": args.data_dir,
+        "chroma_db_dir": args.data_dir / "chroma",
+        "auto_index_on_startup": True,
+    }
+    for name in ("llm_provider", "embedding_provider", "generation_model", "embedding_model", "vector_store_provider"):
+        value = getattr(args, name)
+        if value is not None:
+            overrides[name] = value
+    if args.reranker_model is not None:
+        overrides["reranker_model"] = args.reranker_model
+    if args.configuration == "hybrid-rerank":
+        overrides["reranking_mode"] = "true"
+    elif args.configuration in {"dense", "hybrid"}:
+        overrides["reranking_mode"] = "false"
+    settings = settings.with_overrides(**overrides)
+
+    if args.configuration == "standalone":
+        chat_model = create_chat_model(settings)
+        metadata = experiment_metadata(args.dataset, args.corpus, args.split, args.top_k, args.configuration)
+        metadata.update(
+            {
+                "provider": settings.llm_provider,
+                "generation_model": settings.generation_model,
+                "embedding_provider": None,
+                "embedding_model": None,
+                "vector_store_provider": None,
+            }
+        )
+        return run_end_to_end(
+            examples,
+            None,
+            ChatModelAnswerer(chat_model, settings.generation_model),
+            configuration=args.configuration,
+            split=args.split,
+            top_k=args.top_k,
+            metadata=metadata,
+        )
+
+    from local_rag_chatbot.application import create_application_services, create_indexing_services
+    from local_rag_chatbot.providers.embeddings import create_embeddings
+    from local_rag_chatbot.rag.retrieval_policy import RetrievalPolicyResolver
+    from local_rag_chatbot.engine import ChatbotEngine
+
+    initialization_started = time.perf_counter()
+    embeddings = create_embeddings(settings)
+    indexing = create_indexing_services(settings, embeddings=embeddings)
+    if not indexing.index_manager.prepare():
+        raise RuntimeError("The benchmark corpus could not be indexed.")
+    initialization_seconds = time.perf_counter() - initialization_started
+    documents = indexing.index_manager.documents
+
+    metadata = experiment_metadata(args.dataset, args.corpus, args.split, args.top_k, args.configuration)
+    metadata.update(
+        {
+            "provider": settings.llm_provider,
+            "generation_model": settings.generation_model,
+            "embedding_provider": settings.embedding_provider,
+            "embedding_model": settings.embedding_model,
+            "vector_store_provider": settings.vector_store_provider,
+            "reranker_model": settings.reranker_model if args.configuration == "hybrid-rerank" else None,
+            "initialization_seconds": initialization_seconds,
+        }
+    )
+
+    if args.configuration == "full":
+        engine = ChatbotEngine(config=settings)
+        asyncio.run(engine.initialize())
+        result = run_end_to_end(
+            examples,
+            None,
+            EngineAnswerer(engine),
+            configuration=args.configuration,
+            split=args.split,
+            top_k=args.top_k,
+        )
+    else:
+        retriever = build_retriever(
+            args.configuration,
+            documents,
+            vector_backend=indexing.index_manager.vector_backend,
+            tuning=indexing.index_manager.retrieval_tuning,
+        )
+        if args.end_to_end:
+            chat_model = create_chat_model(settings)
+            services = create_application_services(
+                settings,
+                chat_model=chat_model,
+                embeddings=embeddings,
+                vector_backend=indexing.index_manager.vector_backend,
+            )
+            answerer: Answerer = AnswerServiceAdapter(
+                services.answer_service,
+                RetrievalPolicyResolver(
+                    default_candidate_k=settings.hybrid_candidate_k,
+                    default_final_k=settings.hybrid_final_k,
+                ),
+            )
+            result = run_end_to_end(
+                examples,
+                retriever,
+                answerer,
+                configuration=args.configuration,
+                split=args.split,
+                top_k=args.top_k,
+                metadata=metadata,
+            )
+        else:
+            result = run_retrieval(
+                examples,
+                retriever,
+                configuration=args.configuration,
+                split=args.split,
+                top_k=args.top_k,
+                metadata=metadata,
+            )
+    result["metadata"] = metadata
+    return result
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Run an offline retrieval benchmark.")
+    parser = argparse.ArgumentParser(description="Run a reproducible RAG benchmark.")
     parser.add_argument("--configuration", choices=CONFIGURATIONS, default="bm25")
     parser.add_argument("--split", choices=("dev", "test"), default="dev")
     parser.add_argument("--top-k", type=int, default=5)
     parser.add_argument("--dataset", type=Path, default=Path("evaluation/dataset/questions.jsonl"))
     parser.add_argument("--corpus", type=Path, default=Path("evaluation/corpus"))
     parser.add_argument("--output", type=Path, default=Path("evaluation/results/benchmark.json"))
+    parser.add_argument("--live", action="store_true", help="Initialize configured providers and run live evaluation.")
+    parser.add_argument("--end-to-end", action="store_true", help="Generate answers instead of retrieval-only records.")
+    parser.add_argument("--data-dir", type=Path, default=Path(".benchmark-data"))
+    parser.add_argument("--llm-provider")
+    parser.add_argument("--generation-model")
+    parser.add_argument("--embedding-provider")
+    parser.add_argument("--embedding-model")
+    parser.add_argument("--vector-store-provider")
+    parser.add_argument("--reranker-model")
     args = parser.parse_args()
     if args.top_k < 1:
         parser.error("--top-k must be positive")
-    if args.configuration != "bm25":
+    if args.configuration != "bm25" and not args.live:
         parser.error(
-            f"{args.configuration} needs an explicit provider/vector-store adapter; the offline CLI only runs bm25"
+            f"{args.configuration} requires --live so its configured providers and index are initialized explicitly"
         )
     examples = load_examples(args.dataset, args.split)
-    documents = load_corpus(args.corpus)
-    result = run_retrieval(
-        examples,
-        BM25Retriever(documents),
-        configuration=args.configuration,
-        split=args.split,
-        top_k=args.top_k,
-        metadata=experiment_metadata(args.dataset, args.corpus, args.split, args.top_k, args.configuration),
-    )
+    if args.live:
+        result = _run_live(args, examples)
+    else:
+        documents = load_corpus(args.corpus)
+        result = run_retrieval(
+            examples,
+            BM25Retriever(documents),
+            configuration=args.configuration,
+            split=args.split,
+            top_k=args.top_k,
+            metadata=experiment_metadata(args.dataset, args.corpus, args.split, args.top_k, args.configuration),
+        )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2, allow_nan=False) + "\n", encoding="utf-8")
     print(json.dumps(result["summary"], sort_keys=True))
