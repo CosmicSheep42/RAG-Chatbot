@@ -86,7 +86,13 @@ The fixed synthetic corpus and 40-example ground-truth dataset are in `evaluatio
 python evaluation/validate_dataset.py
 ```
 
-Phase 3 will reuse these questions and evidence annotations to compare retrieval and generation configurations. No benchmark runner is included yet.
+Run the offline BM25 retrieval benchmark with:
+
+```bash
+python -m evaluation.benchmark --configuration bm25 --split dev --output evaluation/results/dev-bm25.json
+```
+
+The runner records per-question retrieval metrics and reproducibility metadata. The deterministic BM25 mode is CI-safe; dense, hybrid, reranking, full-pipeline, and live LLM experiments require explicit provider adapters and are not run by default.
 
 Default models (Ollama):
 
