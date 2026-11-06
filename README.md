@@ -92,8 +92,16 @@ Run the offline BM25 retrieval benchmark with:
 python -m evaluation.benchmark --configuration bm25 --split dev --output evaluation/results/dev-bm25.json
 ```
 
-The runner records per-question retrieval metrics and reproducibility metadata. The deterministic BM25 mode is CI-safe; dense, hybrid, reranking, full-pipeline, and live LLM experiments require explicit provider adapters and are not run by default.
+The runner records per-question retrieval metrics and reproducibility metadata. The deterministic BM25 mode is CI-safe. When providers and a vector-store extra are configured, run a real configuration explicitly with `--live`; add `--end-to-end` for answer generation:
+
+```bash
+python -m evaluation.benchmark --live --configuration hybrid --split dev --end-to-end \
+  --output /tmp/hybrid-dev.json
+```
+
+Standalone, dense, hybrid, reranking, and full-pipeline modes initialize their requested providers explicitly and fail when a required component is unavailable. Live experiments are never run by default in CI.
 End-to-end records keep factual coverage, source-level citation support, abstention outcomes, and a manual-review payload separate; retrieved evidence presence is not treated as automatic groundedness.
+Measured results are recorded in [evaluation/RESULTS.md](evaluation/RESULTS.md); it currently contains the reproducible BM25 baseline only.
 
 Default models (Ollama):
 
@@ -108,6 +116,7 @@ From the repository root:
 
 ```bash
 cp .env.sample .env
+# Set DOCUMENTS_DIR=./evaluation/corpus in .env to use the demonstration corpus.
 
 ollama pull llama3.2:3b
 ollama pull nomic-embed-text
