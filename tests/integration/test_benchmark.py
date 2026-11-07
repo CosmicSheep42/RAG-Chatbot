@@ -212,3 +212,30 @@ def test_failed_questions_are_counted_without_fake_quality_metrics():
     assert result["summary"]["failed_count"] == 1
     assert result["summary"]["successful_count"] == 0
     assert "recall_at_k" not in result["summary"]
+
+
+def test_benchmark_checkpoint_resume_preserves_completed_records(tmp_path):
+    examples = [
+        BenchmarkExample("q1", "one", True, "one", ["guide.md"], []),
+        BenchmarkExample("q2", "two", True, "two", ["guide.md"], []),
+    ]
+
+    class Retriever:
+        def retrieve(self, question, _limit):
+            return [type("Doc", (), {"metadata": {"source": "guide.md"}})()]
+
+    first = run_retrieval(
+        examples[:1], Retriever(), configuration="bm25", split="dev", top_k=1, checkpoint_dir=tmp_path
+    )
+    assert len(first["records"]) == 1
+    resumed = run_retrieval(
+        examples,
+        Retriever(),
+        configuration="bm25",
+        split="dev",
+        top_k=1,
+        checkpoint_dir=tmp_path,
+        resume=True,
+    )
+    assert [record["question_id"] for record in resumed["records"]] == ["q1", "q2"]
+    assert len(tmp_path.joinpath("records.jsonl").read_text(encoding="utf-8").splitlines()) == 2

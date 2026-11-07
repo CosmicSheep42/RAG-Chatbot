@@ -90,6 +90,7 @@ class AppSettings:
     metadata_boost_weight: float
     reranking_mode: str
     reranker_model: str
+    reranker_device: str
     reranker_allow_lexical_fallback: bool
     retrieval_confidence_threshold: float
     generation_temperature: float
@@ -243,6 +244,8 @@ class AppSettings:
                 f"Invalid RERANKING_MODE value: {self.reranking_mode}. "
                 "Expected one of: auto, true, false."
             )
+        if self.reranker_device not in {"cpu", "cuda", "auto"}:
+            errors.append("RERANKER_DEVICE must be one of: cpu, cuda, auto.")
         if self.retrieval_confidence_threshold < 0 or self.retrieval_confidence_threshold > 1:
             errors.append("RETRIEVAL_CONFIDENCE_THRESHOLD must be between 0 and 1.")
         for name in (
@@ -425,6 +428,7 @@ def get_settings() -> AppSettings:
         metadata_boost_weight=float(os.getenv("METADATA_BOOST_WEIGHT", "0.10")),
         reranking_mode=os.getenv("RERANKING_MODE", "auto").strip().lower(),
         reranker_model=os.getenv("RERANKER_MODEL", "BAAI/bge-reranker-base"),
+        reranker_device=os.getenv("RERANKER_DEVICE", "cpu").strip(),
         reranker_allow_lexical_fallback=_env_bool("RERANKER_ALLOW_LEXICAL_FALLBACK", "false"),
         retrieval_confidence_threshold=float(os.getenv("RETRIEVAL_CONFIDENCE_THRESHOLD", "0.35")),
         generation_temperature=float(os.getenv("GENERATION_TEMPERATURE", "0.7")),
