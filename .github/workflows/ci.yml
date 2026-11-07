@@ -36,6 +36,8 @@ jobs:
           python -m pip install --force-reinstall --no-deps "$RUNNER_TEMP"/package/*.whl
           cd "$RUNNER_TEMP"
           python -c 'from importlib.resources import files; from local_rag_chatbot import ChatbotEngine; assert files("local_rag_chatbot").joinpath("resources/prompts/master_prompt.json").is_file(); assert files("local_rag_chatbot").joinpath("resources/routing/priorities.json").is_file(); print("package smoke passed")'
-      - name: Dependency audit (informational until baseline remediation)
+      - name: Remove local package before dependency audit
+        run: python -m pip uninstall --yes local-rag-chatbot
+      - name: Dependency audit (informational while LangChain migration is pending)
         continue-on-error: true
-        run: pip-audit --progress-spinner off
+        run: pip-audit --progress-spinner off --skip-editable --strict
