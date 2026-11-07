@@ -1,49 +1,51 @@
-# Experimental Results
+# Datapizza Experimental Results
 
-## Partial Datapizza measurement
+## Experimental setup
 
-The BM25 retrieval-only configuration was executed locally with the Datapizza corpus at commit
-`88ec2280d0ea4436c247fb11f3768eecabdccfe8`. It used chunk size `500`, overlap `100`, and `top_k=5`.
-No generation model, embedding model, or reranker was involved.
+The runs below were executed locally on Debian 13 with an NVIDIA RTX 3050 Laptop GPU (4 GB), Docker GPU passthrough, Ollama `0.32.1`, `llama3.2:3b`, and `nomic-embed-text`. Llama was partially offloaded by Ollama (34% CPU / 66% GPU); embeddings used the GPU. The reranker was `BAAI/bge-reranker-base` on CPU.
 
-| Split | Questions | Recall@5 | MRR@5 | nDCG@5 | Passage touch recall | Weighted coverage | Complete passage evidence | Retrieval p50 | Retrieval p95 |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| dev | 12/12 | 0.5741 | 0.5694 | 0.5108 | 0.3569 | 0.2726 | 0.1667 | 28.0 ms | 30.3 ms |
-| test | 44/44 | 0.6936 | 0.7984 | 0.6734 | 0.4392 | 0.3002 | 0.1163 | 31.3 ms | 44.4 ms |
+The Datapizza corpus used 20 Markdown documents, chunk size `500`, overlap `100`, `top_k=5`, Chroma namespace `rag`, temperature `0`, and one inference at a time. The development split has 12 questions and the held-out test split has 44. One test question has no annotated gold passages, so passage metrics use 43 evaluable questions there. All runs used unique local run directories; raw records remain under `evaluation/results/datapizza/` and are not committed.
 
-The test split contains 43 questions with annotated passages and one question without gold passage
-annotations; passage metrics use the 43-question denominator. Complete passage evidence uses the
-configured 0.8 per-passage coverage threshold. These are retrieval measurements, not answer-quality
-or groundedness scores.
+## Retrieval-only comparison
 
-## BM25 development generation
+| Split / metric | BM25 | Dense | Hybrid | Hybrid + rerank |
+|---|---:|---:|---:|---:|
+| dev Recall@5 | 0.5741 | 0.5440 | 0.6227 | 0.7199 |
+| dev MRR@5 | 0.5694 | 0.7222 | 0.7917 | 0.8361 |
+| dev nDCG@5 | 0.5108 | 0.5650 | 0.6363 | 0.7062 |
+| dev weighted passage coverage | 0.2726 | 0.2858 | 0.2963 | 0.2994 |
+| dev retrieval p50 | 28.0 ms | 29.2 ms | 79.4 ms | 1.19 s |
+| test Recall@5 | 0.6936 | 0.6605 | 0.7446 | 0.7576 |
+| test MRR@5 | 0.7984 | 0.7907 | 0.8624 | 0.8605 |
+| test nDCG@5 | 0.6734 | 0.6655 | 0.7360 | 0.7592 |
+| test weighted passage coverage | 0.3002 | 0.2472 | 0.3298 | 0.4017 |
+| test retrieval p50 | 31.3 ms | 35.7 ms | 89.8 ms | 1.19 s |
 
-BM25 end-to-end was executed on the same 12-question development split with the cached
-`llama3.2:3b` model through Ollama. The run completed 12/12 questions without execution failures.
-Inference was CPU-only because Docker GPU passthrough was unavailable.
+Complete passage evidence rates on test were BM25 `0.1163`, Dense `0.1163`, Hybrid `0.1163`, and Hybrid + rerank `0.2093`. The reranker improved measured retrieval metrics on this fixed corpus, but increased retrieval latency substantially.
 
-| Split | Questions | Retrieval p50 | Retrieval p95 | Generation p50 | Generation p95 | Total p50 | Total p95 |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| dev | 12/12 | 30.1 ms | 35.4 ms | 30.6 s | 40.0 s | 30.6 s | 40.0 s |
+## End-to-end comparison
 
-The benchmark recorded four heuristic incorrect-refusal signals among 12 answerable examples. This is
-not a human-reviewed correctness score, and no automatic factual-accuracy score is reported. The
-adapter did not expose the complete generation context for this run, so passage support and citation
-quality are unavailable.
+Every listed run completed without execution failures. Values are p50/p95 seconds for the held-out test split; development runs are preserved in the corresponding run directories.
 
-## Execution status
+| Configuration | Questions | Retrieval p50 | Generation p50 | Total p50 | Total p95 |
+|---|---:|---:|---:|---:|---:|
+| Standalone | 44/44 | N/A | 4.12 | 4.12 | 12.09 |
+| BM25 RAG | 44/44 | 0.038 | 7.44 | 7.48 | 16.22 |
+| Dense RAG | 44/44 | 1.824 | 12.80 | 14.62 | 23.16 |
+| Hybrid RAG | 44/44 | 1.737 | 11.25 | 13.11 | 21.49 |
+| Hybrid + rerank RAG | 44/44 | 2.727 | 9.63 | 12.34 | 18.01 |
+| Full production RAG | 44/44 | N/A | N/A | 7.88 | 13.48 |
 
-The standalone, dense, hybrid, hybrid-rerank, and full production RAG configurations were not executed.
-The host driver is available, but Docker GPU passthrough failed because the NVIDIA Container Toolkit is
-not configured. BM25 end-to-end used CPU-only Ollama successfully; the dense pilot then spent several
-minutes embedding the corpus on CPU without producing a record and was stopped. No values are imputed
-for the unavailable configurations or for unreviewed answer-quality metrics.
+The Full pipeline exposes total engine latency and application-level citation validity, but not separate retrieval and generation timings in these records. Its citation validity was `1.0`; this means returned source identifiers were valid, not that every answer claim was manually verified.
 
-The BM25 Docker runs were saved locally at:
+No factual-correctness, completeness, groundedness, or claim-level citation scores are published: those require the existing manual review workflow and have not yet been completed.
 
-- `evaluation/results/datapizza/bm25/bm25/retrieval-only/run-20261107T050011Z-3a47caae` (dev)
-- `evaluation/results/datapizza/bm25/bm25/retrieval-only/run-20261107T050722Z-0068c061` (test)
-- `evaluation/results/datapizza/bm25/bm25/end-to-end/run-20261107T051530Z-1e748631` (dev)
+## Interpretation and limitations
 
-These generated records are intentionally not committed. Re-run the commands in
-[docs/datapizza-benchmark.md](../docs/datapizza-benchmark.md) to regenerate them.
+On this corpus, Hybrid and Hybrid + rerank retrieved relevant evidence more reliably than BM25 or Dense alone. Reranking had the highest test nDCG and passage coverage, with a CPU latency cost. These are measurements on one 56-question D&D 5e dataset, not universal claims about RAG quality.
+
+The standalone and RAG answer outputs still require human review; heuristic refusal counters are not factual-accuracy measures. Llama's partial CPU offload and the small GPU constrain latency.
+
+## Reproduction
+
+The saved run manifests contain the effective configuration and fingerprints. To reproduce a new run, start the existing Ollama service with the persistent model volume, then use the documented commands in [docs/datapizza-benchmark.md](../docs/datapizza-benchmark.md). Resume an interrupted run only with its exact run directory and matching configuration fingerprint.
