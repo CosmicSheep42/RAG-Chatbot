@@ -27,6 +27,7 @@ from local_rag_chatbot.documents.document_splitter import DocumentSplitter
 from local_rag_chatbot.documents.loaders import MarkdownLoader
 from local_rag_chatbot.rag.hybrid_retriever import SimpleBM25Index
 from local_rag_chatbot.rag.hybrid_retriever import HybridRetriever, RetrievalTuning
+from local_rag_chatbot.rag.index_manager import RAG_VECTOR_NAMESPACE
 from local_rag_chatbot.vectorstores.contracts import VectorStoreBackend
 
 from .metrics import (
@@ -66,16 +67,24 @@ class ChatModelAnswerer:
 
 
 class EngineAnswerer:
-    def __init__(self, engine: Any) -> None:
+    def __init__(self, engine: Any, event_loop: asyncio.AbstractEventLoop | None = None) -> None:
         self.engine = engine
+        self.event_loop = event_loop
         self.timing_name = "pipeline_seconds"
         self.last_retrieved: list[str] = []
-        self.last_context: list[str] = []
+        self.last_context: list[str] | None = None
+        self.context_available = False
+        self.last_route: str | None = None
+        self.last_refused: bool | None = None
 
     def answer(self, question: str, documents: list[Document]) -> tuple[str, list[str]]:
-        response = asyncio.run(self.engine.chat(question))
+        if self.event_loop is None:
+            response = asyncio.run(self.engine.chat(question))
+        else:
+            response = self.event_loop.run_until_complete(self.engine.chat(question))
         self.last_retrieved = [source.source for source in response.sources]
-        self.last_context = [source.snippet or "" for source in response.sources]
+        self.last_route = getattr(response, "route", None)
+        self.last_refused = getattr(response, "refused", None)
         return response.result, [citation.source_name or "" for citation in response.citations]
 
 
@@ -127,8 +136,9 @@ def build_retriever(
     documents: list[Document],
     *,
     vector_backend: VectorStoreBackend | None = None,
-    namespace: str = "benchmark",
+    namespace: str = RAG_VECTOR_NAMESPACE,
     tuning: RetrievalTuning | None = None,
+    reranker_model: str = "BAAI/bge-reranker-base",
 ) -> Retriever | None:
     """Build an adapter without changing or duplicating production retrieval logic."""
     if configuration == "standalone":
@@ -137,6 +147,8 @@ def build_retriever(
         return BM25Retriever(documents)
     if vector_backend is None:
         raise ValueError(f"{configuration} requires an injected vector-store backend")
+    if not vector_backend.index_exists(namespace):
+        raise RuntimeError(f"The benchmark index namespace does not exist: {namespace}")
     if configuration == "dense":
         return DenseRetriever(vector_backend, namespace)
     if configuration == "full":
@@ -151,6 +163,7 @@ def build_retriever(
             documents=documents,
             tuning=tuning or RetrievalTuning(),
             reranking_mode="true" if configuration == "hybrid-rerank" else "false",
+            reranker_model=reranker_model,
         )
         if configuration == "hybrid-rerank" and not production_retriever.reranking_active:
             status = production_retriever.reranking_status
@@ -169,7 +182,7 @@ class BenchmarkExample:
     required_facts: list[str]
 
 
-def load_corpus(corpus_dir: Path, *, chunk_size: int = 800, chunk_overlap: int = 80) -> list[Document]:
+def load_corpus(corpus_dir: Path, *, chunk_size: int = 500, chunk_overlap: int = 100) -> list[Document]:
     documents: list[Document] = []
     loader = MarkdownLoader()
     splitter = DocumentSplitter(chunk_size, chunk_overlap)
@@ -221,6 +234,7 @@ def run_retrieval(
                     "question_id": example.id,
                     "configuration": configuration,
                     "split": split,
+                    "answerable": example.answerable,
                     "status": "failed",
                     "error": str(exc),
                     "timing": {"retrieval_seconds": time.perf_counter() - started},
@@ -238,6 +252,7 @@ def run_retrieval(
                 "question_id": example.id,
                 "configuration": configuration,
                 "split": split,
+                "answerable": example.answerable,
                 "retrieved_documents": ranked,
                 "metrics": {
                     "recall_at_k": _json_metric(recall_at_k(ranked, example.relevant_documents, top_k)),
@@ -295,30 +310,40 @@ def run_end_to_end(
             "last_retrieved",
             [str(document.metadata.get("source", "")) for document in documents],
         )
-        context = getattr(answerer, "last_context", [document.page_content for document in documents])
+        context_available = getattr(answerer, "context_available", None)
+        context = getattr(answerer, "last_context", None)
+        if context_available is None:
+            context_available = True
+        if context_available and context is None:
+            context = [document.page_content for document in documents]
         if not getattr(answerer, "timing_name", None):
             retrieval_latencies.append(retrieval_seconds)
         timing = {"retrieval_seconds": retrieval_seconds, "generation_seconds": answer_seconds}
         timing_name = getattr(answerer, "timing_name", None)
         if timing_name:
             timing = {timing_name: answer_seconds}
-        citation_metrics = citation_quality(citations, retrieved, example.relevant_documents)
+        citation_metrics = citation_quality(citations, retrieved, example.relevant_documents) if citations else None
         records.append(
             {
                 "question_id": example.id,
                 "configuration": configuration,
                 "split": split,
+                "answerable": example.answerable,
                 "retrieved_documents": retrieved,
+                "selected_context": context if context_available else None,
+                "context_available": context_available,
                 "answer": answer,
                 "citations": citations,
+                "route": getattr(answerer, "last_route", None),
+                "refused": getattr(answerer, "last_refused", None),
                 "metrics": {
                     "fact_coverage": fact_coverage(answer, example.required_facts) if example.answerable else None,
-                    "evidence_availability": fact_coverage(
-                        " ".join(d.page_content for d in documents), example.required_facts
+                    "evidence_availability": (
+                        fact_coverage(" ".join(context or []), example.required_facts) if context_available else None
                     ),
-                    "citation_validity": citation_metrics["validity"],
-                    "citation_relevance": citation_metrics["relevance"],
-                    "citation_support": citation_support(citations, example.relevant_documents),
+                    "citation_validity": citation_metrics["validity"] if citation_metrics else None,
+                    "citation_relevance": citation_metrics["relevance"] if citation_metrics else None,
+                    "citation_support": citation_support(citations, example.relevant_documents) if citations else None,
                     "groundedness": "manual_review_required",
                     "abstention": abstention_result(answer, example.answerable),
                 },
@@ -326,7 +351,7 @@ def run_end_to_end(
                     "answer": answer,
                     "reference_answer": example.reference_answer,
                     "required_facts": example.required_facts,
-                    "retrieved_context": context,
+                    "retrieved_context": context if context_available else None,
                 },
                 "timing": timing,
                 "status": "success",
@@ -355,17 +380,36 @@ def _summary(records: list[dict[str, Any]], latencies: list[float]) -> dict[str,
     )
     summary = {}
     for name in metric_names:
-        values = [record["metrics"][name] for record in records if record["metrics"].get(name) is not None]
+        values = [record["metrics"][name] for record in records if record.get("metrics", {}).get(name) is not None]
         if values:
             summary[name] = statistics.mean(values)
     successful = [record for record in records if record.get("status") == "success"]
     summary["successful_count"] = len(successful)
     summary["failed_count"] = sum(record.get("status") == "failed" for record in records)
-    abstentions = [record["metrics"]["abstention"] for record in successful if "abstention" in record["metrics"]]
-    if abstentions:
-        summary["correct_abstention_rate"] = abstentions.count("correct_abstention") / len(abstentions)
-        summary["incorrect_refusal_rate"] = abstentions.count("incorrect_refusal") / len(abstentions)
-        summary["unsupported_answer_rate"] = abstentions.count("unsupported_answer") / len(abstentions)
+    abstention_records = [record for record in successful if "abstention" in record.get("metrics", {})]
+    unanswerable = [record for record in abstention_records if not record["answerable"]]
+    answerable = [record for record in abstention_records if record["answerable"]]
+    summary["unanswerable_evaluated_count"] = len(unanswerable)
+    summary["answerable_evaluated_count"] = len(answerable)
+    summary["correct_abstention_count"] = sum(
+        record["metrics"]["abstention"] == "correct_abstention" for record in unanswerable
+    )
+    summary["unsupported_answer_count"] = sum(
+        record["metrics"]["abstention"] == "unsupported_answer" for record in unanswerable
+    )
+    summary["incorrect_refusal_count"] = sum(
+        record["metrics"]["abstention"] == "incorrect_refusal" for record in answerable
+    )
+    if unanswerable:
+        summary["correct_abstention_rate"] = summary["correct_abstention_count"] / len(unanswerable)
+        summary["unsupported_answer_rate"] = summary["unsupported_answer_count"] / len(unanswerable)
+    else:
+        summary["correct_abstention_rate"] = None
+        summary["unsupported_answer_rate"] = None
+    if answerable:
+        summary["incorrect_refusal_rate"] = summary["incorrect_refusal_count"] / len(answerable)
+    else:
+        summary["incorrect_refusal_rate"] = None
     end_to_end_latencies = []
     for record in successful:
         timing = record.get("timing", {})
@@ -401,7 +445,15 @@ def _percentile(values: list[float], percentile: float) -> float:
 
 
 def experiment_metadata(
-    dataset_path: Path, corpus_dir: Path, split: str, top_k: int, configuration: str
+    dataset_path: Path,
+    corpus_dir: Path,
+    split: str,
+    top_k: int,
+    configuration: str,
+    *,
+    chunk_size: int = 500,
+    chunk_overlap: int = 100,
+    namespace: str = RAG_VECTOR_NAMESPACE,
 ) -> dict[str, Any]:
     return {
         "benchmark_version": "1",
@@ -410,6 +462,10 @@ def experiment_metadata(
         "corpus_checksum": _directory_checksum(corpus_dir),
         "split": split,
         "top_k": top_k,
+        "chunk_size": chunk_size,
+        "chunk_overlap": chunk_overlap,
+        "chunker_version": "structural-v2",
+        "index_namespace": namespace,
         "git_commit": _git_commit(),
         "python": sys.version,
         "platform": platform.platform(),
@@ -446,6 +502,8 @@ def _run_live(args: argparse.Namespace, examples: list[BenchmarkExample]) -> dic
         "data_dir": args.data_dir,
         "chroma_db_dir": args.data_dir / "chroma",
         "auto_index_on_startup": True,
+        "chunk_size": args.chunk_size,
+        "chunk_overlap": args.chunk_overlap,
     }
     for name in ("llm_provider", "embedding_provider", "generation_model", "embedding_model", "vector_store_provider"):
         value = getattr(args, name)
@@ -461,7 +519,15 @@ def _run_live(args: argparse.Namespace, examples: list[BenchmarkExample]) -> dic
 
     if args.configuration == "standalone":
         chat_model = create_chat_model(settings)
-        metadata = experiment_metadata(args.dataset, args.corpus, args.split, args.top_k, args.configuration)
+        metadata = experiment_metadata(
+            args.dataset,
+            args.corpus,
+            args.split,
+            args.top_k,
+            args.configuration,
+            chunk_size=settings.chunk_size,
+            chunk_overlap=settings.chunk_overlap,
+        )
         metadata.update(
             {
                 "provider": settings.llm_provider,
@@ -489,33 +555,43 @@ def _run_live(args: argparse.Namespace, examples: list[BenchmarkExample]) -> dic
     initialization_started = time.perf_counter()
     if args.configuration == "full":
         engine = ChatbotEngine(config=settings)
-        asyncio.run(engine.initialize())
-        initialization_seconds = time.perf_counter() - initialization_started
-        metadata = experiment_metadata(args.dataset, args.corpus, args.split, args.top_k, args.configuration)
-        metadata.update(
-            {
-                "provider": settings.llm_provider,
-                "generation_model": settings.generation_model,
-                "embedding_provider": settings.embedding_provider,
-                "embedding_model": settings.embedding_model,
-                "vector_store_provider": settings.vector_store_provider,
-                "reranker_model": settings.reranker_model,
-                "initialization_seconds": initialization_seconds,
-                "timing_note": "full mode records total engine query time as pipeline_seconds; component timings are not exposed by the public engine API",
-            }
-        )
+        event_loop = asyncio.new_event_loop()
         try:
+            event_loop.run_until_complete(engine.initialize())
+            initialization_seconds = time.perf_counter() - initialization_started
+            metadata = experiment_metadata(
+                args.dataset,
+                args.corpus,
+                args.split,
+                args.top_k,
+                args.configuration,
+                chunk_size=settings.chunk_size,
+                chunk_overlap=settings.chunk_overlap,
+            )
+            metadata.update(
+                {
+                    "provider": settings.llm_provider,
+                    "generation_model": settings.generation_model,
+                    "embedding_provider": settings.embedding_provider,
+                    "embedding_model": settings.embedding_model,
+                    "vector_store_provider": settings.vector_store_provider,
+                    "reranker_model": settings.reranker_model,
+                    "initialization_seconds": initialization_seconds,
+                    "timing_note": "full mode records total engine query time as pipeline_seconds; component timings are not exposed by the public engine API",
+                }
+            )
             result = run_end_to_end(
                 examples,
                 None,
-                EngineAnswerer(engine),
+                EngineAnswerer(engine, event_loop),
                 configuration=args.configuration,
                 split=args.split,
                 top_k=args.top_k,
                 metadata=metadata,
             )
         finally:
-            asyncio.run(engine.shutdown())
+            event_loop.run_until_complete(engine.shutdown())
+            event_loop.close()
         result["metadata"] = metadata
         return result
 
@@ -526,7 +602,15 @@ def _run_live(args: argparse.Namespace, examples: list[BenchmarkExample]) -> dic
     initialization_seconds = time.perf_counter() - initialization_started
     documents = indexing.index_manager.documents
 
-    metadata = experiment_metadata(args.dataset, args.corpus, args.split, args.top_k, args.configuration)
+    metadata = experiment_metadata(
+        args.dataset,
+        args.corpus,
+        args.split,
+        args.top_k,
+        args.configuration,
+        chunk_size=settings.chunk_size,
+        chunk_overlap=settings.chunk_overlap,
+    )
     metadata.update(
         {
             "provider": settings.llm_provider,
@@ -536,6 +620,13 @@ def _run_live(args: argparse.Namespace, examples: list[BenchmarkExample]) -> dic
             "vector_store_provider": settings.vector_store_provider,
             "reranker_model": settings.reranker_model if args.configuration == "hybrid-rerank" else None,
             "initialization_seconds": initialization_seconds,
+            "retrieval_limits": {
+                "dense_k": settings.hybrid_dense_k,
+                "dense_fetch_k": settings.hybrid_dense_fetch_k,
+                "sparse_k": settings.hybrid_sparse_k,
+                "candidate_k": settings.hybrid_candidate_k,
+                "final_k": settings.hybrid_final_k,
+            },
         }
     )
 
@@ -544,7 +635,11 @@ def _run_live(args: argparse.Namespace, examples: list[BenchmarkExample]) -> dic
         documents,
         vector_backend=indexing.index_manager.vector_backend,
         tuning=indexing.index_manager.retrieval_tuning,
+        namespace=RAG_VECTOR_NAMESPACE,
+        reranker_model=settings.reranker_model,
     )
+    if isinstance(retriever, ExistingRetrieverAdapter):
+        metadata["reranking_status"] = retriever.retriever.reranking_status
     if args.end_to_end:
         chat_model = create_chat_model(settings)
         services = create_application_services(
@@ -587,6 +682,8 @@ def main() -> int:
     parser.add_argument("--configuration", choices=CONFIGURATIONS, default="bm25")
     parser.add_argument("--split", choices=("dev", "test"), default="dev")
     parser.add_argument("--top-k", type=int, default=5)
+    parser.add_argument("--chunk-size", type=int, default=500)
+    parser.add_argument("--chunk-overlap", type=int, default=100)
     parser.add_argument("--dataset", type=Path, default=Path("evaluation/dataset/questions.jsonl"))
     parser.add_argument("--corpus", type=Path, default=Path("evaluation/corpus"))
     parser.add_argument("--output", type=Path, default=Path("evaluation/results/benchmark.json"))
@@ -602,6 +699,8 @@ def main() -> int:
     args = parser.parse_args()
     if args.top_k < 1:
         parser.error("--top-k must be positive")
+    if args.chunk_size < 1 or args.chunk_overlap < 0 or args.chunk_overlap >= args.chunk_size:
+        parser.error("--chunk-size must be positive and --chunk-overlap must be between 0 and chunk-size - 1")
     if args.configuration != "bm25" and not args.live:
         parser.error(
             f"{args.configuration} requires --live so its configured providers and index are initialized explicitly"
@@ -610,14 +709,22 @@ def main() -> int:
     if args.live:
         result = _run_live(args, examples)
     else:
-        documents = load_corpus(args.corpus)
+        documents = load_corpus(args.corpus, chunk_size=args.chunk_size, chunk_overlap=args.chunk_overlap)
         result = run_retrieval(
             examples,
             BM25Retriever(documents),
             configuration=args.configuration,
             split=args.split,
             top_k=args.top_k,
-            metadata=experiment_metadata(args.dataset, args.corpus, args.split, args.top_k, args.configuration),
+            metadata=experiment_metadata(
+                args.dataset,
+                args.corpus,
+                args.split,
+                args.top_k,
+                args.configuration,
+                chunk_size=args.chunk_size,
+                chunk_overlap=args.chunk_overlap,
+            ),
         )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2, allow_nan=False) + "\n", encoding="utf-8")

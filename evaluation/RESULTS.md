@@ -6,9 +6,9 @@ The only reproducible experiment completed in the available environment is the d
 
 | Configuration | Split | Questions | Recall@5 | MRR@5 | nDCG@5 | Complete evidence | Retrieval p50 |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| BM25 | dev | 10 | 1.000 | 0.889 | 0.918 | 1.000 | 0.12 ms |
+| BM25 | dev | 10 | 1.000 | 0.889 | 0.918 | 1.000 | 0.11 ms |
 
-All 10 questions completed successfully. The measurement used the version-controlled six-document corpus, 800-character chunks with 80-character overlap, and no model inference. Latency is process-local retrieval time and excludes indexing, embedding, and generation.
+All 10 questions completed successfully. The measurement used the version-controlled six-document corpus, 500-character chunks with 100-character overlap, the production `rag` index namespace, and no model inference. Latency is process-local retrieval time and excludes indexing, embedding, and generation.
 
 ## Reproduction
 
