@@ -22,3 +22,9 @@ python -m evaluation.benchmark \
 ```
 
 Live standalone, dense, hybrid, reranking, and full-pipeline runs are available through the explicit `--live` CLI path when the required provider, vector store, and model resources are configured. They were not executed for this report because those resources were unavailable. Consequently, this report makes no comparative quality, groundedness, or optimization claim.
+
+## Validation status
+
+The deterministic validation suite passed on 2026-11-07: 34 tests, 42.51% application coverage, dataset validation, Ruff, package build, and the BM25 smoke benchmark. Live model comparisons remain pending because the local Ollama executable could not connect to `127.0.0.1:11434`, and the optional Chroma, Ollama provider, and reranker packages were not installed in the validation environment.
+
+No live-model results or optimization claims are reported until those resources are available.
