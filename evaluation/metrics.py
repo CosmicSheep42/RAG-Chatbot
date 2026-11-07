@@ -151,10 +151,19 @@ def complete_passage_retrieval(
     *,
     threshold: float = 0.8,
 ) -> bool | None:
-    coverage = passage_coverage_at_k(results, passages, k, threshold=threshold)
-    if math.isnan(coverage):
+    required = [
+        passage
+        for passage in passages
+        if isinstance(passage.get("start_char"), int)
+        and isinstance(passage.get("end_char"), int)
+        and int(passage["end_char"]) > int(passage["start_char"])
+    ]
+    if not required:
         return None
-    return coverage >= threshold
+    coverages = [passage_coverage_at_k(results, [passage], k, threshold=threshold) for passage in required]
+    if any(math.isnan(coverage) for coverage in coverages):
+        return None
+    return all(coverage >= threshold for coverage in coverages)
 
 
 def reciprocal_rank_at_k(results: Sequence[Mapping[str, object] | str], relevant: Iterable[str], k: int) -> float:

@@ -5,6 +5,8 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import os
+import shutil
+import subprocess
 import tempfile
 from pathlib import Path
 
@@ -58,6 +60,40 @@ def run_preflight(
                 "Model weights not loaded",
             )
         )
+    if mode == "end-to-end":
+        generation_model = os.getenv("GENERATION_MODEL", "llama3.2:3b").strip()
+        checks.append(
+            (
+                "generation_model",
+                "NOT CHECKED" if generation_model else "FAIL",
+                generation_model or "Set GENERATION_MODEL before running an end-to-end experiment",
+            )
+        )
+    if configuration not in {"standalone", "bm25"}:
+        embedding_model = os.getenv("EMBEDDING_MODEL", "nomic-embed-text").strip()
+        checks.append(
+            (
+                "embedding_model",
+                "NOT CHECKED" if embedding_model else "FAIL",
+                embedding_model or "Set EMBEDDING_MODEL before running retrieval",
+            )
+        )
+    if shutil.which("docker"):
+        compose = subprocess.run(
+            ["docker", "compose", "-f", "docker-compose.benchmark.yml", "config", "--quiet"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        checks.append(
+            (
+                "docker_compose",
+                "PASS" if compose.returncode == 0 else "FAIL",
+                "Static Compose validation only",
+            )
+        )
+    else:
+        checks.append(("docker_compose", "UNAVAILABLE", "Docker is not installed; run docker compose config manually"))
     if os.getenv("OLLAMA_BASE_URL"):
         checks.append(("ollama", "NOT CHECKED", "Connectivity is not probed by static preflight"))
     else:
