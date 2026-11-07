@@ -1,42 +1,50 @@
 import json
+import shutil
 from pathlib import Path
 
 import pytest
 
+from evaluation.adapters.datapizza import load_examples
 from evaluation.validate_dataset import validate_dataset
 from local_rag_chatbot.documents.document_repository import DocumentRepository
 from local_rag_chatbot.documents.document_splitter import DocumentSplitter
 
 
-EVALUATION_ROOT = Path(__file__).parents[2] / "evaluation"
-DATASET = EVALUATION_ROOT / "dataset" / "questions.jsonl"
-CORPUS = EVALUATION_ROOT / "corpus"
+ROOT = Path(__file__).parents[2]
+DATASET = ROOT / "evaluation" / "dataset" / "datapizza"
+CORPUS = ROOT / "knowledge-base"
 
 
-def _write_dataset(tmp_path: Path, mutate) -> Path:
-    entries = [json.loads(line) for line in DATASET.read_text(encoding="utf-8").splitlines()]
-    mutate(entries)
-    path = tmp_path / "questions.jsonl"
-    path.write_text("\n".join(json.dumps(entry) for entry in entries) + "\n", encoding="utf-8")
-    return path
+def _copy_dataset(tmp_path: Path) -> tuple[Path, Path]:
+    corpus = tmp_path / "knowledge-base"
+    dataset = tmp_path / "datapizza"
+    shutil.copytree(CORPUS, corpus)
+    shutil.copytree(DATASET, dataset)
+    return corpus, dataset
 
 
-def test_committed_dataset_is_valid():
+def test_committed_datapizza_dataset_is_valid():
     assert validate_dataset(CORPUS, DATASET) == []
+    assert len(load_examples(DATASET, "dev")) == 12
+    assert len(load_examples(DATASET, "test")) == 44
 
 
 @pytest.mark.parametrize(
     ("mutation", "expected"),
     [
-        (lambda entries: entries.append(dict(entries[0])), "duplicate id"),
-        (lambda entries: entries[0]["relevant_documents"].append("missing.md"), "missing source document"),
-        (lambda entries: entries[0]["evidence"][0].update(text="not in the source"), "evidence text"),
-        (lambda entries: entries[0].update(answerable=False), "null reference_answer"),
-        (lambda entries: entries[0].update(split="staging"), "invalid split"),
+        (lambda entries: entries.append(dict(entries[0])), "duplicate normalized id"),
+        (lambda entries: entries[0]["passages"][0].update(document_path="missing.md"), "missing source document"),
+        (lambda entries: entries[0]["passages"][0].update(content="not in the source"), "content does not match"),
+        (lambda entries: entries[0]["passages"][0].update(start_char=-1), "invalid character offsets"),
     ],
 )
-def test_invalid_dataset_is_rejected(tmp_path: Path, mutation, expected: str):
-    errors = validate_dataset(CORPUS, _write_dataset(tmp_path, mutation))
+def test_invalid_datapizza_dataset_is_rejected(tmp_path: Path, mutation, expected: str):
+    corpus, dataset = _copy_dataset(tmp_path)
+    path = dataset / "easy.json"
+    entries = json.loads(path.read_text(encoding="utf-8"))
+    mutation(entries)
+    path.write_text(json.dumps(entries), encoding="utf-8")
+    errors = validate_dataset(corpus, dataset)
     assert any(expected in error for error in errors)
 
 
@@ -49,15 +57,7 @@ def test_corpus_loads_with_source_metadata_and_splits(tmp_path: Path):
     documents = DocumentRepository(documents_dir).load()
     chunks = DocumentSplitter(chunk_size=500, chunk_overlap=50).split(documents)
 
-    assert len(documents) == 6
+    assert len(documents) == 20
     assert chunks
-    assert {document.metadata["source"] for document in documents} == {
-        "configuration.md",
-        "deployment.md",
-        "errors.md",
-        "operations.md",
-        "platform-overview.md",
-        "versions.md",
-    }
+    assert {document.metadata["source"] for document in documents} == {path.name for path in CORPUS.glob("*.md")}
     assert all(document.metadata["source"] for document in chunks)
-    assert any("NBL-429" in document.page_content for document in chunks)

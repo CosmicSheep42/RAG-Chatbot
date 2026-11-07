@@ -19,8 +19,8 @@ from local_rag_chatbot.vectorstores.contracts import ScoredDocument
 
 
 def test_bm25_benchmark_smoke_produces_structured_results(tmp_path):
-    corpus = load_corpus(Path("evaluation/corpus"))
-    examples = load_examples(Path("evaluation/dataset/questions.jsonl"), "dev")[:2]
+    corpus = load_corpus(Path("knowledge-base"))
+    examples = load_examples(Path("evaluation/dataset/datapizza"), "dev")[:2]
 
     retrieval = run_retrieval(examples, BM25Retriever(corpus), configuration="bm25", split="dev", top_k=3)
     assert retrieval["records"]
@@ -164,7 +164,7 @@ def test_full_engine_records_pipeline_time_instead_of_generation_time():
                 },
             )()
 
-    example = load_examples(Path("evaluation/dataset/questions.jsonl"), "dev")[0]
+    example = load_examples(Path("evaluation/dataset/datapizza"), "dev")[0]
     result = run_end_to_end(
         [example],
         None,

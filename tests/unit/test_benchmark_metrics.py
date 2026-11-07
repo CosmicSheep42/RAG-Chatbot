@@ -7,6 +7,7 @@ from evaluation.metrics import (
     complete_evidence_retrieval,
     fact_coverage,
     ndcg_at_k,
+    passage_recall_at_k,
     recall_at_k,
     reciprocal_rank_at_k,
 )
@@ -34,6 +35,13 @@ def test_metrics_handle_empty_and_unanswerable_inputs():
     assert abstention_result("I do not have enough reliable context.", False) == "correct_abstention"
     assert abstention_result("The answer is 42.", False) == "unsupported_answer"
     assert abstention_result("I cannot answer.", True) == "incorrect_refusal"
+
+
+def test_passage_recall_uses_character_overlap_without_document_level_inflation():
+    results = [{"document_id": "rules.md", "start_char": 10, "end_char": 25}]
+    passages = [{"document_path": "rules.md", "start_char": 20, "end_char": 30}]
+    assert passage_recall_at_k(results, passages, 1) == 1.0
+    assert passage_recall_at_k([], passages, 1) == 0.0
 
 
 def test_answer_and_citation_metrics_are_separate():

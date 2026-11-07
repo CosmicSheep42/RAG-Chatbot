@@ -30,6 +30,7 @@ from local_rag_chatbot.rag.hybrid_retriever import HybridRetriever, RetrievalTun
 from local_rag_chatbot.rag.index_manager import RAG_VECTOR_NAMESPACE
 from local_rag_chatbot.vectorstores.contracts import VectorStoreBackend
 
+from .adapters.datapizza import load_examples as load_datapizza_examples
 from .metrics import (
     abstention_result,
     citation_quality,
@@ -37,6 +38,7 @@ from .metrics import (
     complete_evidence_retrieval,
     fact_coverage,
     ndcg_at_k,
+    passage_recall_at_k,
     recall_at_k,
     reciprocal_rank_at_k,
 )
@@ -180,6 +182,8 @@ class BenchmarkExample:
     reference_answer: str | None
     relevant_documents: list[str]
     required_facts: list[str]
+    passages: list[dict[str, Any]] | None = None
+    difficulty: str | None = None
 
 
 def load_corpus(corpus_dir: Path, *, chunk_size: int = 500, chunk_overlap: int = 100) -> list[Document]:
@@ -189,10 +193,38 @@ def load_corpus(corpus_dir: Path, *, chunk_size: int = 500, chunk_overlap: int =
     for path in sorted(corpus_dir.glob("*.md")):
         loaded = loader.load(path, base_metadata={"source": path.name, "document_id": path.name})
         documents.extend(Document(item.page_content, metadata=item.metadata) for item in loaded)
-    return splitter.split(documents)
+    chunks = splitter.split(documents)
+    cursors: dict[str, int] = {}
+    for chunk in chunks:
+        source = str(chunk.metadata.get("source", ""))
+        source_text = next(
+            (document.page_content for document in documents if document.metadata.get("source") == source), ""
+        )
+        start = source_text.find(chunk.page_content, cursors.get(source, 0))
+        if start < 0:
+            start = source_text.find(chunk.page_content)
+        if start >= 0:
+            chunk.metadata["source_char_start"] = start
+            chunk.metadata["source_char_end"] = start + len(chunk.page_content)
+            cursors[source] = start + 1
+    return chunks
 
 
 def load_examples(dataset_path: Path, split: str) -> list[BenchmarkExample]:
+    if dataset_path.is_dir():
+        return [
+            BenchmarkExample(
+                id=example.id,
+                question=example.question,
+                answerable=True,
+                reference_answer=example.answer,
+                relevant_documents=example.relevant_documents,
+                required_facts=[],
+                passages=[passage.__dict__ for passage in example.passages],
+                difficulty=example.tier,
+            )
+            for example in load_datapizza_examples(dataset_path, split)
+        ]
     examples = []
     with dataset_path.open(encoding="utf-8") as handle:
         for line in handle:
@@ -208,6 +240,7 @@ def load_examples(dataset_path: Path, split: str) -> list[BenchmarkExample]:
                         reference_answer=item["reference_answer"],
                         relevant_documents=item["relevant_documents"],
                         required_facts=item["required_facts"],
+                        passages=item.get("evidence"),
                     )
                 )
     return examples
@@ -244,7 +277,12 @@ def run_retrieval(
         latency = time.perf_counter() - started
         retrieval_latencies.append(latency)
         ranked = [
-            {"document_id": str(document.metadata.get("source", "")), "rank": rank}
+            {
+                "document_id": str(document.metadata.get("source", "")),
+                "rank": rank,
+                "start_char": document.metadata.get("source_char_start"),
+                "end_char": document.metadata.get("source_char_end"),
+            }
             for rank, document in enumerate(documents, 1)
         ]
         records.append(
@@ -258,6 +296,11 @@ def run_retrieval(
                     "recall_at_k": _json_metric(recall_at_k(ranked, example.relevant_documents, top_k)),
                     "mrr_at_k": _json_metric(reciprocal_rank_at_k(ranked, example.relevant_documents, top_k)),
                     "ndcg_at_k": _json_metric(ndcg_at_k(ranked, example.relevant_documents, top_k)),
+                    "passage_recall_at_k": (
+                        _json_metric(passage_recall_at_k(ranked, example.passages or [], top_k))
+                        if example.passages
+                        else None
+                    ),
                     "complete_evidence": complete_evidence_retrieval(ranked, example.relevant_documents, top_k),
                 },
                 "timing": {"retrieval_seconds": latency},
@@ -337,9 +380,13 @@ def run_end_to_end(
                 "route": getattr(answerer, "last_route", None),
                 "refused": getattr(answerer, "last_refused", None),
                 "metrics": {
-                    "fact_coverage": fact_coverage(answer, example.required_facts) if example.answerable else None,
+                    "fact_coverage": (
+                        _json_metric(fact_coverage(answer, example.required_facts)) if example.answerable else None
+                    ),
                     "evidence_availability": (
-                        fact_coverage(" ".join(context or []), example.required_facts) if context_available else None
+                        _json_metric(fact_coverage(" ".join(context or []), example.required_facts))
+                        if context_available and example.required_facts
+                        else None
                     ),
                     "citation_validity": citation_metrics["validity"] if citation_metrics else None,
                     "citation_relevance": citation_metrics["relevance"] if citation_metrics else None,
@@ -371,6 +418,7 @@ def _summary(records: list[dict[str, Any]], latencies: list[float]) -> dict[str,
         "recall_at_k",
         "mrr_at_k",
         "ndcg_at_k",
+        "passage_recall_at_k",
         "complete_evidence",
         "fact_coverage",
         "citation_validity",
@@ -474,6 +522,13 @@ def experiment_metadata(
 
 
 def _sha256(path: Path) -> str:
+    if path.is_dir():
+        digest = hashlib.sha256()
+        for child in sorted(path.rglob("*")):
+            if child.is_file():
+                digest.update(child.relative_to(path).as_posix().encode())
+                digest.update(child.read_bytes())
+        return digest.hexdigest()
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
@@ -684,8 +739,8 @@ def main() -> int:
     parser.add_argument("--top-k", type=int, default=5)
     parser.add_argument("--chunk-size", type=int, default=500)
     parser.add_argument("--chunk-overlap", type=int, default=100)
-    parser.add_argument("--dataset", type=Path, default=Path("evaluation/dataset/questions.jsonl"))
-    parser.add_argument("--corpus", type=Path, default=Path("evaluation/corpus"))
+    parser.add_argument("--dataset", type=Path, default=Path("evaluation/dataset/datapizza"))
+    parser.add_argument("--corpus", type=Path, default=Path("knowledge-base"))
     parser.add_argument("--output", type=Path, default=Path("evaluation/results/benchmark.json"))
     parser.add_argument("--live", action="store_true", help="Initialize configured providers and run live evaluation.")
     parser.add_argument("--end-to-end", action="store_true", help="Generate answers instead of retrieval-only records.")

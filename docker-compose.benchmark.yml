@@ -1,0 +1,72 @@
+x-benchmark: &benchmark
+  build:
+    context: .
+    dockerfile: Dockerfile.benchmark
+    args:
+      INSTALL_RERANKER: ${INSTALL_RERANKER:-false}
+  working_dir: /app
+  environment:
+    DOCUMENTS_DIR: /app/knowledge-base
+    DATA_DIR: /app/.benchmark-data
+    VECTOR_STORE_PROVIDER: ${VECTOR_STORE_PROVIDER:-chroma}
+    LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
+    EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-ollama}
+    GENERATION_MODEL: ${GENERATION_MODEL:-llama3.2:3b}
+    EMBEDDING_MODEL: ${EMBEDDING_MODEL:-nomic-embed-text}
+    RERANKER_MODEL: ${RERANKER_MODEL:-BAAI/bge-reranker-base}
+    OLLAMA_BASE_URL: http://ollama:11434
+    GENERATION_TEMPERATURE: ${GENERATION_TEMPERATURE:-0}
+    MAX_CONCURRENT_INFERENCES: ${MAX_CONCURRENT_INFERENCES:-1}
+  volumes:
+    - ./knowledge-base:/app/knowledge-base:ro
+    - ./evaluation/results/datapizza:/app/evaluation/results/datapizza
+    - benchmark-data:/app/.benchmark-data
+
+services:
+  benchmark-standalone:
+    <<: *benchmark
+    profiles: [standalone]
+    depends_on: [ollama]
+    command: ["--live", "--configuration", "standalone", "--end-to-end", "--split", "${BENCHMARK_SPLIT:-dev}", "--output", "/app/evaluation/results/datapizza/standalone/run.json"]
+
+  benchmark-bm25:
+    <<: *benchmark
+    profiles: [bm25]
+    command: ["--configuration", "bm25", "--split", "${BENCHMARK_SPLIT:-dev}", "--output", "/app/evaluation/results/datapizza/bm25/run.json"]
+
+  benchmark-dense:
+    <<: *benchmark
+    profiles: [dense]
+    depends_on: [ollama]
+    command: ["--live", "--configuration", "dense", "--split", "${BENCHMARK_SPLIT:-dev}", "--output", "/app/evaluation/results/datapizza/dense/run.json"]
+
+  benchmark-hybrid:
+    <<: *benchmark
+    profiles: [hybrid]
+    depends_on: [ollama]
+    command: ["--live", "--configuration", "hybrid", "--split", "${BENCHMARK_SPLIT:-dev}", "--output", "/app/evaluation/results/datapizza/hybrid/run.json"]
+
+  benchmark-hybrid-rerank:
+    <<: *benchmark
+    profiles: [hybrid-rerank]
+    depends_on: [ollama]
+    command: ["--live", "--configuration", "hybrid-rerank", "--split", "${BENCHMARK_SPLIT:-dev}", "--output", "/app/evaluation/results/datapizza/hybrid-rerank/run.json"]
+
+  benchmark-full:
+    <<: *benchmark
+    profiles: [full]
+    depends_on: [ollama]
+    command: ["--live", "--configuration", "full", "--end-to-end", "--split", "${BENCHMARK_SPLIT:-dev}", "--output", "/app/evaluation/results/datapizza/full/run.json"]
+
+  ollama:
+    image: ollama/ollama:0.32.1
+    profiles: [standalone, dense, hybrid, hybrid-rerank, full]
+    environment:
+      OLLAMA_NUM_PARALLEL: ${OLLAMA_NUM_PARALLEL:-1}
+      OLLAMA_MAX_LOADED_MODELS: ${OLLAMA_MAX_LOADED_MODELS:-1}
+    volumes:
+      - benchmark-ollama:/root/.ollama
+
+volumes:
+  benchmark-data:
+  benchmark-ollama:

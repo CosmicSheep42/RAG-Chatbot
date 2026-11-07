@@ -80,7 +80,7 @@ ruff check .
 
 ## Evaluation dataset
 
-The fixed synthetic corpus and 40-example ground-truth dataset are in `evaluation/`. The dataset uses a `dev` split of 10 examples and a held-out `test` split of 30 examples; both reference the same corpus. Validate it offline with:
+The Datapizza AI Lab D&D 5e corpus contains 20 Markdown documents in `knowledge-base/` and 56 preserved QA examples in `evaluation/dataset/datapizza/`. Its deterministic manifest has 12 development examples and 44 held-out test examples. Validate it offline with:
 
 ```bash
 python evaluation/validate_dataset.py
@@ -89,7 +89,7 @@ python evaluation/validate_dataset.py
 Run the offline BM25 retrieval benchmark with:
 
 ```bash
-python -m evaluation.benchmark --configuration bm25 --split dev --output evaluation/results/dev-bm25.json
+python -m evaluation.benchmark --configuration bm25 --split dev --output evaluation/results/datapizza/bm25-dev.json
 ```
 
 The runner records per-question retrieval metrics and reproducibility metadata. The deterministic BM25 mode is CI-safe. When providers and a vector-store extra are configured, run a real configuration explicitly with `--live`; add `--end-to-end` for answer generation:
@@ -101,7 +101,7 @@ python -m evaluation.benchmark --live --configuration hybrid --split dev --end-t
 
 Standalone, dense, hybrid, reranking, and full-pipeline modes initialize their requested providers explicitly and fail when a required component is unavailable. Live experiments are never run by default in CI.
 End-to-end records keep factual coverage, source-level citation support, abstention outcomes, and a manual-review payload separate; retrieved evidence presence is not treated as automatic groundedness.
-Measured results are recorded in [evaluation/RESULTS.md](evaluation/RESULTS.md); it currently contains the reproducible BM25 baseline only.
+The Docker scenario preparation and future execution commands are in [docs/datapizza-benchmark.md](docs/datapizza-benchmark.md). No Datapizza benchmark results are published yet; live inference and containers are intentionally not run during dataset preparation.
 
 Default models (Ollama):
 
@@ -116,7 +116,7 @@ From the repository root:
 
 ```bash
 cp .env.sample .env
-# Set DOCUMENTS_DIR=./evaluation/corpus in .env to use the demonstration corpus.
+# Set DOCUMENTS_DIR=./knowledge-base in .env to use the Datapizza demonstration corpus.
 
 ollama pull llama3.2:3b
 ollama pull nomic-embed-text
