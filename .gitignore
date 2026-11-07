@@ -86,3 +86,4 @@ tmp/
 temp/
 evaluation/results/*.json
 evaluation/results/**/*.json
+evaluation/results/**/*.jsonl
