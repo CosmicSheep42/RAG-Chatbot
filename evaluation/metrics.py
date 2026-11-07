@@ -38,6 +38,36 @@ def complete_evidence_retrieval(
     return required.issubset(_document_ids(results[: max(k, 0)]))
 
 
+def passage_recall_at_k(
+    results: Sequence[Mapping[str, object]], passages: Iterable[Mapping[str, object]], k: int
+) -> float:
+    """Return the fraction of gold passages overlapped by retrieved source ranges.
+
+    This is a passage-level metric; document-level retrieval metrics remain separate.
+    """
+    required = list(passages)
+    if not required:
+        return math.nan
+    retrieved = results[: max(k, 0)]
+    matched = 0
+    for passage in required:
+        source = str(passage.get("document_path", ""))
+        start = passage.get("start_char")
+        end = passage.get("end_char")
+        if not isinstance(start, int) or not isinstance(end, int):
+            continue
+        if any(
+            str(result.get("document_id", "")) == source
+            and isinstance(result.get("start_char"), int)
+            and isinstance(result.get("end_char"), int)
+            and int(result["start_char"]) < end
+            and int(result["end_char"]) > start
+            for result in retrieved
+        ):
+            matched += 1
+    return matched / len(required)
+
+
 def reciprocal_rank_at_k(results: Sequence[Mapping[str, object] | str], relevant: Iterable[str], k: int) -> float:
     required = set(_unique(relevant))
     if not required:

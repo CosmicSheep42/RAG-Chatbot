@@ -1,0 +1,645 @@
+[
+  {
+    "id": 0,
+    "question": "Compare the restoration abilities of the Pit Fiend, Planetar, Rakshasa, and Solar. What are the key differences in how their bodies react upon death and where they are revived?",
+    "answer": "The key differences in how their bodies react upon death and where they are revived are as follows:\n\n**Reaction of Body upon Death:**\n*   **Pit Fiend:** Its body disappears in sulfurous smoke.\n*   **Rakshasa:** Its body turns to ichor.\n*   **Planetar and Solar:** Their bodies disappear.\n\n**Revival Location:**\n*   **Pit Fiend and Rakshasa:** They are revived somewhere in the Nine Hells.\n*   **Planetar and Solar:** They are revived somewhere in Mount Celestia.",
+    "passages": [
+      {
+        "content": "**Diabolical Restoration.** If the pit fiend dies outside the Nine Hells, its body disappears in sulfurous smoke, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells.",
+        "document_path": "DND5eSRD_313-332.md",
+        "start_char": 8877,
+        "end_char": 9087
+      },
+      {
+        "content": "**Fiendish Restoration.** If the rakshasa dies outside the Nine Hells, its body turns to ichor, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells.",
+        "document_path": "DND5eSRD_313-332.md",
+        "start_char": 21449,
+        "end_char": 21641
+      },
+      {
+        "content": "**Exalted Restoration.** If the planetar dies outside Mount Celestia, its body disappears, and it gains a new body instantly, reviving with all its Hit Points somewhere in Mount Celestia.",
+        "document_path": "DND5eSRD_313-332.md",
+        "start_char": 11536,
+        "end_char": 11723
+      },
+      {
+        "content": "**Exalted Restoration.** If the solar dies outside Mount Celestia, its body disappears, and it gains a new body instantly, reviving with all its Hit Points somewhere in Mount Celestia.",
+        "document_path": "DND5eSRD_313-332.md",
+        "start_char": 59981,
+        "end_char": 60165
+      }
+    ]
+  },
+  {
+    "id": 1,
+    "question": "What are the three unique healing-enhancement features granted by the Life Domain subclass, and at what levels are they acquired?",
+    "answer": "*   **Level 3: Disciple of Life** - When a healing spell is cast using a spell slot, the target creature regains additional Hit Points equal to 2 plus the spell slot's level.\n*   **Level 6: Blessed Healer** - When casting a healing spell with a spell slot on another creature, the caster also regains Hit Points equal to 2 plus the spell slot's level.\n*   **Level 17: Supreme Healing** - When using a spell or Channel Divinity to restore Hit Points, instead of rolling dice, the maximum possible value for each die is used for the healing.",
+    "passages": [
+      {
+        "content": "### Level 3: Disciple of Life\nWhen a spell you cast with a spell slot restores Hit Points to a creature, that creature regains additional Hit Points on the turn you cast the spell. The additional Hit Points equal 2 plus the spell slot's level.",
+        "document_path": "DND5eSRD_036-046.md",
+        "start_char": 16219,
+        "end_char": 16462
+      },
+      {
+        "content": "### Level 6: Blessed Healer\nThe healing spells you cast on others heal you as well. Immediately after you cast a spell with a spell slot that restores Hit Points to one or more creatures other than yourself, you regain Hit Points equal to 2 plus the spell slot's level.",
+        "document_path": "DND5eSRD_036-046.md",
+        "start_char": 17380,
+        "end_char": 17649
+      },
+      {
+        "content": "### Level 17: Supreme Healing\nWhen you would normally roll one or more dice to restore Hit Points to a creature with a spell or Channel Divinity, don't roll those dice for the healing; instead use the highest number possible for each die. For example, instead of restoring 2d6 Hit Points to a creature with a spell, you restore 12.",
+        "document_path": "DND5eSRD_036-046.md",
+        "start_char": 17651,
+        "end_char": 17982
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "question": "What are the specific methods for destroying each of the seven layers of a Prismatic Wall?",
+    "answer": "The specific methods for destroying each of the seven layers of a Prismatic Wall are as follows:\n\n*   **Red:** Destroyed if it takes at least 25 Cold damage.\n*   **Orange:** Destroyed by a strong wind, such as the one created by *Gust of Wind*.\n*   **Yellow:** Destroyed if it takes at least 60 Force damage.\n*   **Green:** Destroyed by a *Passwall* spell, or another spell of equal or greater level that can open a portal on a solid surface.\n*   **Blue:** Destroyed if it takes at least 25 Fire damage.\n*   **Indigo:** Destroyed by the Bright Light shed by the *Daylight* spell.\n*   **Violet:** Destroyed by *Dispel Magic*.",
+    "passages": [
+      {
+        "content": "1 | **Red.** Failed Save: 12d6 Fire damage. Successful Save: Half as much damage. Additional Effects: Nonmagical ranged attacks can’t pass through this layer, which is destroyed if it takes at least 25 Cold damage.",
+        "document_path": "DND5eSRD_155-175.md",
+        "start_char": 2630,
+        "end_char": 2844
+      },
+      {
+        "content": "2 | **Orange.** Failed Save: 12d6 Acid damage. Successful Save: Half as much damage. Additional Effects: Magical ranged attacks can’t pass through this layer, which is destroyed by a strong wind (such as the one created by *Gust of Wind*).",
+        "document_path": "DND5eSRD_155-175.md",
+        "start_char": 2849,
+        "end_char": 3088
+      },
+      {
+        "content": "3 | **Yellow.** Failed Save: 12d6 Lightning damage. Successful Save: Half as much damage. Additional Effects: The layer is destroyed if it takes at least 60 Force damage.",
+        "document_path": "DND5eSRD_155-175.md",
+        "start_char": 3093,
+        "end_char": 3263
+      },
+      {
+        "content": "4 | **Green.** Failed Save: 12d6 Poison damage. Successful Save: Half as much damage. Additional Effects: A *Passwall* spell, or another spell of equal or greater level that can open a portal on a solid surface, destroys this layer.",
+        "document_path": "DND5eSRD_155-175.md",
+        "start_char": 3268,
+        "end_char": 3500
+      },
+      {
+        "content": "5 | **Blue.** Failed Save: 12d6 Cold damage. Successful Save: Half as much damage. |\n| 6 | **Indigo.** Failed Save: The target has the Restrained condition and makes a Constitution saving throw at the end of each of its turns. If it successfully saves three times, the condition ends. If it fails three times, it has the Petrified condition until it is freed by an effect like the Greater Restoration spell. The successes and failures needn’t be consecutive; keep track of both until the target collects three of a kind. |\n| 7 | **Violet.** Failed Save: The target has the Blinded condition and makes a Wisdom saving throw at the start of your next turn. On a successful save, the condition ends. On a failed save, the condition ends, and the creature teleports to another plane of existence (GM’s choice). |\n| 8 | **Special.** The target is struck by two rays. Roll twice, rerolling any 8. |\n\n## Prismatic Wall\n*Level 9 Abjuration (Bard, Wizard)*\n\n**Casting Time:** Action\n**Range:** 60 feet\n**Components:** V, S\n**Duration:** 10 minutes\n\nA shimmering, multicolored plane of light forms a vertical opaque wall—up to 90 feet long, 30 feet high, and 1 inch thick—centered on a point within range. Alternatively, you shape the wall into a globe up to 30 feet in diameter centered on a point within range. The wall lasts for the duration. If you position the wall in a space occupied by a creature, the spell ends instantly without effect.\n\nThe wall sheds Bright Light within 100 feet and Dim Light for an additional 100 feet. You and creatures you designate when you cast the spell can pass through and be near the wall without harm. If another creature that can see the wall moves within 20 feet of it or starts its turn there, the creature must succeed on a Constitution saving throw or have the Blinded condition for 1 minute.\n\nThe wall consists of seven layers, each with a different color. When a creature reaches into or passes through the wall, it does so one layer at a time through all the layers. Each layer forces the creature to make a Dexterity saving throw or be affected by that layer’s properties as described in the Prismatic Layers table.\n\nThe wall, which has AC 10, can be destroyed one layer at a time, in order from red to violet, by means specific to each layer. If a layer is destroyed, it is gone for the duration. *Antimagic Field* has no effect on the wall, and *Dispel Magic* can affect only the violet layer.\n\n### Prismatic Layers\n| Order | Effects |\n| :--- | :--- |\n| 1 | **Red.** Failed Save: 12d6 Fire damage. Successful Save: Half as much damage. Additional Effects: Nonmagical ranged attacks can’t pass through this layer, which is destroyed if it takes at least 25 Cold damage. |\n| 2 | **Orange.** Failed Save: 12d6 Acid damage. Successful Save: Half as much damage. Additional Effects: Magical ranged attacks can’t pass through this layer, which is destroyed by a strong wind (such as the one created by *Gust of Wind*). |\n| 3 | **Yellow.** Failed Save: 12d6 Lightning damage. Successful Save: Half as much damage. Additional Effects: The layer is destroyed if it takes at least 60 Force damage. |\n| 4 | **Green.** Failed Save: 12d6 Poison damage. Successful Save: Half as much damage. Additional Effects: A *Passwall* spell, or another spell of equal or greater level that can open a portal on a solid surface, destroys this layer. |\n| 5 | **Blue.** Failed Save: 12d6 Cold damage. Successful Save: Half as much damage. Additional Effects: The layer is destroyed if it takes at least 25 Fire damage.",
+        "document_path": "DND5eSRD_155-175.md",
+        "start_char": 135,
+        "end_char": 3667
+      },
+      {
+        "content": "6 | **Indigo.** Failed Save: The target has the Restrained condition and makes a Constitution saving throw at the end of each of its turns. If it successfully saves three times, the condition ends. If it fails three times, it has the Petrified condition until it is freed by an effect like the Greater Restoration spell. The successes and failures needn’t be consecutive; keep track of both until the target collects three of a kind. |\n| 7 | **Violet.** Failed Save: The target has the Blinded condition and makes a Wisdom saving throw at the start of your next turn. On a successful save, the condition ends. On a failed save, the condition ends, and the creature teleports to another plane of existence (GM’s choice). |\n| 8 | **Special.** The target is struck by two rays. Roll twice, rerolling any 8. |\n\n## Prismatic Wall\n*Level 9 Abjuration (Bard, Wizard)*\n\n**Casting Time:** Action\n**Range:** 60 feet\n**Components:** V, S\n**Duration:** 10 minutes\n\nA shimmering, multicolored plane of light forms a vertical opaque wall—up to 90 feet long, 30 feet high, and 1 inch thick—centered on a point within range. Alternatively, you shape the wall into a globe up to 30 feet in diameter centered on a point within range. The wall lasts for the duration. If you position the wall in a space occupied by a creature, the spell ends instantly without effect.\n\nThe wall sheds Bright Light within 100 feet and Dim Light for an additional 100 feet. You and creatures you designate when you cast the spell can pass through and be near the wall without harm. If another creature that can see the wall moves within 20 feet of it or starts its turn there, the creature must succeed on a Constitution saving throw or have the Blinded condition for 1 minute.\n\nThe wall consists of seven layers, each with a different color. When a creature reaches into or passes through the wall, it does so one layer at a time through all the layers. Each layer forces the creature to make a Dexterity saving throw or be affected by that layer’s properties as described in the Prismatic Layers table.\n\nThe wall, which has AC 10, can be destroyed one layer at a time, in order from red to violet, by means specific to each layer. If a layer is destroyed, it is gone for the duration. *Antimagic Field* has no effect on the wall, and *Dispel Magic* can affect only the violet layer.\n\n### Prismatic Layers\n| Order | Effects |\n| :--- | :--- |\n| 1 | **Red.** Failed Save: 12d6 Fire damage. Successful Save: Half as much damage. Additional Effects: Nonmagical ranged attacks can’t pass through this layer, which is destroyed if it takes at least 25 Cold damage. |\n| 2 | **Orange.** Failed Save: 12d6 Acid damage. Successful Save: Half as much damage. Additional Effects: Magical ranged attacks can’t pass through this layer, which is destroyed by a strong wind (such as the one created by *Gust of Wind*). |\n| 3 | **Yellow.** Failed Save: 12d6 Lightning damage. Successful Save: Half as much damage. Additional Effects: The layer is destroyed if it takes at least 60 Force damage. |\n| 4 | **Green.** Failed Save: 12d6 Poison damage. Successful Save: Half as much damage. Additional Effects: A *Passwall* spell, or another spell of equal or greater level that can open a portal on a solid surface, destroys this layer. |\n| 5 | **Blue.** Failed Save: 12d6 Cold damage. Successful Save: Half as much damage. Additional Effects: The layer is destroyed if it takes at least 25 Fire damage. |\n| 6 | **Indigo.** Failed Save: The target has the Restrained condition and makes a Constitution saving throw at the end of each of its turns. If it successfully saves three times, the condition ends. If it fails three times, it has the Petrified condition until it is freed by an effect like the *Greater Restoration* spell. The successes and failures needn’t be consecutive; keep track of both until the target collects three of a kind. Additional Effects: Spells can’t be cast through this layer, which is destroyed by Bright Light shed by the *Daylight* spell.",
+        "document_path": "DND5eSRD_155-175.md",
+        "start_char": 222,
+        "end_char": 4233
+      },
+      {
+        "content": "7 | **Violet.** Failed Save: The target has the Blinded condition and makes a Wisdom saving throw at the start of your next turn. On a successful save, the condition ends. On a failed save, the condition ends, and the creature teleports to another plane of existence (GM’s choice). |\n| 8 | **Special.** The target is struck by two rays. Roll twice, rerolling any 8. |\n\n## Prismatic Wall\n*Level 9 Abjuration (Bard, Wizard)*\n\n**Casting Time:** Action\n**Range:** 60 feet\n**Components:** V, S\n**Duration:** 10 minutes\n\nA shimmering, multicolored plane of light forms a vertical opaque wall—up to 90 feet long, 30 feet high, and 1 inch thick—centered on a point within range. Alternatively, you shape the wall into a globe up to 30 feet in diameter centered on a point within range. The wall lasts for the duration. If you position the wall in a space occupied by a creature, the spell ends instantly without effect.\n\nThe wall sheds Bright Light within 100 feet and Dim Light for an additional 100 feet. You and creatures you designate when you cast the spell can pass through and be near the wall without harm. If another creature that can see the wall moves within 20 feet of it or starts its turn there, the creature must succeed on a Constitution saving throw or have the Blinded condition for 1 minute.\n\nThe wall consists of seven layers, each with a different color. When a creature reaches into or passes through the wall, it does so one layer at a time through all the layers. Each layer forces the creature to make a Dexterity saving throw or be affected by that layer’s properties as described in the Prismatic Layers table.\n\nThe wall, which has AC 10, can be destroyed one layer at a time, in order from red to violet, by means specific to each layer. If a layer is destroyed, it is gone for the duration. *Antimagic Field* has no effect on the wall, and *Dispel Magic* can affect only the violet layer.\n\n### Prismatic Layers\n| Order | Effects |\n| :--- | :--- |\n| 1 | **Red.** Failed Save: 12d6 Fire damage. Successful Save: Half as much damage. Additional Effects: Nonmagical ranged attacks can’t pass through this layer, which is destroyed if it takes at least 25 Cold damage. |\n| 2 | **Orange.** Failed Save: 12d6 Acid damage. Successful Save: Half as much damage. Additional Effects: Magical ranged attacks can’t pass through this layer, which is destroyed by a strong wind (such as the one created by *Gust of Wind*). |\n| 3 | **Yellow.** Failed Save: 12d6 Lightning damage. Successful Save: Half as much damage. Additional Effects: The layer is destroyed if it takes at least 60 Force damage. |\n| 4 | **Green.** Failed Save: 12d6 Poison damage. Successful Save: Half as much damage. Additional Effects: A *Passwall* spell, or another spell of equal or greater level that can open a portal on a solid surface, destroys this layer. |\n| 5 | **Blue.** Failed Save: 12d6 Cold damage. Successful Save: Half as much damage. Additional Effects: The layer is destroyed if it takes at least 25 Fire damage. |\n| 6 | **Indigo.** Failed Save: The target has the Restrained condition and makes a Constitution saving throw at the end of each of its turns. If it successfully saves three times, the condition ends. If it fails three times, it has the Petrified condition until it is freed by an effect like the *Greater Restoration* spell. The successes and failures needn’t be consecutive; keep track of both until the target collects three of a kind. Additional Effects: Spells can’t be cast through this layer, which is destroyed by Bright Light shed by the *Daylight* spell. |\n| 7 | **Violet.** Failed Save: The target has the Blinded condition and makes a Wisdom saving throw at the start of your next turn. On a successful save, the condition ends. On a failed save, the condition ends, and the creature teleports to another plane of existence (GM’s choice). Additional Effects: This layer is destroyed by *Dispel Magic*.",
+        "document_path": "DND5eSRD_155-175.md",
+        "start_char": 660,
+        "end_char": 4582
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "question": "A level 6 Life Domain Cleric casts a healing spell on an ally using a 2nd-level spell slot. Based on the Disciple of Life and Blessed Healer features, what additional healing effects occur and who are the recipients?",
+    "answer": "Based on the features, the following additional healing effects occur:\n\n*   **Disciple of Life:** The ally who was healed regains an additional 4 Hit Points (2 + the 2nd-level spell slot).\n*   **Blessed Healer:** The cleric who cast the spell regains 4 Hit Points (2 + the 2nd-level spell slot).",
+    "passages": [
+      {
+        "content": "lso seek the magic of this domain.\n\n### Level 3: Disciple of Life\nWhen a spell you cast with a spell slot restores Hit Points to a creature, that creature regains additional Hit Points on the turn you cast the spell. The additional Hit Points equal 2 plus the spell slot's level.",
+        "document_path": "DND5eSRD_036-046.md",
+        "start_char": 16183,
+        "end_char": 16462
+      },
+      {
+        "content": " more than half its Hit Point maximum.\n\n### Level 6: Blessed Healer\nThe healing spells you cast on others heal you as well. Immediately after you cast a spell with a spell slot that restores Hit Points to one or more creatures other than yourself, you regain Hit Points equal to 2 plus the spell slot's level.",
+        "document_path": "DND5eSRD_036-046.md",
+        "start_char": 17340,
+        "end_char": 17649
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "question": "What are the effects of the Blinded condition, and how does the Blindsight ability allow a creature to overcome some of them?",
+    "answer": "**Effects of the Blinded condition:**\n*   You cannot see and automatically fail any ability check that requires sight.\n*   Attack rolls against you have Advantage.\n*   Your attack rolls have Disadvantage.\n\n**How Blindsight overcomes some of these effects:**\nBlindsight allows a creature to see within a specific range without relying on physical sight. Within that range, it can see anything not behind Total Cover, even if it has the Blinded condition or is in Darkness. This ability overcomes the \"Can't See\" effect of the Blinded condition for anything within the Blindsight's range. It also allows the creature to see something that has the Invisible condition within that range.",
+    "passages": [
+      {
+        "content": "While you have the Blinded condition, you experience the following effects.\n\n**Can't See.** You can't see and automatically fail any ability check that requires sight.\n\n**Attacks Affected.** Attack rolls against you have Advantage, and your attack rolls have Disadvantage.",
+        "document_path": "DND5eSRD_176-191.md",
+        "start_char": 7376,
+        "end_char": 7648
+      },
+      {
+        "content": "If you have Blindsight, you can see within a specific range without relying on physical sight. Within that range, you can see anything that isn't behind Total Cover even if you have the Blinded condition or are in Darkness. Moreover, in that range, you can see something that has the Invisible condition.",
+        "document_path": "DND5eSRD_176-191.md",
+        "start_char": 7665,
+        "end_char": 7969
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "question": "What is the outcome of placing an item that creates an extradimensional space, like a Portable Hole, inside another such item, like a Bag of Holding?",
+    "answer": "Placing an item that creates an extradimensional space inside another such item instantly destroys both items and opens a gate to the Astral Plane. The gate originates where the one item was placed inside the other. Any creature within 10 feet of the gate that is not behind Total Cover is sucked through it to a random location on the Astral Plane. The gate, which is one-way only, then closes and cannot be reopened.",
+    "passages": [
+      {
+        "content": "Placing the mirror inside an extradimensional space created by a Bag of Holding, Portable Hole, or similar item instantly destroys both items and opens a gate to the Astral Plane. The gate originates where the one item was placed inside the other. Any creature within 10 feet of the gate and not behind Total Cover is sucked through it to a random location on the Astral Plane. The gate then closes. The gate is one-way only and can't be reopened.",
+        "document_path": "DND5eSRD_230-252.md",
+        "start_char": 4583,
+        "end_char": 5030
+      },
+      {
+        "content": "Placing a Portable Hole inside an extradimensional space created by a Bag of Holding, Handy Haversack, or similar item instantly destroys both items and opens a gate to the Astral Plane. The gate originates where the one item was placed inside the other. Any creature within 10 feet of the gate and not behind Total Cover is sucked through it and deposited in a random location on the Astral Plane. The gate then closes. The gate is one-way only and can't be reopened.",
+        "document_path": "DND5eSRD_230-252.md",
+        "start_char": 23835,
+        "end_char": 24303
+      }
+    ]
+  },
+  {
+    "id": 6,
+    "question": "What are the differences between how Sorcerers and Warlocks manage and recover their spell slots?",
+    "answer": "**Spell Slot Recovery on Rests:**\n*   **Sorcerers** regain all expended spell slots when they finish a Long Rest.\n*   **Warlocks** regain all expended Pact Magic spell slots when they finish a Short or Long Rest.\n\n**Special Recovery Features:**\n*   **Sorcerers** have \"Sorcerous Restoration,\" which allows them to regain expended Sorcery Points (not spell slots) after a Short Rest, once per Long Rest. The number of points regained is no more than half their Sorcerer level (rounded down).\n*   **Warlocks** have \"Magical Cunning,\" which allows them to perform a 1-minute rite to regain expended Pact Magic spell slots, once per Long Rest. The number of slots regained is no more than half their maximum (rounded up).\n\n**Spell Slot Creation:**\n*   **Sorcerers** can use a Bonus Action to transform unexpended Sorcery Points into a new spell slot. Any spell slot created this way vanishes after a Long Rest.\n*   The passages do not mention a similar ability for **Warlocks**.",
+    "passages": [
+      {
+        "content": "spells. You regain all expended slots when you finish a Long Rest.",
+        "document_path": "DND5eSRD_064-076.md",
+        "start_char": 6309,
+        "end_char": 6375
+      },
+      {
+        "content": "n at Sorcerer levels 8, 12, and 16.\n\n### Level 5: Sorcerous Restoration\nWhen you finish a Short Rest, you can regain expended Sorcery Points, but no more than a number equal to half your Sorcerer level (round down). Once you use this feature, you can’t do so again until you finish a Long Rest.",
+        "document_path": "DND5eSRD_064-076.md",
+        "start_char": 10782,
+        "end_char": 11076
+      },
+      {
+        "content": "**Creating Spell Slots.** As a Bonus Action, you can transform unexpended Sorcery Points into one spell slot. The Creating Spell Slots table shows the cost of creating a spell slot of a given level, and it lists the minimum Sorcerer level you must be to create a slot. You can create a spell slot no higher than level 5.\nAny spell slot you create with this feature vanishes when you finish a Long Rest.",
+        "document_path": "DND5eSRD_064-076.md",
+        "start_char": 8994,
+        "end_char": 9396
+      },
+      {
+        "content": "**Spell Slots.** The Warlock Features table shows how many spell slots you have to cast your Warlock spells of levels 1–5. The table also shows the level of those slots, all of which are the same level. You regain all expended Pact Magic spell slots when you finish a Short or Long Rest.",
+        "document_path": "DND5eSRD_064-076.md",
+        "start_char": 27890,
+        "end_char": 28177
+      },
+      {
+        "content": "ls.\n**Spellcasting Focus.** You can use an Arcane Focus as a Spellcasting Focus for your Warlock spells.\n\n### Level 2: Magical Cunning\nYou can perform an esoteric rite for 1 minute. At the end of it, you regain expended Pact Magic spell slots but no more than a number equal to half your maximum (round up). Once you use this feature, you can’t do so again until you finish a Long Rest.",
+        "document_path": "DND5eSRD_064-076.md",
+        "start_char": 29602,
+        "end_char": 29988
+      }
+    ]
+  },
+  {
+    "id": 7,
+    "question": "According to the rules on multiclassing, what are the ability score prerequisites, and how is the experience point cost for gaining a level determined?",
+    "answer": "**Ability Score Prerequisites:**\nTo qualify for a new class, you must have an ability score of at least 13 in the primary ability of both your new class and your current classes. For example, a Barbarian multiclassing into the Druid class must have a Strength score and a Wisdom score of 13 or higher.\n\n**Experience Point Cost:**\nThe experience point cost to gain a level is based on your total character level, not your level in any particular class. For example, a character who is a level 6 Cleric / level 1 Fighter must gain enough XP to reach level 8 before they can take another level in either class.",
+    "passages": [
+      {
+        "content": "To qualify for a new class, you must have a score of at least 13 in the primary ability of the new class and your current classes. For example, a Barbarian who decides to multiclass into the Druid class must have Strength and Wisdom scores of 13 or higher,\n\n#### Starting Equipment at Higher Levels\n| Starting Level | Equipment and Money | Magic Items |\n| :--- | :--- | :--- |\n| 2–4 | Normal starting equipment | 1 Common |\n| 5–10 | 500 GP plus 1d10 × 25 GP plus normal starting equipment | 1 Common, 1 Uncommon |\n| 11–16 | 5,000 GP plus 1d10 × 250 GP plus normal starting equipment | 2 Common, 3 Uncommon, 1 Rare |\n| 17–20 | 20,000 GP plus 1d10 × 250 GP plus normal starting equipment | 2 Common, 4 Uncommon, 3 Rare, 1 Very Rare |\n---\n25\nsince Strength is the primary ability for Barbarians and Wisdom is the primary ability for Druids.",
+        "document_path": "DND5eSRD_019-035.md",
+        "start_char": 24514,
+        "end_char": 25351
+      },
+      {
+        "content": "The Experience Point cost to gain a level is based on your total character level, not your level in a particular class, as shown in the Character Advancement table in \"Character Creation.\" For example, if you are a level 6 Cleric / level 1 Fighter, you must gain enough XP to reach level 8 before you can take your second level as a Fighter or your seventh level as a Cleric.",
+        "document_path": "DND5eSRD_019-035.md",
+        "start_char": 25375,
+        "end_char": 25750
+      }
+    ]
+  },
+  {
+    "id": 8,
+    "question": "Compare and contrast the ways a level 13 Thief Rogue and a Warlock with the Pact of the Tome invocation can access and use spells from outside their respective class spell lists.",
+    "answer": "**Similarities:**\n*   Both the Thief Rogue and the Warlock with Pact of the Tome can access spells from any class's spell list.\n\n**Contrasts:**\n*   **Method and Scope:** The Rogue accesses spells by using consumable *Spell Scrolls*, which can contain a spell of any level. The Warlock uses their book to prepare a specific, fixed set of spells: three cantrips and two 1st-level spells with the Ritual tag.\n*   **Permanence and Reusability:** The Rogue's use of a spell is a one-time event per scroll. The Warlock has their chosen spells persistently prepared and available for use as long as they have their book.\n*   **Casting and Reliability:** The Warlock's spells function as Warlock spells. The Rogue uses Intelligence as their spellcasting ability and must succeed on an Intelligence (Arcana) check to cast spells of 2nd level or higher from a scroll. If the Rogue fails this check, the scroll disintegrates.",
+    "passages": [
+      {
+        "content": "**Scrolls.** You can use any *Spell Scroll*, using Intelligence as your spellcasting ability for the spell. If the spell is a cantrip or a level 1 spell, you can cast it reliably. If the scroll contains a higher-level spell, you must first succeed on an Intelligence (Arcana) check (DC 10 plus the spell’s level). On a successful check, you cast the spell from the scroll. On a failed check, the scroll disintegrates.",
+        "document_path": "DND5eSRD_064-076.md",
+        "start_char": 1592,
+        "end_char": 2009
+      },
+      {
+        "content": "**Cantrips and Rituals.** When the book appears, choose three cantrips, and choose two level 1 spells that have the Ritual tag. The spells can be from any class’s spell list, and they must be spells you don’t already have prepared. While the book is on your person, you have the chosen spells prepared, and they function as Warlock spells for you.",
+        "document_path": "DND5eSRD_064-076.md",
+        "start_char": 39748,
+        "end_char": 40095
+      }
+    ]
+  },
+  {
+    "id": 9,
+    "question": "What are the specific requirements for providing the Verbal, Somatic, and Material components when casting a spell?",
+    "answer": "Based on the passages, the specific requirements for providing spell components are:\n\n**Verbal (V) Component:**\n*   The caster must chant esoteric words in a normal speaking voice.\n*   The caster cannot be gagged or within an area of magical silence.\n\n**Somatic (S) Component:**\n*   The caster must perform a forceful gesticulation or an intricate set of gestures.\n*   The caster must use at least one hand to perform these movements.\n\n**Material (M) Component:**\n*   The caster must use a particular material specified by the spell.\n*   The caster must have a free hand to access the material, which can be the same hand used for Somatic components.\n*   If the material is not consumed and has no specified cost, a Component Pouch or a Spellcasting Focus can be used as a substitute.\n    *   **Component Pouch:** Requires a free hand to reach into it.\n    *   **Spellcasting Focus:** Must be held, unless its description states otherwise.",
+    "passages": [
+      {
+        "content": "A spell's components are physical requirements the spellcaster must meet to cast the spell. Each spell's description indicates whether it requires Verbal (V), Somatic (S), or Material (M) components. If the spellcaster can't provide one or more of a spell's components, the spellcaster can't cast the spell.",
+        "document_path": "DND5eSRD_104-120.md",
+        "start_char": 7242,
+        "end_char": 7549
+      },
+      {
+        "content": "A Verbal component is the chanting of esoteric words that sound like nonsense to the uninitiated. The words must be uttered in a normal speaking voice. The words themselves aren't the source of the spell's power; rather, the particular combination of sounds, with specific pitch and resonance, sets the threads of magic in motion. Thus, a creature who is gagged or in an area of magical silence can't cast a spell with a Verbal component.",
+        "document_path": "DND5eSRD_104-120.md",
+        "start_char": 7566,
+        "end_char": 8004
+      },
+      {
+        "content": "A Somatic component is a forceful gesticulation or an intricate set of gestures. A spellcaster must use at least one of their hands to perform these movements.",
+        "document_path": "DND5eSRD_104-120.md",
+        "start_char": 8022,
+        "end_char": 8181
+      },
+      {
+        "content": "A Material component is a particular material used in a spell's casting, as specified in parentheses in the Components entry. These materials aren't consumed by the spell unless the spell's description states otherwise. The spellcaster must have a hand free to access them, but it can be the same hand used to perform Somatic components, if any.\nIf a spell doesn't consume its materials and doesn't specify a cost for them, a spellcaster can use a Component Pouch (see \"Equipment”) instead of providing the materials specified in the spell, or the spellcaster can substitute a Spellcasting Focus if the caster has a feature that allows that substitution. To use a Component Pouch, you must have a hand free to reach into it, and to use a Spellcasting Focus, you must hold it unless its description says otherwise (see \"Equipment\" for descriptions).",
+        "document_path": "DND5eSRD_104-120.md",
+        "start_char": 8200,
+        "end_char": 9048
+      }
+    ]
+  },
+  {
+    "id": 10,
+    "question": "Compare the spells Wall of Force, Wall of Stone, and Wall of Ice, detailing their physical properties (HP, AC, thickness), how they affect a creature whose space they appear in, and how each wall can be destroyed.",
+    "answer": "**Wall of Force**\n*   **Physical Properties:** It is 1/4 inch thick. It is immune to all damage, so it does not have HP or an AC value.\n*   **Effect on Creature:** A creature whose space the wall appears in is pushed to one side of the wall, chosen by the caster.\n*   **Destruction:** It is immune to all damage and cannot be dispelled by *Dispel Magic*. It can be destroyed instantly by a *Disintegrate* spell.\n\n**Wall of Stone**\n*   **Physical Properties:** It has an AC of 15 and 30 HP per inch of thickness. Panels can be 6 inches thick (180 HP) or 3 inches thick (90 HP).\n*   **Effect on Creature:** A creature whose space the wall appears in is pushed to one side of the wall, chosen by the caster. If a creature would be completely enclosed, it can make a Dexterity saving throw to use its reaction to move so it is no longer enclosed.\n*   **Destruction:** A panel is destroyed by reducing its HP to 0. If the caster maintains concentration for the full duration, the wall becomes permanent and cannot be dispelled; otherwise, it disappears when the spell ends.\n\n**Wall of Ice**\n*   **Physical Properties:** It is 1 foot thick, has an AC of 12, and 30 HP per 10-foot section. It has vulnerability to Fire damage.\n*   **Effect on Creature:** A creature whose space the wall appears in is pushed to one side of the wall (caster's choice) and must make a Dexterity saving throw, taking 10d6 Cold damage on a failed save or half as much on a successful one.\n*   **Destruction:** A 10-foot section is destroyed by reducing its HP to 0.",
+    "passages": [
+      {
+        "content": "An Invisible wall of force springs into existence at a point you choose within range. The wall appears in any orientation you choose, as a horizontal or vertical barrier or at an angle. It can be free floating or resting on a solid surface. You can form it into a hemispherical dome or a globe with a radius of up to 10 feet, or you can shape a flat surface made up of ten 10-foot-by-10-foot panels. Each panel must be contiguous with another panel. In any form, the wall is 1/4 inch thick and lasts for the duration. If the wall cuts through a creature’s space when it appears, the creature is pushed to one side of the wall (you choose which side).\n\nNothing can physically pass through the wall. It is immune to all damage and can’t be dispelled by *Dispel Magic*. A *Disintegrate* spell destroys the wall instantly, however. The wall also extends into the Ethereal Plane and blocks ethereal travel through the wall.",
+        "document_path": "DND5eSRD_155-175.md",
+        "start_char": 77994,
+        "end_char": 78912
+      },
+      {
+        "content": "You create a wall of fire on a solid surface within range. You can make the wall up to 60 feet long, 20 feet high, and 1 foot thick, or a ringed wall up to 20 feet in diameter, 20 feet high, and 1 foot thick. The wall is opaque and lasts for the duration.\n\nWhen the wall appears, each creature in its area makes a Dexterity saving throw, taking 5d8 Fire damage on a failed save or half as much damage on a successful one.\n\nOne side of the wall, selected by you when you cast this spell, deals 5d8 Fire damage to each creature that ends its turn within 10 feet of that side or inside the wall. A creature takes the same damage when it enters the wall for the first time on a turn or ends its turn there. The other side of the wall deals no damage.\n\n**Using a Higher-Level Spell Slot.** The damage increases by 1d8 for each spell slot level above 4.\n\n## Wall of Force\n*Level 5 Evocation (Wizard)*\n\n**Casting Time:** Action\n**Range:** 120 feet\n**Components:** V, S, M (a shard of glass)\n**Duration:** Concentration, up to 10 minutes\n\nAn Invisible wall of force springs into existence at a point you choose within range. The wall appears in any orientation you choose, as a horizontal or vertical barrier or at an angle. It can be free floating or resting on a solid surface. You can form it into a hemispherical dome or a globe with a radius of up to 10 feet, or you can shape a flat surface made up of ten 10-foot-by-10-foot panels. Each panel must be contiguous with another panel. In any form, the wall is 1/4 inch thick and lasts for the duration. If the wall cuts through a creature’s space when it appears, the creature is pushed to one side of the wall (you choose which side).\n\nNothing can physically pass through the wall. It is immune to all damage and can’t be dispelled by *Dispel Magic*. A *Disintegrate* spell destroys the wall instantly, however. The wall also extends into the Ethereal Plane and blocks ethereal travel through the wall.\n\n## Wall of Ice\n*Level 6 Evocation (Wizard)*\n\n**Casting Time:** Action\n**Range:** 120 feet\n**Components:** V, S, M (a piece of quartz)\n**Duration:** Concentration, up to 10 minutes\n\nYou create a wall of ice on a solid surface within range. You can form it into a hemispherical dome or a globe with a radius of up to 10 feet, or you can shape a flat surface made up of ten 10-foot-square panels. Each panel must be contiguous with another panel. In any form, the wall is 1 foot thick and lasts for the duration.\n\nIf the wall cuts through a creature’s space when it appears, the creature is pushed to one side of the wall (you choose which side) and makes a Dexterity saving throw, taking 10d6 Cold damage on a failed save or half as much damage on a successful one.\n\nThe wall is an object that can be damaged and thus breached. It has AC 12 and 30 Hit Points per 10-foot section, and it has Immunity to Cold, Poison, and Psychic damage and Vulnerability to Fire damage. Reducing a 10-foot section of wall to 0 Hit Points destroys it and leaves behind a sheet of frigid air in the space the wall occupied.\n\nA creature moving through the sheet of frigid air for the first time on a turn makes a Constitution saving throw, taking 5d6 Cold damage on a failed save or half as much damage on a successful one.\n\n***\n172 System Reference Document 5.2.1\n\n***\n\n### Page 19\n\n**Using a Higher-Level Spell Slot.** The damage the wall deals when it appears increases by 2d6 and the damage from passing through the sheet of frigid air increases by 1d6 for each spell slot level above 6.",
+        "document_path": "DND5eSRD_155-175.md",
+        "start_char": 76963,
+        "end_char": 80483
+      },
+      {
+        "content": "A nonmagical wall of solid stone springs into existence at a point you choose within range. The wall is 6 inches thick and is composed of ten 10-foot-by-10-foot panels. Each panel must be contiguous with another panel. Alternatively, you can create 10-foot-by-20-foot panels that are only 3 inches thick.\n\nIf the wall cuts through a creature’s space when it appears, the creature is pushed to one side of the wall (you choose which side). If a creature would be surrounded on all sides by the wall (or the wall and another solid surface), that creature can make a Dexterity saving throw. On a success, it can use its Reaction to move up to its Speed so that it is no longer enclosed by the wall.\n\nThe wall can have any shape you desire, though it can’t occupy the same space as a creature or object. The wall doesn’t need to be vertical or rest on a firm foundation. It must, however, merge with and be solidly supported by existing stone. Thus, you can use this spell to bridge a chasm or create a ramp.\n\nIf you create a span greater than 20 feet in length, you must halve the size of each panel to create supports. You can crudely shape the wall to create battlements and the like.\n\nThe wall is an object made of stone that can be damaged and thus breached. Each panel has AC 15 and 30 Hit Points per inch of thickness, and it has Immunity to Poison and Psychic damage. Reducing a panel to 0 Hit Points destroys it and might cause connected panels to collapse at the GM’s discretion.\n\nIf you maintain your Concentration on this spell for its full duration, the wall becomes permanent and can’t be dispelled. Otherwise, the wall disappears when the spell ends.",
+        "document_path": "DND5eSRD_155-175.md",
+        "start_char": 80685,
+        "end_char": 82346
+      }
+    ]
+  },
+  {
+    "id": 11,
+    "question": "What are the requirements, time commitments, and costs for a character to create a Potion of Healing and scribe a Level 1 Spell Scroll?",
+    "answer": "**Potion of Healing**\n*   **Requirements:** Proficiency with and use of an Herbalism Kit.\n*   **Time Commitment:** 1 day (8 hours of work).\n*   **Cost:** 25 GP of raw material.\n\n**Level 1 Spell Scroll**\n*   **Requirements:**\n    *   Proficiency in the Arcana skill or with Calligrapher’s Supplies.\n    *   The spell must be prepared on each day of the inscription.\n    *   The character must have any material components required by the spell.\n*   **Time Commitment:** 1 day.\n*   **Cost:** 25 GP.",
+    "passages": [
+      {
+        "content": "## Brewing Potions of Healing\nA character who has proficiency with the Herbalism Kit can create a *Potion of Healing*. Doing so requires using that kit and 25 GP of raw material over the course of 1 day (8 hours of work).",
+        "document_path": "DND5eSRD_087-103.md",
+        "start_char": 62368,
+        "end_char": 62589
+      },
+      {
+        "content": "### Prerequisites for the Scribe\nTo scribe a scroll, you must have proficiency in the Arcana skill or with Calligrapher’s Supplies and have the spell prepared on each day of the inscription. You must also have at hand any Material components required by the spell; if the spell consumes its Material components, they are consumed only when you complete the scroll. The scroll’s spell uses your spell save DC and spell attack bonus.",
+        "document_path": "DND5eSRD_087-103.md",
+        "start_char": 62990,
+        "end_char": 63421
+      },
+      {
+        "content": "#### Spell Scroll Costs\n| Spell Level | Time | Cost |\n| :--- | :--- | :--- |\n| Cantrip | 1 day | 15 GP |\n| 1 | 1 day | 25 GP |\n| 2 | 3 days | 100 GP |\n| 3 | 5 days | 150 GP |\n| 4 | 10 days | 1,000 GP |\n| 5 | 25 days | 1,500 GP |\n| 6 | 40 days | 10,000 GP |\n| 7 | 50 days | 12,500 GP |\n| 8 | 60 days | 15,000 GP |\n| 9 | 120 days | 50,000 GP |",
+        "document_path": "DND5eSRD_087-103.md",
+        "start_char": 63538,
+        "end_char": 63879
+      }
+    ]
+  },
+  {
+    "id": 12,
+    "question": "What are the differences between the Mass Cure Wounds, Mass Heal, and Mass Healing Word spells regarding their casting time, healing amount, and number of targets?",
+    "answer": "**Mass Cure Wounds**\n*   **Number of Targets:** Up to six creatures in a 30-foot-radius sphere.\n*   **Healing Amount:** Each target regains 5d8 plus your spellcasting ability modifier.\n*   **Casting Time:** Not mentioned in the passages.\n\n**Mass Heal**\n*   **Number of Targets:** Any number of creatures that you can see within range.\n*   **Healing Amount:** A total of 700 Hit Points, divided as you choose among the targets. It also removes the Blinded, Deafened, and Poisoned conditions.\n*   **Casting Time:** Not mentioned in the passages.\n\n**Mass Healing Word**\n*   **Number of Targets:** Up to six creatures of your choice that you can see within range.\n*   **Healing Amount:** Each target regains 2d4 plus your spellcasting ability modifier.\n*   **Casting Time:** Not mentioned in the passages.",
+    "passages": [
+      {
+        "content": "A wave of healing energy washes out from a point you can see within range. Choose up to six creatures in a 30-foot-radius Sphere centered on that point. Each target regains Hit Points equal to 5d8 plus your spellcasting ability modifier.",
+        "document_path": "DND5eSRD_138-154.md",
+        "start_char": 43577,
+        "end_char": 43814
+      },
+      {
+        "content": "A flood of healing energy flows from you into creatures around you. You restore up to 700 Hit Points, divided as you choose among any number of creatures that you can see within range. Creatures healed by this spell also have the Blinded, Deafened, and Poisoned conditions removed from them.",
+        "document_path": "DND5eSRD_138-154.md",
+        "start_char": 44058,
+        "end_char": 44349
+      },
+      {
+        "content": "Up to six creatures of your choice that you can see within range regain Hit Points equal to 2d4 plus your spellcasting ability modifier.",
+        "document_path": "DND5eSRD_138-154.md",
+        "start_char": 44567,
+        "end_char": 44703
+      }
+    ]
+  },
+  {
+    "id": 13,
+    "question": "What are the effects, poison type, and Constitution saving throw DC for Crawler Mucus and Oil of Taggit?",
+    "answer": "**Crawler Mucus**\n*   **Poison Type:** Contact\n*   **Constitution Saving Throw DC:** 13\n*   **Effects:** On a failed save, a creature is poisoned for 1 minute and is also paralyzed. The creature can repeat the saving throw at the end of each of its turns, ending the effect on a success.\n\n**Oil of Taggit**\n*   **Poison Type:** Contact\n*   **Constitution Saving Throw DC:** 13\n*   **Effects:** On a failed save, a creature is poisoned for 24 hours and is also unconscious. The creature wakes up if it takes damage.",
+    "passages": [
+      {
+        "content": "#### Crawler Mucus (200 GP)\n*Contact Poison*\nA creature subjected to Crawler Mucus must succeed on a DC 13 Constitution saving throw or have the Poisoned condition for 1 minute. The creature also has the Paralyzed condition while Poisoned in this way. The creature repeats the save at the end of each of its turns, ending the effect on itself on a success.",
+        "document_path": "DND5eSRD_192-203.md",
+        "start_char": 22448,
+        "end_char": 22804
+      },
+      {
+        "content": "#### Oil of Taggit (400 GP)\n*Contact Poison*\nA creature subjected to Oil of Taggit must succeed on a DC 13 Constitution saving throw or have the Poisoned condition for 24 hours. The creature also has the Unconscious condition while Poisoned in this way. It wakes up if it takes damage.",
+        "document_path": "DND5eSRD_192-203.md",
+        "start_char": 23851,
+        "end_char": 24136
+      }
+    ]
+  },
+  {
+    "id": 14,
+    "question": "Compare and contrast the 'Potent Spellcasting' feature available to both Clerics and Druids, including the level at which it is first offered and how it is improved at higher levels for each class.",
+    "answer": "**Initial Offering (Level 7):**\n*   **Cleric:** Can choose 'Potent Spellcasting' at Level 7 as part of the 'Blessed Strikes' feature. It allows them to add their Wisdom modifier to the damage dealt with any Cleric cantrip.\n*   **Druid:** Can choose 'Potent Spellcasting' at Level 7 as part of the 'Elemental Fury' feature. It allows them to add their Wisdom modifier to the damage dealt with any Druid cantrip.\n\n**Higher-Level Improvement:**\n*   **Cleric:** At Level 14, 'Improved Blessed Strikes' enhances the feature. When the Cleric deals damage with a Cleric cantrip, they can grant temporary hit points equal to twice their Wisdom modifier to themselves or another creature within 60 feet.\n*   **Druid:** At Level 15, 'Improved Elemental Fury' enhances the feature. When the Druid casts a Druid cantrip that has a range of 10 feet or greater, the spell's range is increased by 300 feet.",
+    "passages": [
+      {
+        "content": "### Level 7: Blessed Strikes\nDivine power infuses you in battle. You gain one of the following options of your choice (if you get either option from a Cleric subclass in an older book, use only the option you choose for this feature).\n**Divine Strike.** Once on each of your turns when you hit a creature with an attack roll using a weapon, you can cause the target to take an extra 1d8 Necrotic or Radiant damage (your choice).\n**Potent Spellcasting.** Add your Wisdom modifier to the damage you deal with any Cleric cantrip.",
+        "document_path": "DND5eSRD_036-046.md",
+        "start_char": 8767,
+        "end_char": 9293
+      },
+      {
+        "content": "### Level 14: Improved Blessed Strikes\nThe option you chose for Blessed Strikes grows more powerful.\n**Divine Strike.** The extra damage of your Divine Strike increases to 2d8.\n**Potent Spellcasting.** When you cast a Cleric cantrip and deal damage to a creature with it, you can give vitality to yourself or another creature within 60 feet of yourself, granting a number of Temporary Hit Points equal to twice your Wisdom modifier.",
+        "document_path": "DND5eSRD_036-046.md",
+        "start_char": 9676,
+        "end_char": 10108
+      },
+      {
+        "content": "### Level 7: Elemental Fury\nThe might of the elements flows through you. You gain one of the following options of your choice.\n**Potent Spellcasting.** Add your Wisdom modifier to the damage you deal with any Druid cantrip.",
+        "document_path": "DND5eSRD_036-046.md",
+        "start_char": 28974,
+        "end_char": 29197
+      },
+      {
+        "content": "### Level 15: Improved Elemental Fury\nThe option you chose for Elemental Fury grows more powerful, as detailed below.\n**Potent Spellcasting.** When you cast a Druid cantrip with a range of 10 feet or greater, the spell's range increases by 300 feet.",
+        "document_path": "DND5eSRD_036-046.md",
+        "start_char": 29454,
+        "end_char": 29703
+      }
+    ]
+  },
+  {
+    "id": 15,
+    "question": "Compare the Swallow ability of the Purple Worm, Remorhaz, and Tarrasque. What are the differences in the number of creatures they can swallow, the damage and conditions inflicted, and the circumstances under which a swallowed creature is regurgitated?",
+    "answer": "**Number of Swallowed Creatures:**\n*   **Purple Worm:** Can swallow up to three creatures at a time.\n*   **Remorhaz:** Can swallow up to two creatures at a time.\n*   **Tarrasque:** Can swallow up to six creatures at a time.\n\n**Damage and Conditions Inflicted:**\n*   **Purple Worm:** A swallowed creature is Blinded and Restrained, and takes 17 (5d6) Acid damage at the start of each of the worm's turns.\n*   **Remorhaz:** A swallowed creature is Blinded and Restrained, and takes 10 (3d6) Acid damage plus 10 (3d6) Fire damage at the start of each of the remorhaz's turns.\n*   **Tarrasque:** A swallowed creature is Blinded, Restrained, and can't teleport. It takes 56 (16d6) Acid damage at the start of each of the tarrasque's turns.\n\n**Regurgitation Circumstances:**\n*   **Forced Regurgitation (while alive):**\n    *   **Purple Worm:** If it takes 30 or more damage from an inside creature in one turn, it must succeed on a DC 21 Constitution saving throw or regurgitate all swallowed creatures. They land Prone within 5 feet of the worm.\n    *   **Remorhaz:** If it takes 30 or more damage from an inside creature in one turn, it must succeed on a DC 15 Constitution saving throw or regurgitate all swallowed creatures. They land Prone within 5 feet of the remorhaz.\n    *   **Tarrasque:** If it takes 60 or more damage from an inside creature in one turn, it must succeed on a DC 20 Constitution saving throw or regurgitate all swallowed creatures. They land Prone within 10 feet of the tarrasque.\n*   **Escape Upon Death:**\n    *   **Purple Worm:** A swallowed creature can escape the corpse using 20 feet of movement, exiting Prone.\n    *   **Remorhaz:** A swallowed creature can escape the corpse using 15 feet of movement, exiting Prone.\n    *   **Tarrasque:** A swallowed creature can escape the corpse using 20 feet of movement, exiting Prone.",
+    "passages": [
+      {
+        "content": "**Swallow.** *Strength Saving Throw:* DC 19, one Large or smaller creature Grappled by the worm (it can have up to three creatures swallowed at a time). *Failure:* The target is swallowed by the worm, and the Grappled condition ends. A swallowed creature has the Blinded and Restrained conditions, has Total Cover against attacks and other effects outside the worm, and takes 17 (5d6) Acid damage at the start of each of the worm's turns.\n\nIf the worm takes 30 damage or more on a single turn from a creature inside it, the worm must succeed on a DC 21 Constitution saving throw at the end of that turn or regurgitate all swallowed creatures, each of which falls in a space within 5 feet of the worm and has the Prone condition. If the worm dies, any swallowed creature no longer has the Restrained condition and can escape from the corpse using 20 feet of movement, exiting Prone.",
+        "document_path": "DND5eSRD_313-332.md",
+        "start_char": 17782,
+        "end_char": 18663
+      },
+      {
+        "content": "**Swallow.** *Strength Saving Throw:* DC 19, one Large or smaller creature Grappled by the remorhaz (it can have up to two creatures swallowed at a time). *Failure:* The target is swallowed by the remorhaz, and the Grappled condition ends. A swallowed creature has the Blinded\n\n***\n319\nSystem Reference Document 5.2.1\n\n***\n\n### Page 8 / 320\n\nand Restrained conditions, it has Total Cover against attacks and other effects outside the remorhaz, and it takes 10 (3d6) Acid damage plus 10 (3d6) Fire damage at the start of each of the remorhaz's turns.\n\nIf the remorhaz takes 30 damage or more on a single turn from a creature inside it, the remorhaz must succeed on a DC 15 Constitution saving throw at the end of that turn or regurgitate all swallowed creatures, each of which falls in a space within 5 feet of the remorhaz and has the Prone condition. If the remorhaz dies, any swallowed creature no longer has the Restrained condition and can escape from the corpse by using 15 feet of movement, exiting Prone.",
+        "document_path": "DND5eSRD_313-332.md",
+        "start_char": 30090,
+        "end_char": 31101
+      },
+      {
+        "content": "**Swallow.** *Strength Saving Throw:* DC 27, one Large or smaller creature Grappled by the tarrasque (it can have up to six creatures swallowed at a time). *Failure:* The target is swallowed, and the Grappled condition ends. A swallowed creature has the Blinded and Restrained conditions and can't teleport, it has Total Cover against attacks and other effects outside the tarrasque, and it takes 56 (16d6) Acid damage at the start of each of the tarrasque's turns.\nIf the tarrasque takes 60 damage or more on a single turn from a creature inside it, the tarrasque must succeed on a DC 20 Constitution saving throw at the end of that turn or regurgitate all swallowed creatures, each of which falls in a space within 10 feet of the tarrasque and has the Prone condition. If the tarrasque dies, any swallowed creature no longer has the Restrained condition and can escape from the corpse using 20 feet of movement, exiting Prone.",
+        "document_path": "DND5eSRD_313-332.md",
+        "start_char": 83815,
+        "end_char": 84743
+      }
+    ]
+  },
+  {
+    "id": 16,
+    "question": "How do the defensive capabilities provided by the Draconic Sorcery subclass compare to those available to a Fiend Patron Warlock, considering both subclass features and Eldritch Invocation options?",
+    "answer": "**Draconic Sorcerer Defensive Capabilities:**\n\n*   **Hit Points:** The Sorcerer's Hit Point maximum increases by 3, plus an additional 1 for every Sorcerer level.\n*   **Armor Class:** When not wearing armor, their base Armor Class is 10 + Dexterity modifier + Charisma modifier.\n*   **Damage Resistance:** They gain permanent resistance to one chosen damage type from a specific list (Acid, Cold, Fire, Lightning, or Poison).\n\n**Fiend Warlock Defensive Capabilities:**\n\n*   **Hit Points:** They gain Temporary Hit Points equal to their Charisma modifier + Warlock level whenever an enemy is reduced to 0 Hit Points nearby.\n*   **Armor Class:** They are trained with Light armor.\n*   **Damage Resistance:** After a Short or Long Rest, they can choose one damage type (other than Force) to have resistance to until their next rest.\n\n**Warlock Eldritch Invocation Defensive Options:**\n\n*   **Armor of Shadows:** Can cast *Mage Armor* at will, providing a base AC of 13 + Dexterity modifier.\n*   **Fiendish Vigor:** Can cast *False Life* at will to gain the maximum possible Temporary Hit Points from the spell.\n*   **Eldritch Mind:** Provides Advantage on Constitution saving throws to maintain concentration.",
+    "passages": [
+      {
+        "content": "The magic in your body manifests physical traits of your draconic gift. Your Hit Point maximum increases by 3, and it increases by 1 whenever you gain another Sorcerer level.\nParts of you are also covered by dragon-like scales. While you aren’t wearing armor, your base Armor Class equals 10 plus your Dexterity and Charisma modifiers.",
+        "document_path": "DND5eSRD_064-076.md",
+        "start_char": 21431,
+        "end_char": 21766
+      },
+      {
+        "content": "Your draconic magic has an affinity with a damage type associated with dragons. Choose one of those types: Acid, Cold, Fire, Lightning, or Poison.\nYou have Resistance to that damage type, and when you cast a spell that deals damage of that type, you can add your Charisma modifier to one damage roll of that spell.",
+        "document_path": "DND5eSRD_064-076.md",
+        "start_char": 22249,
+        "end_char": 22563
+      },
+      {
+        "content": "* Gain the following traits from the Core Warlock Traits table: Hit Point Die and training with Light armor.\n* Gain the Warlock's level 1 features, which are listed in the Warlock Features table. See the multiclassing rules in \"Character Creation\" to determine your available spell slots.",
+        "document_path": "DND5eSRD_064-076.md",
+        "start_char": 24123,
+        "end_char": 24411
+      },
+      {
+        "content": "When you reduce an enemy to 0 Hit Points, you gain Temporary Hit Points equal to your Charisma modifier plus your Warlock level (minimum of 1 Temporary Hit Point). You also gain this benefit if someone else reduces an enemy within 10 feet of you to 0 Hit Points.",
+        "document_path": "DND5eSRD_064-076.md",
+        "start_char": 45382,
+        "end_char": 45644
+      },
+      {
+        "content": "Choose one damage type, other than Force, whenever you finish a Short or Long Rest. You have Resistance to that damage type until you choose a different one with this feature.",
+        "document_path": "DND5eSRD_064-076.md",
+        "start_char": 46613,
+        "end_char": 46788
+      },
+      {
+        "content": "### Armor of Shadows\nYou can cast *Mage Armor* on yourself without expending a spell slot.",
+        "document_path": "DND5eSRD_064-076.md",
+        "start_char": 32387,
+        "end_char": 32477
+      },
+      {
+        "content": "*Prerequisite: Level 2+ Warlock*\nYou can cast *False Life* on yourself without expending a spell slot. When you cast the spell with this feature, you don’t roll the die for the Temporary Hit Points; you automatically get the highest number on the die.",
+        "document_path": "DND5eSRD_064-076.md",
+        "start_char": 33881,
+        "end_char": 34132
+      },
+      {
+        "content": "### Eldritch Mind\nYou have Advantage on Constitution saving throws that you make to maintain Concentration.",
+        "document_path": "DND5eSRD_064-076.md",
+        "start_char": 32935,
+        "end_char": 33042
+      }
+    ]
+  },
+  {
+    "id": 17,
+    "question": "What are the three types of modifiers that can be added to a D20 Test, and under what specific circumstances is the Proficiency Bonus applied to each of the three kinds of D20 Tests?",
+    "answer": "The three types of modifiers that can be added to a D20 Test are:\n*   The Relevant Ability Modifier\n*   Your Proficiency Bonus If Relevant\n*   Circumstantial Bonuses and Penalties\n\nThe Proficiency Bonus is applied to the three kinds of D20 Tests under the following circumstances:\n*   **Ability Check:** The Proficiency Bonus is added when the GM determines a skill or tool proficiency is relevant to the check and you have that proficiency.\n*   **Saving Throw:** The Proficiency Bonus is added if you have proficiency in that kind of save.\n*   **Attack Roll:** The Proficiency Bonus is added when you attack using a weapon you have proficiency with, or when you attack with a spell.",
+    "passages": [
+      {
+        "content": "**5: Add Modifiers.** Add these modifiers to the number rolled on the d20:\n*   **The Relevant Ability Modifier.** “Playing the Game” and “Rules Glossary” explain which ability modifiers to use for various D20 Tests.\n*   **Your Proficiency Bonus If Relevant.** Each creature has a Proficiency Bonus, a number added when making a D20 Test that uses something, such as a skill, in which the creature has proficiency. See “Proficiency” later in “Playing the Game.”\n*   **Circumstantial Bonuses and Penalties.** A class feature, a spell, or another rule might give a bonus or penalty to the die roll.",
+        "document_path": "DND5eSRD_001-018.md",
+        "start_char": 15083,
+        "end_char": 15678
+      },
+      {
+        "content": "Add your Proficiency Bonus to an ability check when the GM determines that a skill or tool proficiency is relevant to the check and you have that proficiency. For example, if a rule refers to a Strength (Acrobatics or Athletics) check, you can add your Proficiency Bonus to the check if you have proficiency in the Acrobatics or Athletics skill. See “Proficiency” later in “Playing the Game” for more information about skill and tool proficiencies.",
+        "document_path": "DND5eSRD_001-018.md",
+        "start_char": 17390,
+        "end_char": 17838
+      },
+      {
+        "content": "You add your Proficiency Bonus to your saving throw if you have proficiency in that kind of save. See “Proficiency” later in “Playing the Game.”",
+        "document_path": "DND5eSRD_001-018.md",
+        "start_char": 19472,
+        "end_char": 19616
+      },
+      {
+        "content": "You add your Proficiency Bonus to your saving throw if you have proficiency in that kind of save. See “Proficiency” later in “Playing the Game.”\n\n### Difficulty Class\nThe Difficulty Class for a saving throw is determined by the effect that causes it or by the GM. For example, if a spell forces you to make a save, the DC is determined by the caster's spellcasting ability and Proficiency Bonus. Monster abilities that call for saves specify the DC.\n\n## Attack Rolls\nAn attack roll determines whether an attack hits a target. An attack roll hits if the roll equals or exceeds the target's Armor Class. Attack rolls usually occur in battle, described in \"Combat\" later in \"Playing the Game,\" but the GM might also ask for an attack roll in other situations, such as an archery competition.\n\n### Ability Modifier\nThe Attack Roll Abilities table shows which ability modifier to use for different types of attack rolls.\n\n**Attack Roll Abilities**\n| Ability | Attack Type |\n| :--- | :--- |\n| **Strength** | Melee attack with a weapon or an Unarmed Strike (see “Rules Glossary”) |\n| **Dexterity** | Ranged attack with a weapon |\n| **Varies** | Spell attack (the ability used is determined by the spellcaster’s spellcasting feature, as explained in “Spells”) |\n\nSome features let you use different ability modifiers from those listed. For example, the Finesse property (see \"Equipment\") lets you use Strength or Dexterity with a weapon that has that property.\n\n### Proficiency Bonus\nYou add your Proficiency Bonus to your attack roll when you attack using a weapon you have proficiency with, as well as when you attack with a spell. See “Proficiency” later in “Playing the Game” for more information about weapon proficiencies.",
+        "document_path": "DND5eSRD_001-018.md",
+        "start_char": 19472,
+        "end_char": 21192
+      }
+    ]
+  },
+  {
+    "id": 18,
+    "question": "If a 10th-level Evoker wizard casts an Evocation spell that affects multiple creatures, what two class features could they use to protect their allies from the spell's effects and also increase the spell's damage output?",
+    "answer": "The two class features are:\n\n*   **Sculpt Spells:** This feature protects allies by allowing the wizard to choose a number of creatures who automatically succeed on their saving throws against the spell and take no damage.\n*   **Empowered Evocation:** This feature increases the spell's damage output by allowing the wizard to add their Intelligence modifier to one damage roll of the spell.",
+    "passages": [
+      {
+        "content": "### Level 6: Sculpt Spells\nYou can create pockets of relative safety within the effects of your evocations. When you cast an Evocation spell that affects other creatures that you can see, you can choose a number of them equal to 1 plus the spell's level. The chosen creatures automatically succeed on their saving throws against the spell, and they take no damage if they would normally take half damage on a successful save.",
+        "document_path": "DND5eSRD_077-086.md",
+        "start_char": 20313,
+        "end_char": 20738
+      },
+      {
+        "content": "### Level 10: Empowered Evocation\nWhenever you cast a Wizard spell from the Evocation school, you can add your Intelligence modifier to one damage roll of that spell.",
+        "document_path": "DND5eSRD_077-086.md",
+        "start_char": 20740,
+        "end_char": 20906
+      }
+    ]
+  },
+  {
+    "id": 19,
+    "question": "Compare the effects, methods of transmission, and ways to fight the contagions of Cackle Fever and Sight Rot.",
+    "answer": "**Effects**\n*   **Cackle Fever:** Affects only Humanoids, with gnomes being immune. 1d4 days after infection, the creature gains one level of Exhaustion. When taking damage (other than Psychic), the creature must make a DC 13 Constitution saving throw. On a failure, it takes 5 (1d10) Psychic damage and becomes Incapacitated with uncontrollable laughter.\n*   **Sight Rot:** Affects Beasts and Humanoids. Upon infection, the creature must succeed on a DC 15 Constitution saving throw or gain the Blinded condition until the contagion is cured.\n\n**Methods of Transmission**\n*   **Cackle Fever:** The initial infection comes from cheaply made potions and elixirs. It spreads when a Humanoid (other than a gnome) starts its turn within a 10-foot emanation of an infected creature and fails a DC 10 Constitution saving throw.\n*   **Sight Rot:** The initial infection comes from drinking tainted water. It spreads when a Humanoid makes skin contact with an infected creature and fails a DC 15 Constitution saving throw.\n\n**Ways to Fight the Contagion**\n*   **Cackle Fever:** An infected creature makes a DC 13 Constitution saving throw after each Long Rest. The contagion ends after three successful saves, granting the creature immunity for one year.\n*   **Sight Rot:** The contagion can be ended immediately with magic such as a *Heal* or *Lesser Restoration* spell. Alternatively, a special ointment can be created with an Herbalism Kit. One application suppresses the contagion for 24 hours; if it is suppressed for a total of 72 hours (three applications), the contagion ends.",
+    "passages": [
+      {
+        "content": "#### Cackle Fever\n*Magical Contagion*\nCheaply made potions and elixirs are sometimes tainted by Cackle Fever, which affects Humanoids only (gnomes are strangely immune). A creature suffers the following effects 1d4 days after infection:\n**Fever.** The creature gains 1 Exhaustion level, which lasts until the contagion ends on the creature.\n**Uncontrollable Laughter.** While the creature has the Exhaustion condition, the creature makes a DC 13 Constitution saving throw each time it takes damage other than Psychic damage. On a failed save, the creature takes 5 (1d10) Psychic damage and has the Incapacitated condition as it laughs uncontrollably. At the end of each of its turns, the creature repeats the save, ending the effect on itself on a success. After 1 minute, it succeeds automatically.\n\n**Fighting the Contagion.** At the end of each Long Rest, an infected creature makes a DC 13 Constitution saving throw. After the creature succeeds on three of these saves, the contagion ends on it, and the creature is immune to Cackle Fever for 1 year.\n**Spreading the Contagion.** Any Humanoid (other than a gnome) that starts its turn within a 10-foot Emanation originating from a creature infected with Cackle Fever must succeed on a DC 10 Constitution saving throw or also become infected with the contagion. On a successful save, the Humanoid can't catch the contagion from that particular infected creature for the next 24 hours.",
+        "document_path": "DND5eSRD_192-203.md",
+        "start_char": 8435,
+        "end_char": 9872
+      },
+      {
+        "content": "#### Sight Rot\n*Magical Contagion*\nAny Beast or Humanoid that drinks water tainted by Sight Rot must succeed on a DC 15 Constitution saving throw or have the Blinded condition until the contagion ends.\n**Fighting the Contagion.** Magic such as a *Heal* or *Lesser Restoration* spell ends the contagion immediately. A character who is proficient with an Herbalism Kit can use it to create one dose of nonmagical ointment, which takes 1 hour. When applied to the eyes of a creature suffering from Sight Rot, the ointment suppresses the contagion on that creature for 24 hours. If the contagion is suppressed in this way for a total of 72 hours (requiring three doses and applications of the ointment), the contagion ends on the creature.\n**Spreading the Contagion.** Any Humanoid that makes skin contact with a creature infected with Sight Rot must succeed on a DC 15 Constitution saving throw or also become infected with the contagion. On a successful save, the Humanoid can't catch the contagion from that particular infected creature for the next 24 hours.",
+        "document_path": "DND5eSRD_192-203.md",
+        "start_char": 11107,
+        "end_char": 12165
+      }
+    ]
+  },
+  {
+    "id": 20,
+    "question": "Describe the different mechanisms by which the Guardian Naga, the Lich, and the Mummy Lord can return after being destroyed. Include the conditions required for their return and the time it takes for each.",
+    "answer": "*   **Guardian Naga:** Returns to life in 1d6 days with all its Hit Points. This can be prevented if *Dispel Evil and Good* is cast on its remains.\n*   **Lich:** Reforms in 1d10 days with all its Hit Points, but only if it has a spirit jar. The new body appears in an unoccupied space within the lich's lair.\n*   **Mummy Lord:** Gains a new body in 24 hours with all its Hit Points, provided its heart is intact. The new body appears in an unoccupied space within the mummy's lair. The heart is a Tiny object with AC 17, 10 HP, and is immune to all damage except fire.",
+    "passages": [
+      {
+        "content": "**Celestial Restoration.** If the naga dies, it returns to life in 1d6 days and regains all its Hit Points unless *Dispel Evil and Good* is cast on its remains.",
+        "document_path": "DND5eSRD_293-312.md",
+        "start_char": 13815,
+        "end_char": 13975
+      },
+      {
+        "content": "**Spirit Jar.** If destroyed, the lich reforms in 1d10 days if it has a spirit jar, reviving with all its Hit Points. The new body appears in an unoccupied space within the lich's lair.",
+        "document_path": "DND5eSRD_293-312.md",
+        "start_char": 46315,
+        "end_char": 46500
+      },
+      {
+        "content": "**Undead Restoration.** If destroyed, the mummy gains a new body in 24 hours if its heart is intact, reviving with all its Hit Points. The new body appears in an unoccupied space within the mummy's lair. The heart is a Tiny object that has AC 17, HP 10, and Immunity to all damage except Fire.",
+        "document_path": "DND5eSRD_293-312.md",
+        "start_char": 68554,
+        "end_char": 68847
+      }
+    ]
+  },
+  {
+    "id": 21,
+    "question": "Explain the differences between a Narrative Curse and an Environmental Curse, using Demonic Possession as a specific example for the latter.",
+    "answer": "A Narrative Curse is a supernatural punishment for a specific transgression, such as breaking a vow or defiling a tomb. The affected creature should know why they are cursed and how to end it, which typically involves symbolically righting the wrong they committed. A spell like *Remove Curse* might only suppress its effects.\n\nAn Environmental Curse is contracted by lingering in a location suffused with evil. Demonic Possession is an example of this, occurring when a creature interacts with demonic objects or stays in a desecrated place. Unlike a Narrative Curse, Demonic Possession has specific mechanical means of removal: it can be ended by a *Dispel Evil and Good* spell, any magic that removes a curse, or by the creature succeeding on a DC 15 Charisma saving throw after a long rest.",
+    "passages": [
+      {
+        "content": "A curse might manifest during an adventure when a creature's violation of a taboo warrants supernatural punishment, such as breaking a vow, defiling a tomb, or murdering an innocent. Such a curse can have any effects you design, or it might be a customized version of another type of curse discussed in this section.\nA creature affected by such a curse should know why they're being punished and be able to learn how to end their curse, likely by symbolically righting the wrong they committed. How a spell like *Remove Curse* affects a curse that's part of your adventure is up to you—the spell might merely suppress the effects of the curse for a time. Regardless, narrative curses should feel like rare, potent magic rooted in the lore of your campaign.",
+        "document_path": "DND5eSRD_192-203.md",
+        "start_char": 5665,
+        "end_char": 6421
+      },
+      {
+        "content": "Some locations are so suffused with evil that anyone who lingers there is burdened with a curse. Demonic Possession is one example of an environmental curse.\n**Demonic Possession.** Demonic Possession arises from the chaos and evil of the Abyss and commonly besets creatures that interact with demonic objects or linger in desecrated locations, where demonic spirits await victims.\nA creature that becomes the target of Demonic Possession must succeed on a DC 15 Charisma saving throw or be possessed by a bodiless demonic entity. Whenever the possessed creature rolls a 1 on a D20 Test, the demonic entity takes control of the creature and determines the creature's behavior thereafter. At the end of each of the possessed creature's later turns, the creature makes a DC 15 Charisma saving throw, regaining control of itself on a success.\nAfter finishing a Long Rest, a creature with Demonic Possession makes a DC 15 Charisma saving throw. On a successful save, the effect ends on the creature. A *Dispel Evil and Good* spell or any magic that removes a curse also ends the effect on it.",
+        "document_path": "DND5eSRD_192-203.md",
+        "start_char": 6449,
+        "end_char": 7537
+      }
+    ]
+  },
+  {
+    "id": 22,
+    "question": "How are the effects of multiple spells handled when they overlap, and what is the specific rule for when the same spell is cast more than once on the same target?",
+    "answer": "The effects of different spells add together while their durations overlap.\n\nWhen the same spell is cast multiple times on the same target, the effects do not combine. Instead, the most potent effect, such as the highest bonus, from those castings applies. If the castings are equally potent, the most recent effect applies. For example, a target under the effect of two *Bless* spells only gains the spell's benefit once. The effect continues until the duration of the second spell ends.",
+    "passages": [
+      {
+        "content": "The effects of different spells add together while their durations overlap. In contrast, the effects of the same spell cast multiple times don't combine. Instead, the most potent effect—such as the highest bonus—from those castings applies while their durations overlap. The most recent effect applies if the castings are equally potent and their durations overlap. For example, if two Clerics cast *Bless* on the same target, that target gains the spell's benefit only once; the target doesn't receive two bonus dice. But if the durations of the spells overlap, the effect continues until the duration of the second *Bless* ends.",
+        "document_path": "DND5eSRD_104-120.md",
+        "start_char": 12495,
+        "end_char": 13125
+      }
+    ]
+  },
+  {
+    "id": 23,
+    "question": "Compare the spells Protection from Energy, Protection from Evil and Good, and Protection from Poison. Detail their spell level, duration, components, and the specific protective benefits each one grants.",
+    "answer": "**Protection from Energy**\n*   **Spell Level:** 3\n*   **Duration:** Concentration, up to 1 hour\n*   **Components:** V, S\n*   **Protective Benefits:** The target gains Resistance to one chosen damage type: Acid, Cold, Fire, Lightning, or Thunder.\n\n**Protection from Evil and Good**\n*   **Spell Level:** 1\n*   **Duration:** Concentration up to 10 minutes\n*   **Components:** V, S, M (a flask of Holy Water worth 25+ GP, which is consumed)\n*   **Protective Benefits:** Against Aberrations, Celestials, Elementals, Fey, Fiends, or Undead, the target receives the following benefits:\n    *   Creatures of those types have Disadvantage on attack rolls against the target.\n    *   The target cannot be possessed, Charmed, or Frightened by them.\n    *   If already possessed, Charmed, or Frightened by such a creature, the target has Advantage on new saving throws against the effect.\n\n**Protection from Poison**\n*   **Spell Level:** 2\n*   **Duration:** 1 hour\n*   **Components:** V, S\n*   **Protective Benefits:**\n    *   Ends the Poisoned condition on the target.\n    *   The target has Advantage on saving throws to avoid or end the Poisoned condition.\n    *   The target has Resistance to Poison damage.",
+    "passages": [
+      {
+        "content": "## Protection from Energy\n*Level 3 Abjuration (Cleric, Druid, Ranger, Sorcerer, Wizard)*\n\n**Casting Time:** Action\n**Range:** Touch\n**Components:** V, S\n**Duration:** Concentration, up to 1 hour\n\nFor the duration, the willing creature you touch has Resistance to one damage type of your choice: Acid, Cold, Fire, Lightning, or Thunder.",
+        "document_path": "DND5eSRD_155-175.md",
+        "start_char": 9254,
+        "end_char": 9589
+      },
+      {
+        "content": "## Protection from Evil and Good\n*Level 1 Abjuration (Cleric, Druid, Paladin, Warlock, Wizard)*\n\n**Casting Time:** Action\n**Range:** Touch\n**Components:** V, S, M (a flask of Holy Water worth 25+ GP, which the spell consumes)\n**Duration:** Concentration up to 10 minutes\n\nUntil the spell ends, one willing creature you touch is protected against creatures that are Aberrations, Celestials, Elementals, Fey, Fiends, or Undead.\nThe protection grants several benefits. Creatures of those types have Disadvantage on attack rolls against the target. The target also can’t be possessed by or gain the Charmed or Frightened conditions from them. If the target is already possessed, Charmed, or Frightened by such a creature, the target has Advantage on any new saving throw against the relevant effect.",
+        "document_path": "DND5eSRD_155-175.md",
+        "start_char": 9591,
+        "end_char": 10386
+      },
+      {
+        "content": "## Protection from Poison\n*Level 2 Abjuration (Cleric, Druid, Paladin, Ranger)*\n\n**Casting Time:** Action\n**Range:** Touch\n**Components:** V, S\n**Duration:** 1 hour\n\nYou touch a creature and end the Poisoned condition on it. For the duration, the target has Advantage on saving throws to avoid or end the Poisoned condition, and it has Resistance to Poison damage.",
+        "document_path": "DND5eSRD_155-175.md",
+        "start_char": 10388,
+        "end_char": 10752
+      }
+    ]
+  },
+  {
+    "id": 24,
+    "question": "How do the Thief Rogue's \"Fast Hands\" feature and the Sorcerer's \"Quickened Spell\" Metamagic option each allow a character to manipulate their action economy, and what are the differences in their costs, limitations, and the types of actions they affect?",
+    "answer": "**Fast Hands** manipulates action economy by allowing a character to use their Bonus Action to perform specific tasks that would otherwise take an Action: making a Dexterity (Sleight of Hand) check to pick a lock, disarm a trap, or pick a pocket, or taking the Use an Object/Magic action.\n\n**Quickened Spell** manipulates action economy by allowing a character to change the casting time of a spell from an Action to a Bonus Action for a single casting.\n\nThe differences between them are:\n\n*   **Cost:**\n    *   **Fast Hands:** Has no resource cost mentioned.\n    *   **Quickened Spell:** Costs 2 Sorcery Points.\n\n*   **Limitations:**\n    *   **Fast Hands:** Is limited to the specific actions listed: certain Sleight of Hand checks and the Use an Object/Magic action.\n    *   **Quickened Spell:** Prevents the caster from casting another spell of 1st level or higher in the same turn.\n\n*   **Types of Actions Affected:**\n    *   **Fast Hands:** Affects Dexterity (Sleight of Hand) checks and the Use an Object/Magic action.\n    *   **Quickened Spell:** Affects spells that have a casting time of an action.",
+    "passages": [
+      {
+        "content": "### Level 3: Fast Hands\nAs a Bonus Action, you can do one of the following.\n**Sleight of Hand.** Make a Dexterity (Sleight of Hand) check to pick a lock or disarm a trap with Thieves’ Tools or to pick a pocket.\n**Use an Object.** Take the Utilize action, or take the Magic action to use a magic item that requires that action.",
+        "document_path": "DND5eSRD_064-076.md",
+        "start_char": 385,
+        "end_char": 711
+      },
+      {
+        "content": "### Quickened Spell\n*Cost: 2 Sorcery Points*\n\nWhen you cast a spell that has a casting time of an action, you can spend 2 Sorcery Points to change the casting time to a Bonus Action for this casting. You can’t modify a spell in this way if you’ve already cast a level 1+ spell on the current turn, nor can you cast a level 1+ spell on this turn after modifying a spell in this way.",
+        "document_path": "DND5eSRD_064-076.md",
+        "start_char": 13554,
+        "end_char": 13935
+      }
+    ]
+  }
+]

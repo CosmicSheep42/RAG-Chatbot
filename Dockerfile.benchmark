@@ -1,0 +1,39 @@
+FROM python:3.12-slim
+
+ARG INSTALL_RERANKER=false
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    DOCUMENTS_DIR=/app/knowledge-base \
+    DATA_DIR=/app/.benchmark-data \
+    VECTOR_STORE_PROVIDER=chroma \
+    LLM_PROVIDER=ollama \
+    EMBEDDING_PROVIDER=ollama \
+    OLLAMA_BASE_URL=http://ollama:11434 \
+    OLLAMA_NUM_PARALLEL=1 \
+    OLLAMA_MAX_LOADED_MODELS=1 \
+    GENERATION_TEMPERATURE=0 \
+    MAX_CONCURRENT_INFERENCES=1
+
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY pyproject.toml README.md /app/
+COPY src /app/src
+COPY evaluation /app/evaluation
+COPY knowledge-base /app/knowledge-base
+
+RUN set -eu; \
+    extras="chroma,ollama"; \
+    if [ "$INSTALL_RERANKER" = "true" ]; then extras="$extras,rerank"; fi; \
+    pip install --no-cache-dir -e ".[${extras}]"
+
+RUN useradd --create-home --uid 10001 appuser \
+    && mkdir -p /app/.benchmark-data /app/evaluation/results/datapizza \
+    && chown -R appuser:appuser /app
+USER appuser
+
+ENTRYPOINT ["python", "-m", "evaluation.benchmark"]
