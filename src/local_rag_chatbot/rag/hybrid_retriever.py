@@ -209,8 +209,9 @@ class SimpleBM25Index:
 
 
 class CrossEncoderReranker:
-    def __init__(self, model_name: str, *, allow_lexical_fallback: bool = False) -> None:
+    def __init__(self, model_name: str, *, device: str = "cpu", allow_lexical_fallback: bool = False) -> None:
         self.model_name = model_name
+        self.device = device
         self.allow_lexical_fallback = allow_lexical_fallback
         self._model: Any | None = None
         self._load_error: Exception | None = None
@@ -243,7 +244,7 @@ class CrossEncoderReranker:
         try:
             from sentence_transformers import CrossEncoder
 
-            self._model = CrossEncoder(self.model_name)
+            self._model = CrossEncoder(self.model_name, device=None if self.device == "auto" else self.device)
         except Exception as exc:  # pragma: no cover - import/model download fallback
             self._load_error = exc
             self._model = None
@@ -305,6 +306,7 @@ class HybridRetriever(BaseRetriever):
     tuning: RetrievalTuning = RetrievalTuning()
     reranking_mode: str = "auto"
     reranker_model: str = "BAAI/bge-reranker-base"
+    reranker_device: str = "cpu"
     reranker_allow_lexical_fallback: bool = False
 
     _bm25_index: SimpleBM25Index = PrivateAttr()
@@ -368,6 +370,7 @@ class HybridRetriever(BaseRetriever):
 
         reranker = CrossEncoderReranker(
             self.reranker_model,
+            device=self.reranker_device,
             allow_lexical_fallback=self.reranker_allow_lexical_fallback,
         )
         if reranker.load():

@@ -41,16 +41,33 @@ def complete_evidence_retrieval(
 def passage_recall_at_k(
     results: Sequence[Mapping[str, object]], passages: Iterable[Mapping[str, object]], k: int
 ) -> float:
-    """Return the fraction of gold passages overlapped by retrieved source ranges.
+    """Return the fraction of gold passages touched by retrieved source ranges.
 
-    This is a passage-level metric; document-level retrieval metrics remain separate.
+    This intentionally measures *touch*, not sufficient evidence coverage. Use
+    :func:`passage_coverage_at_k` for the stricter coverage metric.
     """
     required = list(passages)
     if not required:
         return math.nan
     retrieved = results[: max(k, 0)]
+    valid_passages = [
+        passage
+        for passage in required
+        if isinstance(passage.get("start_char"), int)
+        and isinstance(passage.get("end_char"), int)
+        and int(passage["end_char"]) > int(passage["start_char"])
+    ]
+    if not valid_passages:
+        return math.nan
+    valid_results = [
+        result
+        for result in retrieved
+        if isinstance(result.get("start_char"), int) and isinstance(result.get("end_char"), int)
+    ]
+    if retrieved and not valid_results:
+        return math.nan
     matched = 0
-    for passage in required:
+    for passage in valid_passages:
         source = str(passage.get("document_path", ""))
         start = passage.get("start_char")
         end = passage.get("end_char")
@@ -65,7 +82,79 @@ def passage_recall_at_k(
             for result in retrieved
         ):
             matched += 1
-    return matched / len(required)
+    return matched / len(valid_passages)
+
+
+def passage_coverage_at_k(
+    results: Sequence[Mapping[str, object]],
+    passages: Iterable[Mapping[str, object]],
+    k: int,
+    *,
+    threshold: float = 0.8,
+) -> float:
+    """Return the fraction of gold passage length covered by retrieved chunks.
+
+    Overlapping retrieved ranges are merged before measuring coverage. The
+    threshold is validated so experiment metadata cannot describe an invalid
+    coverage policy.
+    """
+    if not 0 <= threshold <= 1:
+        raise ValueError("threshold must be between 0 and 1")
+    required = [
+        passage
+        for passage in passages
+        if isinstance(passage.get("start_char"), int)
+        and isinstance(passage.get("end_char"), int)
+        and int(passage["end_char"]) > int(passage["start_char"])
+    ]
+    if not required:
+        return math.nan
+    retrieved = [
+        result
+        for result in results[: max(k, 0)]
+        if isinstance(result.get("start_char"), int) and isinstance(result.get("end_char"), int)
+    ]
+    if results and not retrieved:
+        return math.nan
+    covered = 0
+    for passage in required:
+        source = str(passage.get("document_path", ""))
+        start = int(passage["start_char"])
+        end = int(passage["end_char"])
+        intervals = sorted(
+            (
+                max(start, int(result["start_char"])),
+                min(end, int(result["end_char"])),
+            )
+            for result in retrieved
+            if str(result.get("document_id", "")) == source
+            and int(result["end_char"]) > start
+            and int(result["start_char"]) < end
+        )
+        merged: list[list[int]] = []
+        for left, right in intervals:
+            if right <= left:
+                continue
+            if merged and left <= merged[-1][1]:
+                merged[-1][1] = max(merged[-1][1], right)
+            else:
+                merged.append([left, right])
+        covered += sum(right - left for left, right in merged)
+    total = sum(int(passage["end_char"]) - int(passage["start_char"]) for passage in required)
+    return covered / total if total else math.nan
+
+
+def complete_passage_retrieval(
+    results: Sequence[Mapping[str, object]],
+    passages: Iterable[Mapping[str, object]],
+    k: int,
+    *,
+    threshold: float = 0.8,
+) -> bool | None:
+    coverage = passage_coverage_at_k(results, passages, k, threshold=threshold)
+    if math.isnan(coverage):
+        return None
+    return coverage >= threshold
 
 
 def reciprocal_rank_at_k(results: Sequence[Mapping[str, object] | str], relevant: Iterable[str], k: int) -> float:

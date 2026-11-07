@@ -97,6 +97,11 @@ class DocumentRepository:
                     if not content:
                         continue
                     metadata = self._normalize_metadata(path, loaded_document.metadata)
+                    if path.suffix.lower() in {".md", ".markdown"}:
+                        try:
+                            metadata["_source_text"] = path.read_text(encoding="utf-8")
+                        except UnicodeDecodeError:
+                            pass
                     documents.append(Document(page_content=content, metadata=metadata))
             except Exception as exc:
                 self._record_error(path, "load_failed", str(exc))

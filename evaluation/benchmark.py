@@ -11,11 +11,13 @@ import asyncio
 import hashlib
 import json
 import math
+import os
 import platform
 import statistics
 import subprocess
 import sys
 import time
+import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -35,10 +37,12 @@ from .metrics import (
     abstention_result,
     citation_quality,
     citation_support,
+    complete_passage_retrieval,
     complete_evidence_retrieval,
     fact_coverage,
     ndcg_at_k,
     passage_recall_at_k,
+    passage_coverage_at_k,
     recall_at_k,
     reciprocal_rank_at_k,
 )
@@ -141,6 +145,7 @@ def build_retriever(
     namespace: str = RAG_VECTOR_NAMESPACE,
     tuning: RetrievalTuning | None = None,
     reranker_model: str = "BAAI/bge-reranker-base",
+    reranker_device: str = "cpu",
 ) -> Retriever | None:
     """Build an adapter without changing or duplicating production retrieval logic."""
     if configuration == "standalone":
@@ -166,6 +171,7 @@ def build_retriever(
             tuning=tuning or RetrievalTuning(),
             reranking_mode="true" if configuration == "hybrid-rerank" else "false",
             reranker_model=reranker_model,
+            reranker_device=reranker_device,
         )
         if configuration == "hybrid-rerank" and not production_retriever.reranking_active:
             status = production_retriever.reranking_status
@@ -191,23 +197,16 @@ def load_corpus(corpus_dir: Path, *, chunk_size: int = 500, chunk_overlap: int =
     loader = MarkdownLoader()
     splitter = DocumentSplitter(chunk_size, chunk_overlap)
     for path in sorted(corpus_dir.glob("*.md")):
-        loaded = loader.load(path, base_metadata={"source": path.name, "document_id": path.name})
-        documents.extend(Document(item.page_content, metadata=item.metadata) for item in loaded)
-    chunks = splitter.split(documents)
-    cursors: dict[str, int] = {}
-    for chunk in chunks:
-        source = str(chunk.metadata.get("source", ""))
-        source_text = next(
-            (document.page_content for document in documents if document.metadata.get("source") == source), ""
+        loaded = loader.load(
+            path,
+            base_metadata={
+                "source": path.name,
+                "document_id": path.name,
+                "_source_text": path.read_text(encoding="utf-8"),
+            },
         )
-        start = source_text.find(chunk.page_content, cursors.get(source, 0))
-        if start < 0:
-            start = source_text.find(chunk.page_content)
-        if start >= 0:
-            chunk.metadata["source_char_start"] = start
-            chunk.metadata["source_char_end"] = start + len(chunk.page_content)
-            cursors[source] = start + 1
-    return chunks
+        documents.extend(Document(item.page_content, metadata=item.metadata) for item in loaded)
+    return splitter.split(documents)
 
 
 def load_examples(dataset_path: Path, split: str) -> list[BenchmarkExample]:
@@ -254,10 +253,24 @@ def run_retrieval(
     split: str,
     top_k: int,
     metadata: dict[str, Any] | None = None,
+    checkpoint_dir: Path | None = None,
+    resume: bool = False,
+    retry_failed: bool = False,
 ) -> dict[str, Any]:
-    records = []
+    examples = list(examples)
+    metadata = dict(metadata or {})
+    metadata.setdefault("experiment_mode", "retrieval-only")
+    metadata.setdefault("question_count", len(examples))
+    records = _load_checkpoint_records(checkpoint_dir) if resume and checkpoint_dir else []
+    if retry_failed:
+        records = [record for record in records if record.get("status") != "failed"]
+    completed_ids = {
+        record.get("question_id") for record in records if record.get("status") == "success" or not retry_failed
+    }
     retrieval_latencies = []
     for example in examples:
+        if example.id in completed_ids:
+            continue
         started = time.perf_counter()
         try:
             documents = retriever.retrieve(example.question, top_k)
@@ -265,6 +278,9 @@ def run_retrieval(
             records.append(
                 {
                     "question_id": example.id,
+                    "question": example.question,
+                    "difficulty": example.difficulty,
+                    "gold_passages": example.passages,
                     "configuration": configuration,
                     "split": split,
                     "answerable": example.answerable,
@@ -273,6 +289,7 @@ def run_retrieval(
                     "timing": {"retrieval_seconds": time.perf_counter() - started},
                 }
             )
+            _persist_checkpoint(checkpoint_dir, records, metadata)
             continue
         latency = time.perf_counter() - started
         retrieval_latencies.append(latency)
@@ -288,6 +305,9 @@ def run_retrieval(
         records.append(
             {
                 "question_id": example.id,
+                "question": example.question,
+                "difficulty": example.difficulty,
+                "gold_passages": example.passages,
                 "configuration": configuration,
                 "split": split,
                 "answerable": example.answerable,
@@ -301,12 +321,27 @@ def run_retrieval(
                         if example.passages
                         else None
                     ),
+                    "passage_coverage_at_k": (
+                        _json_metric(passage_coverage_at_k(ranked, example.passages or [], top_k))
+                        if example.passages
+                        else None
+                    ),
+                    "complete_passage_evidence": (
+                        complete_passage_retrieval(ranked, example.passages or [], top_k) if example.passages else None
+                    ),
                     "complete_evidence": complete_evidence_retrieval(ranked, example.relevant_documents, top_k),
                 },
                 "timing": {"retrieval_seconds": latency},
                 "status": "success",
             }
         )
+        _persist_checkpoint(checkpoint_dir, records, metadata)
+    if not retrieval_latencies:
+        retrieval_latencies = [
+            float(record.get("timing", {}).get("retrieval_seconds", 0))
+            for record in records
+            if record.get("status") == "success" and "retrieval_seconds" in record.get("timing", {})
+        ]
     return {
         "metadata": metadata or {},
         "configuration": configuration,
@@ -325,10 +360,24 @@ def run_end_to_end(
     split: str,
     top_k: int,
     metadata: dict[str, Any] | None = None,
+    checkpoint_dir: Path | None = None,
+    resume: bool = False,
+    retry_failed: bool = False,
 ) -> dict[str, Any]:
-    records = []
+    examples = list(examples)
+    metadata = dict(metadata or {})
+    metadata.setdefault("experiment_mode", "end-to-end")
+    metadata.setdefault("question_count", len(examples))
+    records = _load_checkpoint_records(checkpoint_dir) if resume and checkpoint_dir else []
+    if retry_failed:
+        records = [record for record in records if record.get("status") != "failed"]
+    completed_ids = {
+        record.get("question_id") for record in records if record.get("status") == "success" or not retry_failed
+    }
     retrieval_latencies = []
     for example in examples:
+        if example.id in completed_ids:
+            continue
         started = time.perf_counter()
         try:
             documents = retriever.retrieve(example.question, top_k) if retriever else []
@@ -340,6 +389,9 @@ def run_end_to_end(
             records.append(
                 {
                     "question_id": example.id,
+                    "question": example.question,
+                    "difficulty": example.difficulty,
+                    "gold_passages": example.passages,
                     "configuration": configuration,
                     "split": split,
                     "status": "failed",
@@ -347,6 +399,7 @@ def run_end_to_end(
                     "timing": {"retrieval_seconds": time.perf_counter() - started},
                 }
             )
+            _persist_checkpoint(checkpoint_dir, records, metadata)
             continue
         retrieved = getattr(
             answerer,
@@ -369,6 +422,9 @@ def run_end_to_end(
         records.append(
             {
                 "question_id": example.id,
+                "question": example.question,
+                "difficulty": example.difficulty,
+                "gold_passages": example.passages,
                 "configuration": configuration,
                 "split": split,
                 "answerable": example.answerable,
@@ -404,6 +460,7 @@ def run_end_to_end(
                 "status": "success",
             }
         )
+        _persist_checkpoint(checkpoint_dir, records, metadata)
     return {
         "metadata": metadata or {},
         "configuration": configuration,
@@ -419,6 +476,7 @@ def _summary(records: list[dict[str, Any]], latencies: list[float]) -> dict[str,
         "mrr_at_k",
         "ndcg_at_k",
         "passage_recall_at_k",
+        "passage_coverage_at_k",
         "complete_evidence",
         "fact_coverage",
         "citation_validity",
@@ -482,6 +540,53 @@ def _summary(records: list[dict[str, Any]], latencies: list[float]) -> dict[str,
     return summary
 
 
+def _load_checkpoint_records(checkpoint_dir: Path | None) -> list[dict[str, Any]]:
+    if checkpoint_dir is None:
+        return []
+    records_path = checkpoint_dir / "records.jsonl"
+    if not records_path.exists():
+        return []
+    records_by_id: dict[str, dict[str, Any]] = {}
+    for line in records_path.read_text(encoding="utf-8").splitlines():
+        try:
+            value = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(value, dict) and value.get("question_id"):
+            records_by_id[str(value["question_id"])] = value
+    return list(records_by_id.values())
+
+
+def _persist_checkpoint(
+    checkpoint_dir: Path | None,
+    records: list[dict[str, Any]],
+    metadata: dict[str, Any] | None,
+) -> None:
+    if checkpoint_dir is None:
+        return
+    checkpoint_dir.mkdir(parents=True, exist_ok=True)
+    records_path = checkpoint_dir / "records.jsonl"
+    temporary = records_path.with_suffix(".jsonl.tmp")
+    temporary.write_text(
+        "".join(json.dumps(record, ensure_ascii=False, allow_nan=False) + "\n" for record in records),
+        encoding="utf-8",
+    )
+    temporary.replace(records_path)
+    manifest = checkpoint_dir / "manifest.json"
+    manifest_data = dict(metadata or {})
+    manifest_data.update(
+        {
+            "run_status": "running",
+            "attempted_count": len(records),
+            "successful_count": sum(record.get("status") == "success" for record in records),
+            "failed_count": sum(record.get("status") == "failed" for record in records),
+        }
+    )
+    manifest_tmp = manifest.with_suffix(".json.tmp")
+    manifest_tmp.write_text(json.dumps(manifest_data, indent=2, allow_nan=False) + "\n", encoding="utf-8")
+    manifest_tmp.replace(manifest)
+
+
 def _json_metric(value: float) -> float | None:
     return value if math.isfinite(value) else None
 
@@ -505,6 +610,8 @@ def experiment_metadata(
 ) -> dict[str, Any]:
     return {
         "benchmark_version": "1",
+        "dataset_name": dataset_path.name,
+        "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239" if dataset_path.is_dir() else None,
         "configuration": configuration,
         "dataset_checksum": _sha256(dataset_path),
         "corpus_checksum": _directory_checksum(corpus_dir),
@@ -547,6 +654,41 @@ def _git_commit() -> str | None:
         return None
 
 
+def _prepare_run_output(args: argparse.Namespace) -> None:
+    if args.output.suffix == ".json":
+        if args.resume:
+            raise ValueError("--resume requires a run directory output, not a legacy JSON file.")
+        if not args.resume and args.output.exists():
+            raise ValueError(f"Refusing to overwrite existing result: {args.output}")
+        args.checkpoint_dir = None
+        return
+    if args.resume:
+        if not (args.output / "manifest.json").exists():
+            raise ValueError("--resume requires an existing run directory containing manifest.json.")
+        manifest = json.loads((args.output / "manifest.json").read_text(encoding="utf-8"))
+        expected_values = {
+            "configuration": args.configuration,
+            "split": args.split,
+            "top_k": args.top_k,
+            "chunk_size": args.chunk_size,
+            "chunk_overlap": args.chunk_overlap,
+            "experiment_mode": "end-to-end" if args.end_to_end else "retrieval-only",
+            "dataset_checksum": _sha256(args.dataset),
+            "corpus_checksum": _directory_checksum(args.corpus),
+        }
+        for key, expected in expected_values.items():
+            if key not in manifest:
+                continue
+            if manifest.get(key) != expected:
+                raise ValueError(f"Resume configuration mismatch for {key}: {manifest.get(key)!r} != {expected!r}")
+        args.checkpoint_dir = args.output
+        return
+    mode = "end-to-end" if args.end_to_end else "retrieval-only"
+    run_id = args.run_id or f"{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')}-{uuid.uuid4().hex[:8]}"
+    args.output = args.output / args.configuration / mode / f"run-{run_id}"
+    args.checkpoint_dir = args.output
+
+
 def _run_live(args: argparse.Namespace, examples: list[BenchmarkExample]) -> dict[str, Any]:
     from local_rag_chatbot.providers.llm import create_chat_model
     from local_rag_chatbot.settings import get_settings
@@ -560,7 +702,14 @@ def _run_live(args: argparse.Namespace, examples: list[BenchmarkExample]) -> dic
         "chunk_size": args.chunk_size,
         "chunk_overlap": args.chunk_overlap,
     }
-    for name in ("llm_provider", "embedding_provider", "generation_model", "embedding_model", "vector_store_provider"):
+    for name in (
+        "llm_provider",
+        "embedding_provider",
+        "generation_model",
+        "embedding_model",
+        "vector_store_provider",
+        "reranker_device",
+    ):
         value = getattr(args, name)
         if value is not None:
             overrides[name] = value
@@ -571,6 +720,74 @@ def _run_live(args: argparse.Namespace, examples: list[BenchmarkExample]) -> dic
     elif args.configuration in {"dense", "hybrid"}:
         overrides["reranking_mode"] = "false"
     settings = settings.with_overrides(**overrides)
+
+    if args.configuration == "bm25":
+        documents = load_corpus(args.corpus, chunk_size=settings.chunk_size, chunk_overlap=settings.chunk_overlap)
+        retriever = BM25Retriever(documents)
+        metadata = experiment_metadata(
+            args.dataset,
+            args.corpus,
+            args.split,
+            args.top_k,
+            args.configuration,
+            chunk_size=settings.chunk_size,
+            chunk_overlap=settings.chunk_overlap,
+        )
+        metadata.update(
+            {
+                "provider": settings.llm_provider,
+                "generation_model": settings.generation_model if args.end_to_end else None,
+                "embedding_provider": None,
+                "embedding_model": None,
+                "vector_store_provider": None,
+                "retrieval_configuration": "bm25",
+            }
+        )
+        if not args.end_to_end:
+            return run_retrieval(
+                examples,
+                retriever,
+                configuration=args.configuration,
+                split=args.split,
+                top_k=args.top_k,
+                metadata=metadata,
+                checkpoint_dir=args.checkpoint_dir,
+                resume=args.resume,
+                retry_failed=args.retry_failed,
+            )
+
+        from local_rag_chatbot.documents.prompt_repository import MasterPromptRepository
+        from local_rag_chatbot.documents.tool_config_repository import ToolCallingConfigRepository
+        from local_rag_chatbot.rag.answer_service import AnswerService
+        from local_rag_chatbot.rag.retrieval_policy import RetrievalPolicyResolver
+
+        chat_model = create_chat_model(settings)
+        tool_config = ToolCallingConfigRepository(settings.tool_calling_config_file).load()
+        answer_service = AnswerService(
+            chat_model=chat_model,
+            generation_model=settings.generation_model,
+            prompt_loader=MasterPromptRepository(settings.master_prompt_file).load,
+            answer_prompt_template=tool_config.answer_prompt_template,
+            system_prompt_template=tool_config.system_prompt_template,
+        )
+        return run_end_to_end(
+            examples,
+            retriever,
+            AnswerServiceAdapter(
+                answer_service,
+                RetrievalPolicyResolver(
+                    default_candidate_k=settings.hybrid_candidate_k,
+                    default_final_k=settings.hybrid_final_k,
+                ),
+            ),
+            configuration=args.configuration,
+            split=args.split,
+            top_k=args.top_k,
+            metadata=metadata,
+            checkpoint_dir=args.checkpoint_dir,
+            resume=args.resume,
+            retry_failed=args.retry_failed,
+        )
 
     if args.configuration == "standalone":
         chat_model = create_chat_model(settings)
@@ -600,6 +817,9 @@ def _run_live(args: argparse.Namespace, examples: list[BenchmarkExample]) -> dic
             split=args.split,
             top_k=args.top_k,
             metadata=metadata,
+            checkpoint_dir=args.checkpoint_dir,
+            resume=args.resume,
+            retry_failed=args.retry_failed,
         )
 
     from local_rag_chatbot.application import create_application_services, create_indexing_services
@@ -630,6 +850,7 @@ def _run_live(args: argparse.Namespace, examples: list[BenchmarkExample]) -> dic
                     "embedding_provider": settings.embedding_provider,
                     "embedding_model": settings.embedding_model,
                     "vector_store_provider": settings.vector_store_provider,
+                    "reranker_device": settings.reranker_device,
                     "reranker_model": settings.reranker_model,
                     "initialization_seconds": initialization_seconds,
                     "timing_note": "full mode records total engine query time as pipeline_seconds; component timings are not exposed by the public engine API",
@@ -643,6 +864,9 @@ def _run_live(args: argparse.Namespace, examples: list[BenchmarkExample]) -> dic
                 split=args.split,
                 top_k=args.top_k,
                 metadata=metadata,
+                checkpoint_dir=args.checkpoint_dir,
+                resume=args.resume,
+                retry_failed=args.retry_failed,
             )
         finally:
             event_loop.run_until_complete(engine.shutdown())
@@ -692,6 +916,7 @@ def _run_live(args: argparse.Namespace, examples: list[BenchmarkExample]) -> dic
         tuning=indexing.index_manager.retrieval_tuning,
         namespace=RAG_VECTOR_NAMESPACE,
         reranker_model=settings.reranker_model,
+        reranker_device=settings.reranker_device,
     )
     if isinstance(retriever, ExistingRetrieverAdapter):
         metadata["reranking_status"] = retriever.retriever.reranking_status
@@ -718,6 +943,9 @@ def _run_live(args: argparse.Namespace, examples: list[BenchmarkExample]) -> dic
             split=args.split,
             top_k=args.top_k,
             metadata=metadata,
+            checkpoint_dir=args.checkpoint_dir,
+            resume=args.resume,
+            retry_failed=args.retry_failed,
         )
     else:
         result = run_retrieval(
@@ -727,6 +955,9 @@ def _run_live(args: argparse.Namespace, examples: list[BenchmarkExample]) -> dic
             split=args.split,
             top_k=args.top_k,
             metadata=metadata,
+            checkpoint_dir=args.checkpoint_dir,
+            resume=args.resume,
+            retry_failed=args.retry_failed,
         )
     result["metadata"] = metadata
     return result
@@ -735,15 +966,24 @@ def _run_live(args: argparse.Namespace, examples: list[BenchmarkExample]) -> dic
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run a reproducible RAG benchmark.")
     parser.add_argument("--configuration", choices=CONFIGURATIONS, default="bm25")
-    parser.add_argument("--split", choices=("dev", "test"), default="dev")
-    parser.add_argument("--top-k", type=int, default=5)
-    parser.add_argument("--chunk-size", type=int, default=500)
-    parser.add_argument("--chunk-overlap", type=int, default=100)
+    parser.add_argument("--split", choices=("dev", "test"), default=os.getenv("BENCHMARK_SPLIT", "dev"))
+    parser.add_argument("--top-k", type=int, default=int(os.getenv("BENCHMARK_TOP_K", "5")))
+    parser.add_argument("--chunk-size", type=int, default=int(os.getenv("CHUNK_SIZE", "500")))
+    parser.add_argument("--chunk-overlap", type=int, default=int(os.getenv("CHUNK_OVERLAP", "100")))
     parser.add_argument("--dataset", type=Path, default=Path("evaluation/dataset/datapizza"))
     parser.add_argument("--corpus", type=Path, default=Path("knowledge-base"))
     parser.add_argument("--output", type=Path, default=Path("evaluation/results/benchmark.json"))
+    parser.add_argument("--resume", action="store_true", help="Resume an existing run directory.")
+    parser.add_argument("--retry-failed", action="store_true", help="Retry failed questions while resuming.")
+    parser.add_argument("--run-id", help="Explicit run identifier for a new directory output.")
     parser.add_argument("--live", action="store_true", help="Initialize configured providers and run live evaluation.")
-    parser.add_argument("--end-to-end", action="store_true", help="Generate answers instead of retrieval-only records.")
+    parser.add_argument(
+        "--mode",
+        choices=("retrieval-only", "end-to-end"),
+        default=None,
+        help="Evaluation mode; BENCHMARK_MODE is used when omitted.",
+    )
+    parser.add_argument("--end-to-end", action="store_true", help="Backward-compatible alias for --mode end-to-end.")
     parser.add_argument("--data-dir", type=Path, default=Path(".benchmark-data"))
     parser.add_argument("--llm-provider")
     parser.add_argument("--generation-model")
@@ -751,15 +991,27 @@ def main() -> int:
     parser.add_argument("--embedding-model")
     parser.add_argument("--vector-store-provider")
     parser.add_argument("--reranker-model")
+    parser.add_argument("--reranker-device", choices=("cpu", "cuda", "auto"))
     args = parser.parse_args()
+    args.end_to_end = args.end_to_end or (args.mode or os.getenv("BENCHMARK_MODE", "retrieval-only")) == "end-to-end"
     if args.top_k < 1:
         parser.error("--top-k must be positive")
     if args.chunk_size < 1 or args.chunk_overlap < 0 or args.chunk_overlap >= args.chunk_size:
         parser.error("--chunk-size must be positive and --chunk-overlap must be between 0 and chunk-size - 1")
+    if args.configuration in {"standalone", "full"} and not args.end_to_end:
+        parser.error(f"{args.configuration} only supports end-to-end mode")
+    if args.configuration == "standalone" and args.live is False:
+        parser.error("standalone requires --live")
+    if args.configuration == "full" and args.live is False:
+        parser.error("full requires --live")
     if args.configuration != "bm25" and not args.live:
         parser.error(
             f"{args.configuration} requires --live so its configured providers and index are initialized explicitly"
         )
+    try:
+        _prepare_run_output(args)
+    except ValueError as exc:
+        parser.error(str(exc))
     examples = load_examples(args.dataset, args.split)
     if args.live:
         result = _run_live(args, examples)
@@ -780,9 +1032,30 @@ def main() -> int:
                 chunk_size=args.chunk_size,
                 chunk_overlap=args.chunk_overlap,
             ),
+            checkpoint_dir=args.checkpoint_dir,
+            resume=args.resume,
+            retry_failed=args.retry_failed,
         )
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(result, indent=2, allow_nan=False) + "\n", encoding="utf-8")
+    if args.checkpoint_dir is not None:
+        args.output.mkdir(parents=True, exist_ok=True)
+        manifest_path = args.output / "manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8")) if manifest_path.exists() else {}
+        manifest.update(
+            {
+                "run_status": "completed",
+                "completed_at_utc": datetime.now(UTC).isoformat(),
+                "attempted_count": len(result["records"]),
+                "successful_count": result["summary"].get("successful_count", 0),
+                "failed_count": result["summary"].get("failed_count", 0),
+            }
+        )
+        manifest_path.write_text(json.dumps(manifest, indent=2, allow_nan=False) + "\n", encoding="utf-8")
+        (args.output / "summary.json").write_text(
+            json.dumps(result["summary"], indent=2, allow_nan=False) + "\n", encoding="utf-8"
+        )
+    else:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(json.dumps(result, indent=2, allow_nan=False) + "\n", encoding="utf-8")
     print(json.dumps(result["summary"], sort_keys=True))
     return 0
 

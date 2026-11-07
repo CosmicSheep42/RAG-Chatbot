@@ -8,6 +8,8 @@ from evaluation.metrics import (
     fact_coverage,
     ndcg_at_k,
     passage_recall_at_k,
+    passage_coverage_at_k,
+    complete_passage_retrieval,
     recall_at_k,
     reciprocal_rank_at_k,
 )
@@ -42,6 +44,24 @@ def test_passage_recall_uses_character_overlap_without_document_level_inflation(
     passages = [{"document_path": "rules.md", "start_char": 20, "end_char": 30}]
     assert passage_recall_at_k(results, passages, 1) == 1.0
     assert passage_recall_at_k([], passages, 1) == 0.0
+
+
+def test_passage_coverage_merges_overlapping_chunks_and_requires_real_coverage():
+    passages = [{"document_path": "rules.md", "start_char": 0, "end_char": 100}]
+    results = [
+        {"document_id": "rules.md", "start_char": 0, "end_char": 40},
+        {"document_id": "rules.md", "start_char": 30, "end_char": 80},
+    ]
+    assert passage_recall_at_k(results, passages, 2) == 1.0
+    assert passage_coverage_at_k(results, passages, 2) == 0.8
+    assert complete_passage_retrieval(results, passages, 2, threshold=0.8)
+
+
+def test_passage_metrics_are_unavailable_when_retrieved_offsets_are_missing():
+    passages = [{"document_path": "rules.md", "start_char": 0, "end_char": 100}]
+    results = [{"document_id": "rules.md"}]
+    assert math.isnan(passage_recall_at_k(results, passages, 1))
+    assert math.isnan(passage_coverage_at_k(results, passages, 1))
 
 
 def test_answer_and_citation_metrics_are_separate():

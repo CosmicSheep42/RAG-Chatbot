@@ -214,6 +214,7 @@ class IndexManager:
             tuning=self.retrieval_tuning,
             reranking_mode=self.settings.reranking_mode,
             reranker_model=self.settings.reranker_model,
+            reranker_device=self.settings.reranker_device,
             reranker_allow_lexical_fallback=self.settings.reranker_allow_lexical_fallback,
         )
         self.retrieval_service = RetrievalService(

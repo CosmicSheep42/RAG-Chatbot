@@ -34,9 +34,11 @@ class DocumentSplitter:
     def split(self, documents: Iterable[Document]) -> list[Document]:
         split_documents: list[Document] = []
         indexed_at = datetime.now(timezone.utc).isoformat()
+        source_cursors: dict[str, int] = {}
 
         for document in documents:
             base_metadata = dict(document.metadata)
+            source_text = base_metadata.pop("_source_text", None)
             units = self._structural_units(document)
             document_id = str(base_metadata.get("document_id") or self._stable_hash(base_metadata.get("source", "")))
             document_chunk_index = 0
@@ -60,6 +62,12 @@ class DocumentSplitter:
                     metadata["structural_split_index"] = split_index
                     metadata["indexed_at"] = indexed_at
                     metadata["index_version"] = "structural-v2"
+                    if isinstance(source_text, str):
+                        source_key = str(metadata.get("source", ""))
+                        span = self._verified_source_span(source_text, content, source_cursors.get(source_key, 0))
+                        if span is not None:
+                            metadata["source_char_start"], metadata["source_char_end"] = span
+                            source_cursors[source_key] = span[0] + 1
                     metadata.setdefault("source_path", metadata.get("source"))
                     metadata.setdefault("header_path", str(metadata.get("hierarchy_path") or ""))
                     if len(content) > self.chunk_size:
@@ -69,6 +77,43 @@ class DocumentSplitter:
                     split_documents.append(Document(page_content=content, metadata=metadata))
 
         return split_documents
+
+    def _verified_source_span(self, source: str, content: str, search_from: int) -> tuple[int, int] | None:
+        """Return a source span only when the chunk can be verified in the original text."""
+        start = source.find(content, max(search_from, 0))
+        if start >= 0 and source[start : start + len(content)] == content:
+            return start, start + len(content)
+
+        normalized_source, positions = self._normalized_with_positions(source)
+        normalized_content = re.sub(r"\s+", " ", content).strip()
+        if not normalized_content:
+            return None
+        normalized_start = normalized_source.find(normalized_content)
+        while normalized_start >= 0 and positions[normalized_start] < search_from:
+            normalized_start = normalized_source.find(normalized_content, normalized_start + 1)
+        if normalized_start < 0:
+            return None
+        start = positions[normalized_start]
+        end = positions[normalized_start + len(normalized_content) - 1] + 1
+        if re.sub(r"\s+", " ", source[start:end]).strip() == normalized_content:
+            return start, end
+        return None
+
+    def _normalized_with_positions(self, value: str) -> tuple[str, list[int]]:
+        normalized: list[str] = []
+        positions: list[int] = []
+        pending_space = False
+        for index, character in enumerate(value):
+            if character.isspace():
+                pending_space = bool(normalized)
+                continue
+            if pending_space:
+                normalized.append(" ")
+                positions.append(index - 1)
+                pending_space = False
+            normalized.append(character)
+            positions.append(index)
+        return "".join(normalized), positions
 
     def _structural_units(self, document: Document) -> list[StructuralUnit]:
         file_type = str(document.metadata.get("file_type") or "").lower()
