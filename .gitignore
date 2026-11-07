@@ -87,3 +87,5 @@ temp/
 evaluation/results/*.json
 evaluation/results/**/*.json
 evaluation/results/**/*.jsonl
+# Local analysis bundles are generated from published records and are not committed.
+exports/

@@ -101,7 +101,20 @@ python -m evaluation.benchmark --live --configuration hybrid --split dev --end-t
 
 Standalone, dense, hybrid, reranking, and full-pipeline modes initialize their requested providers explicitly and fail when a required component is unavailable. Live experiments are never run by default in CI.
 End-to-end records keep factual coverage, source-level citation support, abstention outcomes, and a manual-review payload separate; retrieved evidence presence is not treated as automatic groundedness.
-The Docker scenario preparation and future execution commands are in [docs/datapizza-benchmark.md](docs/datapizza-benchmark.md). No Datapizza benchmark results are published yet; live inference and containers are intentionally not run during dataset preparation.
+The Docker scenario preparation and execution commands are in [docs/datapizza-benchmark.md](docs/datapizza-benchmark.md). The measured results are summarized in [evaluation/RESULTS.md](evaluation/RESULTS.md), with selected per-question records in [evaluation/published/datapizza/](evaluation/published/datapizza/).
+
+### Experimental Evaluation
+
+The Datapizza evaluation used 20 D&D 5e Markdown documents and 56 questions (12 development, 44 held-out test) on a Debian 13 host with an NVIDIA RTX 3050 Laptop GPU. The generation model was `llama3.2:3b`, embeddings used `nomic-embed-text`, and `BAAI/bge-reranker-base` ran on CPU. On the held-out split, retrieval results were:
+
+| Method | Recall@5 | nDCG@5 | Weighted passage coverage |
+|---|---:|---:|---:|
+| BM25 | 0.6936 | 0.6734 | 0.3002 |
+| Dense | 0.6605 | 0.6655 | 0.2472 |
+| Hybrid | 0.7446 | 0.7360 | 0.3298 |
+| Hybrid + rerank | 0.7576 | 0.7592 | 0.4017 |
+
+These are measurements on this fixed corpus, not universal performance claims. End-to-end latency and limitations are documented in the [results report](evaluation/RESULTS.md). Answer correctness, completeness, and evidence grounding have not yet been independently evaluated. An LLM-assisted evaluation is planned; the repository publishes an unscored blind-review input and rubric, not completed judge scores. Datapizza attribution and licensing details are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 Default models (Ollama):
 

@@ -40,6 +40,21 @@ The Full pipeline exposes total engine latency and application-level citation va
 
 No factual-correctness, completeness, groundedness, or claim-level citation scores are published: those require the existing manual review workflow and have not yet been completed.
 
+## Auditable records and planned answer review
+
+Selected per-question records are published under [evaluation/published/datapizza/](published/datapizza/). They were derived from the completed local run directories without changing generated answers. The original local run directories remain outside version control. The deterministic export command is:
+
+```bash
+.venv/bin/python -m evaluation.export_analysis_bundle \
+  --results evaluation/results/datapizza \
+  --dataset evaluation/dataset/datapizza \
+  --corpus knowledge-base \
+  --published evaluation/published/datapizza \
+  --output exports/datapizza-rag-evaluation-bundle.zip
+```
+
+The published data includes per-question retrieval and generation records, source manifests, checksums, and an unscored blind-review input. `judge_input.jsonl` hides configuration names; `blind_mapping.json` is used only after scoring. An LLM-as-a-Judge review is planned, but no factual or groundedness scores are asserted here. The review remains limited by the 56-question single-domain corpus and by the observability available in each configuration.
+
 ## Interpretation and limitations
 
 On this corpus, Hybrid and Hybrid + rerank retrieved relevant evidence more reliably than BM25 or Dense alone. Reranking had the highest test nDCG and passage coverage, with a CPU latency cost. These are measurements on one 56-question D&D 5e dataset, not universal claims about RAG quality.
