@@ -19,6 +19,9 @@ x-benchmark: &benchmark
     OLLAMA_BASE_URL: http://ollama:11434
     GENERATION_TEMPERATURE: ${GENERATION_TEMPERATURE:-0}
     MAX_CONCURRENT_INFERENCES: ${MAX_CONCURRENT_INFERENCES:-1}
+    REPLY_TIMEOUT_SECONDS: ${REPLY_TIMEOUT_SECONDS:-180}
+    OLLAMA_CONNECT_TIMEOUT_SECONDS: ${OLLAMA_CONNECT_TIMEOUT_SECONDS:-10}
+    OLLAMA_READ_TIMEOUT_SECONDS: ${OLLAMA_READ_TIMEOUT_SECONDS:-180}
     BENCHMARK_MODE: ${BENCHMARK_MODE:-retrieval-only}
   volumes:
     - ./knowledge-base:/app/knowledge-base:ro
@@ -35,7 +38,13 @@ services:
   benchmark-bm25:
     <<: *benchmark
     profiles: [bm25]
-    command: ["--configuration", "bm25", "--split", "${BENCHMARK_SPLIT:-dev}", "--output", "/app/evaluation/results/datapizza/bm25"]
+    command: ["--live", "--configuration", "bm25", "--split", "${BENCHMARK_SPLIT:-dev}", "--output", "/app/evaluation/results/datapizza/bm25"]
+
+  benchmark-bm25-e2e:
+    <<: *benchmark
+    profiles: [bm25-e2e]
+    depends_on: [ollama]
+    command: ["--live", "--configuration", "bm25", "--mode", "end-to-end", "--split", "${BENCHMARK_SPLIT:-dev}", "--output", "/app/evaluation/results/datapizza/bm25"]
 
   benchmark-dense:
     <<: *benchmark
@@ -63,7 +72,7 @@ services:
 
   ollama:
     image: ollama/ollama:0.32.1
-    profiles: [standalone, dense, hybrid, hybrid-rerank, full]
+    profiles: [standalone, bm25-e2e, dense, hybrid, hybrid-rerank, full]
     environment:
       OLLAMA_NUM_PARALLEL: ${OLLAMA_NUM_PARALLEL:-1}
       OLLAMA_MAX_LOADED_MODELS: ${OLLAMA_MAX_LOADED_MODELS:-1}

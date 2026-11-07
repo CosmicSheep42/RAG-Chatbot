@@ -13,6 +13,12 @@ from evaluation.benchmark import (
     load_examples,
     run_end_to_end,
     run_retrieval,
+    validate_configuration_mode,
+    _configuration_fingerprint,
+    _configuration_snapshot,
+    _load_checkpoint_records,
+    _prepare_run_output,
+    _run_live,
 )
 from local_rag_chatbot.rag.index_manager import RAG_VECTOR_NAMESPACE
 from local_rag_chatbot.vectorstores.contracts import ScoredDocument
@@ -239,3 +245,136 @@ def test_benchmark_checkpoint_resume_preserves_completed_records(tmp_path):
     )
     assert [record["question_id"] for record in resumed["records"]] == ["q1", "q2"]
     assert len(tmp_path.joinpath("records.jsonl").read_text(encoding="utf-8").splitlines()) == 2
+
+
+def test_retrieval_only_summary_does_not_report_end_to_end_latency(document):
+    result = run_retrieval(
+        [BenchmarkExample("q1", "one", True, "one", ["guide.md"], [])],
+        type("Retriever", (), {"retrieve": lambda self, _question, _limit: [document("one", source="guide.md")]})(),
+        configuration="bm25",
+        split="dev",
+        top_k=1,
+    )
+    assert "retrieval_latency_p50_seconds" in result["summary"]
+    assert "end_to_end_latency_p50_seconds" not in result["summary"]
+
+
+@pytest.mark.parametrize(
+    ("configuration", "mode", "supported"),
+    [
+        ("standalone", "retrieval-only", False),
+        ("standalone", "end-to-end", True),
+        ("bm25", "retrieval-only", True),
+        ("bm25", "end-to-end", True),
+        ("dense", "retrieval-only", True),
+        ("dense", "end-to-end", True),
+        ("hybrid", "retrieval-only", True),
+        ("hybrid", "end-to-end", True),
+        ("hybrid-rerank", "retrieval-only", True),
+        ("hybrid-rerank", "end-to-end", True),
+        ("full", "retrieval-only", False),
+        ("full", "end-to-end", True),
+    ],
+)
+def test_configuration_mode_matrix(configuration, mode, supported):
+    if supported:
+        validate_configuration_mode(configuration, mode)
+    else:
+        with pytest.raises(ValueError):
+            validate_configuration_mode(configuration, mode)
+
+
+def test_bm25_compose_service_uses_live_dispatch_without_ollama_dependency():
+    compose = Path("docker-compose.benchmark.yml").read_text(encoding="utf-8")
+    bm25_block = compose.split("  benchmark-bm25:\n", 1)[1].split("  benchmark-bm25-e2e:", 1)[0]
+    assert 'command: ["--live", "--configuration", "bm25"' in bm25_block
+    assert "depends_on:" not in bm25_block
+    bm25_e2e_block = compose.split("  benchmark-bm25-e2e:", 1)[1].split("  benchmark-dense:", 1)[0]
+    assert 'command: ["--live", "--configuration", "bm25", "--mode", "end-to-end"' in bm25_e2e_block
+    assert "depends_on: [ollama]" in bm25_e2e_block
+
+
+def test_resume_rejects_changed_generation_model_before_execution(tmp_path, monkeypatch):
+    args = type(
+        "Args",
+        (),
+        {
+            "dataset": Path("evaluation/dataset/datapizza"),
+            "corpus": Path("knowledge-base"),
+            "split": "dev",
+            "configuration": "bm25",
+            "end_to_end": True,
+            "top_k": 5,
+            "chunk_size": 500,
+            "chunk_overlap": 100,
+            "output": tmp_path / "run",
+            "resume": False,
+            "run_id": "test",
+        },
+    )()
+    snapshot = _configuration_snapshot(args)
+    args.output.mkdir()
+    (args.output / "manifest.json").write_text(
+        json.dumps(
+            {
+                "run_status": "running",
+                "configuration_fingerprint": _configuration_fingerprint(snapshot),
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("GENERATION_MODEL", "different-model")
+    args.resume = True
+    with pytest.raises(ValueError, match="configuration mismatch"):
+        _prepare_run_output(args)
+
+
+def test_corrupt_checkpoint_is_rejected(tmp_path):
+    records = tmp_path / "records.jsonl"
+    records.write_text('{"question_id":"q1"}\nnot-json\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="Corrupt checkpoint"):
+        _load_checkpoint_records(tmp_path)
+
+
+def test_bm25_live_end_to_end_uses_generation_without_embeddings(monkeypatch, tmp_path):
+    calls = {"chat": 0}
+
+    class FakeChatModel:
+        def chat(self, _messages, *, model):
+            calls["chat"] += 1
+            return type("Result", (), {"content": f"answer from {model}"})()
+
+    monkeypatch.setattr("local_rag_chatbot.providers.llm.create_chat_model", lambda _settings: FakeChatModel())
+    monkeypatch.setattr(
+        "local_rag_chatbot.providers.embeddings.create_embeddings",
+        lambda _settings: (_ for _ in ()).throw(AssertionError("BM25 must not create embeddings")),
+    )
+    args = type(
+        "Args",
+        (),
+        {
+            "dataset": Path("evaluation/dataset/datapizza"),
+            "corpus": Path("knowledge-base"),
+            "split": "dev",
+            "configuration": "bm25",
+            "end_to_end": True,
+            "top_k": 2,
+            "chunk_size": 500,
+            "chunk_overlap": 100,
+            "data_dir": tmp_path,
+            "llm_provider": None,
+            "embedding_provider": None,
+            "generation_model": "test-model",
+            "embedding_model": None,
+            "vector_store_provider": None,
+            "reranker_model": None,
+            "reranker_device": None,
+            "checkpoint_dir": None,
+            "resume": False,
+            "retry_failed": False,
+        },
+    )()
+    result = _run_live(args, load_examples(args.dataset, "dev")[:1])
+    assert calls["chat"] == 1
+    assert result["metadata"]["configuration"] == "bm25"
+    assert result["metadata"]["experiment_mode"] == "end-to-end"

@@ -29,6 +29,7 @@ one concurrent inference. Models must be prepared separately in the persistent O
 
 ```bash
 docker compose -f docker-compose.benchmark.yml --profile standalone build
+docker compose -f docker-compose.benchmark.yml --profile hybrid-rerank build --build-arg INSTALL_RERANKER=true
 docker compose -f docker-compose.benchmark.yml --profile standalone up -d ollama
 docker compose -f docker-compose.benchmark.yml --profile standalone exec ollama ollama pull llama3.2:3b
 docker compose -f docker-compose.benchmark.yml --profile standalone exec ollama ollama pull nomic-embed-text
@@ -50,22 +51,33 @@ The default mode is retrieval-only for BM25, Dense, Hybrid, and Hybrid + Rerank.
 generation without editing YAML:
 
 ```bash
-BENCHMARK_MODE=end-to-end docker compose -f docker-compose.benchmark.yml --profile bm25 run --rm benchmark-bm25
+docker compose -f docker-compose.benchmark.yml --profile bm25-e2e run --rm benchmark-bm25-e2e
 BENCHMARK_MODE=end-to-end docker compose -f docker-compose.benchmark.yml --profile dense run --rm benchmark-dense
 BENCHMARK_MODE=end-to-end docker compose -f docker-compose.benchmark.yml --profile hybrid run --rm benchmark-hybrid
 BENCHMARK_MODE=end-to-end docker compose -f docker-compose.benchmark.yml --profile hybrid-rerank run --rm benchmark-hybrid-rerank
 ```
+
+The BM25 retrieval-only service includes `--live` only to select the configured runner path; it constructs
+only the in-memory BM25 index and does not create an LLM, embedding, Chroma, or vector index. The separate
+`benchmark-bm25-e2e` profile adds the Ollama dependency and explicitly selects end-to-end generation while
+still using only BM25 retrieval.
 
 Standalone and Full are always end-to-end. Use `BENCHMARK_SPLIT=test` for the held-out split and
 `BENCHMARK_TOP_K` or an explicit CLI override when running the image directly. BM25 retrieval-only does
 not need Ollama, embeddings, Chroma, or paid APIs; generation modes require the configured model.
 The result root is `evaluation/results/datapizza/<configuration>/<mode>/run-<id>/`, with a manifest,
 incremental `records.jsonl`, and `summary.json`. A new run gets a unique directory and never overwrites
-an existing one. Resume a run by invoking the CLI with `--resume --output <run-directory>` after checking
-that the manifest matches the requested split, top-K, and configuration:
+an existing one. Resume a specific incomplete run by invoking the CLI with `--resume --output <run-directory>`.
+The manifest fingerprint checks dataset/corpus checksums, models, providers, chunking, retrieval limits,
+reranking, prompt files, temperature, and mode. Completed runs are protected from overwrite:
 
 ```bash
-python -m evaluation.benchmark --configuration bm25 --split dev --output evaluation/results/datapizza --resume
+python -m evaluation.benchmark \
+  --live --configuration bm25 --mode end-to-end --split dev \
+  --output evaluation/results/datapizza/bm25/end-to-end/run-<id> --resume
+python -m evaluation.benchmark \
+  --live --configuration bm25 --mode end-to-end --split dev \
+  --output evaluation/results/datapizza/bm25/end-to-end/run-<id> --resume --retry-failed
 ```
 
 Export generated answers for human review and aggregate completed annotations:
@@ -80,6 +92,8 @@ completeness, and evidence support. Unreviewed answers remain excluded from mean
 
 For NVIDIA Container Toolkit, add `-f docker-compose.benchmark.gpu.yml`; otherwise the base file is
 CPU-compatible. Set `RERANKER_DEVICE=cpu` (the default) to keep the cross-encoder off the 4 GB GPU.
+Compose defaults local inference timeouts to `REPLY_TIMEOUT_SECONDS=180`,
+`OLLAMA_CONNECT_TIMEOUT_SECONDS=10`, and `OLLAMA_READ_TIMEOUT_SECONDS=180`.
 
 The benchmark image mounts the corpus read-only and persists index data and model storage in named volumes.
 Changing the corpus or chunking settings causes the application's index fingerprint checks to rebuild an
@@ -93,3 +107,10 @@ docker compose -f docker-compose.benchmark.yml --profile bm25 down -v
 The Docker image is non-root. If a bind-mounted result directory is not writable by the container user,
 set `BENCHMARK_UID=$(id -u)` and `BENCHMARK_GID=$(id -g)` before the Compose command, or pre-create the
 directory with ownership for UID/GID 10001. Do not run the benchmark as a privileged container.
+
+## Pilot protocol
+
+When live execution is intentionally started later: run static preflight, run one or two-question
+provider smoke tests per scenario, run the 12-question development split, freeze the effective manifest,
+run the 44-question test split, then export and review answers with the manual rubric. Do not tune after
+looking at held-out test results.

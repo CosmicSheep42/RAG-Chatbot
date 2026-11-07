@@ -48,6 +48,16 @@ from .metrics import (
 )
 
 CONFIGURATIONS = ("standalone", "dense", "bm25", "hybrid", "hybrid-rerank", "full")
+MODES = ("retrieval-only", "end-to-end")
+
+
+def validate_configuration_mode(configuration: str, mode: str) -> None:
+    if configuration not in CONFIGURATIONS:
+        raise ValueError(f"Unknown benchmark configuration: {configuration}")
+    if mode not in MODES:
+        raise ValueError(f"Unknown benchmark mode: {mode}")
+    if configuration in {"standalone", "full"} and mode != "end-to-end":
+        raise ValueError(f"{configuration} only supports end-to-end mode")
 
 
 class Retriever(Protocol):
@@ -261,6 +271,7 @@ def run_retrieval(
     metadata = dict(metadata or {})
     metadata.setdefault("experiment_mode", "retrieval-only")
     metadata.setdefault("question_count", len(examples))
+    metadata.setdefault("passage_coverage_threshold", 0.8)
     records = _load_checkpoint_records(checkpoint_dir) if resume and checkpoint_dir else []
     if retry_failed:
         records = [record for record in records if record.get("status") != "failed"]
@@ -302,6 +313,7 @@ def run_retrieval(
             }
             for rank, document in enumerate(documents, 1)
         ]
+        coverage_threshold = float(metadata["passage_coverage_threshold"])
         records.append(
             {
                 "question_id": example.id,
@@ -322,12 +334,16 @@ def run_retrieval(
                         else None
                     ),
                     "passage_coverage_at_k": (
-                        _json_metric(passage_coverage_at_k(ranked, example.passages or [], top_k))
+                        _json_metric(
+                            passage_coverage_at_k(ranked, example.passages or [], top_k, threshold=coverage_threshold)
+                        )
                         if example.passages
                         else None
                     ),
                     "complete_passage_evidence": (
-                        complete_passage_retrieval(ranked, example.passages or [], top_k) if example.passages else None
+                        complete_passage_retrieval(ranked, example.passages or [], top_k, threshold=coverage_threshold)
+                        if example.passages
+                        else None
                     ),
                     "complete_evidence": complete_evidence_retrieval(ranked, example.relevant_documents, top_k),
                 },
@@ -342,12 +358,14 @@ def run_retrieval(
             for record in records
             if record.get("status") == "success" and "retrieval_seconds" in record.get("timing", {})
         ]
+    summary = _summary(records, retrieval_latencies)
+    summary["passage_coverage_threshold"] = metadata["passage_coverage_threshold"]
     return {
         "metadata": metadata or {},
         "configuration": configuration,
         "split": split,
         "records": records,
-        "summary": _summary(records, retrieval_latencies),
+        "summary": summary,
     }
 
 
@@ -368,6 +386,7 @@ def run_end_to_end(
     metadata = dict(metadata or {})
     metadata.setdefault("experiment_mode", "end-to-end")
     metadata.setdefault("question_count", len(examples))
+    metadata.setdefault("passage_coverage_threshold", 0.8)
     records = _load_checkpoint_records(checkpoint_dir) if resume and checkpoint_dir else []
     if retry_failed:
         records = [record for record in records if record.get("status") != "failed"]
@@ -461,12 +480,20 @@ def run_end_to_end(
             }
         )
         _persist_checkpoint(checkpoint_dir, records, metadata)
+    if not retrieval_latencies:
+        retrieval_latencies = [
+            float(record.get("timing", {}).get("retrieval_seconds", 0))
+            for record in records
+            if record.get("status") == "success" and "retrieval_seconds" in record.get("timing", {})
+        ]
+    summary = _summary(records, retrieval_latencies)
+    summary["passage_coverage_threshold"] = metadata["passage_coverage_threshold"]
     return {
         "metadata": metadata or {},
         "configuration": configuration,
         "split": split,
         "records": records,
-        "summary": _summary(records, retrieval_latencies),
+        "summary": summary,
     }
 
 
@@ -489,6 +516,31 @@ def _summary(records: list[dict[str, Any]], latencies: list[float]) -> dict[str,
         values = [record["metrics"][name] for record in records if record.get("metrics", {}).get(name) is not None]
         if values:
             summary[name] = statistics.mean(values)
+    passage_records = [
+        record
+        for record in records
+        if record.get("status") == "success" and "passage_recall_at_k" in record.get("metrics", {})
+    ]
+    passage_values = [
+        record["metrics"]["passage_recall_at_k"]
+        for record in passage_records
+        if record["metrics"].get("passage_recall_at_k") is not None
+    ]
+    coverage_values = [
+        record["metrics"]["passage_coverage_at_k"]
+        for record in passage_records
+        if record["metrics"].get("passage_coverage_at_k") is not None
+    ]
+    complete_values = [
+        record["metrics"]["complete_passage_evidence"]
+        for record in passage_records
+        if record["metrics"].get("complete_passage_evidence") is not None
+    ]
+    summary["passage_examples_evaluated"] = len(passage_values)
+    summary["passage_examples_unavailable"] = len(passage_records) - len(passage_values)
+    summary["passage_touch_recall_mean"] = statistics.mean(passage_values) if passage_values else None
+    summary["weighted_passage_coverage_mean"] = statistics.mean(coverage_values) if coverage_values else None
+    summary["complete_passage_evidence_rate"] = statistics.mean(complete_values) if complete_values else None
     successful = [record for record in records if record.get("status") == "success"]
     summary["successful_count"] = len(successful)
     summary["failed_count"] = sum(record.get("status") == "failed" for record in records)
@@ -517,8 +569,14 @@ def _summary(records: list[dict[str, Any]], latencies: list[float]) -> dict[str,
     else:
         summary["incorrect_refusal_rate"] = None
     end_to_end_latencies = []
+    has_end_to_end_records = any(
+        record.get("status") == "success" and ("answer" in record or "pipeline_seconds" in record.get("timing", {}))
+        for record in records
+    )
     for record in successful:
         timing = record.get("timing", {})
+        if not has_end_to_end_records:
+            continue
         if "pipeline_seconds" in timing:
             end_to_end_latencies.append(timing["pipeline_seconds"])
         elif "retrieval_seconds" in timing:
@@ -550,10 +608,13 @@ def _load_checkpoint_records(checkpoint_dir: Path | None) -> list[dict[str, Any]
     for line in records_path.read_text(encoding="utf-8").splitlines():
         try:
             value = json.loads(line)
-        except json.JSONDecodeError:
-            continue
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Corrupt checkpoint record in {records_path}") from exc
         if isinstance(value, dict) and value.get("question_id"):
-            records_by_id[str(value["question_id"])] = value
+            question_id = str(value["question_id"])
+            if question_id in records_by_id:
+                raise ValueError(f"Duplicate checkpoint record for question {question_id}")
+            records_by_id[question_id] = value
     return list(records_by_id.values())
 
 
@@ -628,6 +689,116 @@ def experiment_metadata(
     }
 
 
+def _configuration_snapshot(args: argparse.Namespace, settings: Any | None = None) -> dict[str, Any]:
+    integer_fields = {
+        "hybrid_dense_k",
+        "hybrid_dense_fetch_k",
+        "hybrid_sparse_k",
+        "hybrid_candidate_k",
+        "hybrid_final_k",
+    }
+    float_fields = {"generation_temperature", "hybrid_dense_weight", "hybrid_sparse_weight"}
+
+    def value(attribute: str, environment: str, default: Any = None) -> Any:
+        if settings is not None and hasattr(settings, attribute):
+            raw = getattr(settings, attribute)
+        elif getattr(args, attribute, None) is not None:
+            raw = getattr(args, attribute)
+        else:
+            raw = os.getenv(environment, default)
+        if raw is None:
+            return None
+        try:
+            if attribute in integer_fields:
+                return int(raw)
+            if attribute in float_fields:
+                return float(raw)
+        except (TypeError, ValueError):
+            return str(raw)
+        return raw
+
+    effective_reranking_mode = (
+        "true"
+        if args.configuration == "hybrid-rerank"
+        else "false"
+        if args.configuration in {"dense", "hybrid"}
+        else value("reranking_mode", "RERANKING_MODE", "auto")
+    )
+    snapshot = {
+        "dataset_name": args.dataset.name,
+        "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239" if args.dataset.is_dir() else None,
+        "dataset_checksum": _sha256(args.dataset),
+        "corpus_checksum": _directory_checksum(args.corpus),
+        "split": args.split,
+        "configuration": args.configuration,
+        "experiment_mode": "end-to-end" if args.end_to_end else "retrieval-only",
+        "top_k": args.top_k,
+        "chunk_size": args.chunk_size,
+        "chunk_overlap": args.chunk_overlap,
+        "chunker_version": "structural-v2",
+        "llm_provider": value("llm_provider", "LLM_PROVIDER", "ollama"),
+        "generation_model": value("generation_model", "GENERATION_MODEL", "llama3.2:3b"),
+        "generation_temperature": value("generation_temperature", "GENERATION_TEMPERATURE", "0.7"),
+        "generation_output_limit": int(os.getenv("GENERATION_MAX_TOKENS", "2048"))
+        if value("llm_provider", "LLM_PROVIDER", "ollama") == "ollama"
+        else os.getenv("GENERATION_MAX_TOKENS"),
+        "generation_context_limit": os.getenv("GENERATION_CONTEXT_LIMIT"),
+        "embedding_provider": None
+        if args.configuration in {"standalone", "bm25"}
+        else value("embedding_provider", "EMBEDDING_PROVIDER", "ollama"),
+        "embedding_model": None
+        if args.configuration in {"standalone", "bm25"}
+        else value("embedding_model", "EMBEDDING_MODEL", "nomic-embed-text"),
+        "vector_store_provider": None
+        if args.configuration in {"standalone", "bm25"}
+        else value("vector_store_provider", "VECTOR_STORE_PROVIDER", "chroma"),
+        "reranker_model": value("reranker_model", "RERANKER_MODEL", "BAAI/bge-reranker-base")
+        if args.configuration in {"hybrid-rerank", "full"}
+        else None,
+        "reranker_device": value("reranker_device", "RERANKER_DEVICE", "cpu")
+        if args.configuration in {"hybrid-rerank", "full"}
+        else None,
+        "reranking_mode": effective_reranking_mode,
+        "dense_retrieval_limits": {
+            "hybrid_dense_k": value("hybrid_dense_k", "HYBRID_DENSE_K", 10),
+            "hybrid_dense_fetch_k": value("hybrid_dense_fetch_k", "HYBRID_DENSE_FETCH_K", 20),
+        },
+        "sparse_retrieval_limits": {"hybrid_sparse_k": value("hybrid_sparse_k", "HYBRID_SPARSE_K", 10)},
+        "fusion_weights": {
+            "dense": value("hybrid_dense_weight", "HYBRID_DENSE_WEIGHT", 0.5),
+            "sparse": value("hybrid_sparse_weight", "HYBRID_SPARSE_WEIGHT", 0.5),
+        },
+        "retrieval_policy": {
+            "candidate_k": value("hybrid_candidate_k", "HYBRID_CANDIDATE_K", 10),
+            "final_k": value("hybrid_final_k", "HYBRID_FINAL_K", 5),
+        },
+        "evidence_coverage_threshold": float(os.getenv("PASSAGE_COVERAGE_THRESHOLD", "0.8")),
+        "prompt_fingerprints": {
+            str(path): _sha256(path)
+            for path in (
+                Path("src/local_rag_chatbot/resources/prompts/master_prompt.json"),
+                Path("src/local_rag_chatbot/resources/prompts/tool_calling.json"),
+            )
+            if path.exists()
+        },
+    }
+    return snapshot
+
+
+def _configuration_fingerprint(snapshot: dict[str, Any]) -> str:
+    return hashlib.sha256(
+        json.dumps(snapshot, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("utf-8")
+    ).hexdigest()
+
+
+def _attach_configuration_metadata(
+    metadata: dict[str, Any], args: argparse.Namespace, settings: Any | None = None
+) -> None:
+    snapshot = _configuration_snapshot(args, settings)
+    metadata["configuration_snapshot"] = snapshot
+    metadata["configuration_fingerprint"] = _configuration_fingerprint(snapshot)
+
+
 def _sha256(path: Path) -> str:
     if path.is_dir():
         digest = hashlib.sha256()
@@ -655,6 +826,8 @@ def _git_commit() -> str | None:
 
 
 def _prepare_run_output(args: argparse.Namespace) -> None:
+    args.configuration_snapshot = _configuration_snapshot(args)
+    args.configuration_fingerprint = _configuration_fingerprint(args.configuration_snapshot)
     if args.output.suffix == ".json":
         if args.resume:
             raise ValueError("--resume requires a run directory output, not a legacy JSON file.")
@@ -666,21 +839,14 @@ def _prepare_run_output(args: argparse.Namespace) -> None:
         if not (args.output / "manifest.json").exists():
             raise ValueError("--resume requires an existing run directory containing manifest.json.")
         manifest = json.loads((args.output / "manifest.json").read_text(encoding="utf-8"))
-        expected_values = {
-            "configuration": args.configuration,
-            "split": args.split,
-            "top_k": args.top_k,
-            "chunk_size": args.chunk_size,
-            "chunk_overlap": args.chunk_overlap,
-            "experiment_mode": "end-to-end" if args.end_to_end else "retrieval-only",
-            "dataset_checksum": _sha256(args.dataset),
-            "corpus_checksum": _directory_checksum(args.corpus),
-        }
-        for key, expected in expected_values.items():
-            if key not in manifest:
-                continue
-            if manifest.get(key) != expected:
-                raise ValueError(f"Resume configuration mismatch for {key}: {manifest.get(key)!r} != {expected!r}")
+        if manifest.get("run_status") in {"completed", "completed_with_failures"}:
+            raise ValueError("The run is already completed; refusing to resume or overwrite it.")
+        if manifest.get("configuration_fingerprint") != args.configuration_fingerprint:
+            raise ValueError(
+                "Resume configuration mismatch: effective model, retrieval, dataset, prompt, or runtime settings differ. "
+                f"existing={manifest.get('configuration_fingerprint')!r}, requested={args.configuration_fingerprint!r}"
+            )
+        _load_checkpoint_records(args.output)
         args.checkpoint_dir = args.output
         return
     mode = "end-to-end" if args.end_to_end else "retrieval-only"
@@ -743,6 +909,7 @@ def _run_live(args: argparse.Namespace, examples: list[BenchmarkExample]) -> dic
                 "retrieval_configuration": "bm25",
             }
         )
+        _attach_configuration_metadata(metadata, args, settings)
         if not args.end_to_end:
             return run_retrieval(
                 examples,
@@ -809,6 +976,7 @@ def _run_live(args: argparse.Namespace, examples: list[BenchmarkExample]) -> dic
                 "vector_store_provider": None,
             }
         )
+        _attach_configuration_metadata(metadata, args, settings)
         return run_end_to_end(
             examples,
             None,
@@ -856,6 +1024,7 @@ def _run_live(args: argparse.Namespace, examples: list[BenchmarkExample]) -> dic
                     "timing_note": "full mode records total engine query time as pipeline_seconds; component timings are not exposed by the public engine API",
                 }
             )
+            _attach_configuration_metadata(metadata, args, settings)
             result = run_end_to_end(
                 examples,
                 None,
@@ -908,6 +1077,7 @@ def _run_live(args: argparse.Namespace, examples: list[BenchmarkExample]) -> dic
             },
         }
     )
+    _attach_configuration_metadata(metadata, args, settings)
 
     retriever = build_retriever(
         args.configuration,
@@ -993,13 +1163,18 @@ def main() -> int:
     parser.add_argument("--reranker-model")
     parser.add_argument("--reranker-device", choices=("cpu", "cuda", "auto"))
     args = parser.parse_args()
-    args.end_to_end = args.end_to_end or (args.mode or os.getenv("BENCHMARK_MODE", "retrieval-only")) == "end-to-end"
+    requested_mode = args.mode or os.getenv("BENCHMARK_MODE", "retrieval-only")
+    if args.end_to_end and requested_mode == "retrieval-only":
+        parser.error("--end-to-end conflicts with --mode retrieval-only")
+    args.end_to_end = args.end_to_end or requested_mode == "end-to-end"
     if args.top_k < 1:
         parser.error("--top-k must be positive")
     if args.chunk_size < 1 or args.chunk_overlap < 0 or args.chunk_overlap >= args.chunk_size:
         parser.error("--chunk-size must be positive and --chunk-overlap must be between 0 and chunk-size - 1")
-    if args.configuration in {"standalone", "full"} and not args.end_to_end:
-        parser.error(f"{args.configuration} only supports end-to-end mode")
+    try:
+        validate_configuration_mode(args.configuration, "end-to-end" if args.end_to_end else "retrieval-only")
+    except ValueError as exc:
+        parser.error(str(exc))
     if args.configuration == "standalone" and args.live is False:
         parser.error("standalone requires --live")
     if args.configuration == "full" and args.live is False:
@@ -1017,21 +1192,23 @@ def main() -> int:
         result = _run_live(args, examples)
     else:
         documents = load_corpus(args.corpus, chunk_size=args.chunk_size, chunk_overlap=args.chunk_overlap)
+        metadata = experiment_metadata(
+            args.dataset,
+            args.corpus,
+            args.split,
+            args.top_k,
+            args.configuration,
+            chunk_size=args.chunk_size,
+            chunk_overlap=args.chunk_overlap,
+        )
+        _attach_configuration_metadata(metadata, args)
         result = run_retrieval(
             examples,
             BM25Retriever(documents),
             configuration=args.configuration,
             split=args.split,
             top_k=args.top_k,
-            metadata=experiment_metadata(
-                args.dataset,
-                args.corpus,
-                args.split,
-                args.top_k,
-                args.configuration,
-                chunk_size=args.chunk_size,
-                chunk_overlap=args.chunk_overlap,
-            ),
+            metadata=metadata,
             checkpoint_dir=args.checkpoint_dir,
             resume=args.resume,
             retry_failed=args.retry_failed,
@@ -1042,7 +1219,7 @@ def main() -> int:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8")) if manifest_path.exists() else {}
         manifest.update(
             {
-                "run_status": "completed",
+                "run_status": ("completed_with_failures" if result["summary"].get("failed_count", 0) else "completed"),
                 "completed_at_utc": datetime.now(UTC).isoformat(),
                 "attempted_count": len(result["records"]),
                 "successful_count": result["summary"].get("successful_count", 0),

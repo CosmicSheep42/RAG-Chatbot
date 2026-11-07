@@ -64,6 +64,19 @@ def test_passage_metrics_are_unavailable_when_retrieved_offsets_are_missing():
     assert math.isnan(passage_coverage_at_k(results, passages, 1))
 
 
+def test_complete_passage_evidence_requires_each_passage_to_reach_threshold():
+    passages = [
+        {"document_path": "rules.md", "start_char": 0, "end_char": 100},
+        {"document_path": "rules.md", "start_char": 100, "end_char": 200},
+    ]
+    results = [
+        {"document_id": "rules.md", "start_char": 0, "end_char": 100},
+        {"document_id": "rules.md", "start_char": 100, "end_char": 160},
+    ]
+    assert passage_coverage_at_k(results, passages, 2) == 0.8
+    assert not complete_passage_retrieval(results, passages, 2, threshold=0.8)
+
+
 def test_answer_and_citation_metrics_are_separate():
     assert fact_coverage("The limit is 50 active API keys.", ["The limit is 50 active API keys."]) == 1.0
     assert citation_quality(["guide.md", "missing.md"], ["guide.md"], ["guide.md"]) == {
