@@ -55,6 +55,12 @@ Selected per-question records are published under [evaluation/published/datapizz
 
 The published data includes per-question retrieval and generation records, source manifests, checksums, and an unscored blind-review input. `judge_input.jsonl` hides configuration names; `blind_mapping.json` is used only after scoring. An LLM-as-a-Judge review is planned, but no factual or groundedness scores are asserted here. The review remains limited by the 56-question single-domain corpus and by the observability available in each configuration.
 
+Verify the published aggregates without providers or model downloads:
+
+```bash
+.venv/bin/python -m evaluation.verify_published_results
+```
+
 ## Interpretation and limitations
 
 On this corpus, Hybrid and Hybrid + rerank retrieved relevant evidence more reliably than BM25 or Dense alone. Reranking had the highest test nDCG and passage coverage, with a CPU latency cost. These are measurements on one 56-question D&D 5e dataset, not universal claims about RAG quality.

@@ -82,6 +82,7 @@ def _load_runs(results: Path, selection: dict[str, str]) -> list[dict[str, Any]]
             split,
         ):
             raise ValueError(f"manifest does not match selection key: {key}")
+        summary = json.loads((run_dir / "summary.json").read_text(encoding="utf-8"))
         records = [json.loads(line) for line in records_path.read_text(encoding="utf-8").splitlines() if line.strip()]
         expected = 12 if split == "dev" else 44
         ids = [record.get("question_id") for record in records]
@@ -98,6 +99,7 @@ def _load_runs(results: Path, selection: dict[str, str]) -> list[dict[str, Any]]
                 "split": split,
                 "path": run_dir,
                 "manifest": manifest,
+                "summary": summary,
                 "records": records,
             }
         )
@@ -269,6 +271,16 @@ def export_bundle(
                 "response_count": len(responses),
                 "retrieval_record_count": sum(len(run["records"]) for run in runs if run["mode"] == "retrieval-only"),
                 "runs": len(runs),
+                "run_summaries": [
+                    {
+                        "configuration": run["configuration"],
+                        "mode": run["mode"],
+                        "split": run["split"],
+                        "record_file": f"{run['configuration']}-{run['mode']}-{run['split']}.jsonl",
+                        "declared_summary": run["summary"],
+                    }
+                    for run in runs
+                ],
                 "human_review": "pending",
             },
         )
