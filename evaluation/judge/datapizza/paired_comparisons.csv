@@ -1,0 +1,8 @@
+split,scenario_a,scenario_b,n,a_better,same,a_worse,mean_delta,bootstrap_ci95_low,bootstrap_ci95_high
+test,hybrid-rerank,hybrid,44,11,30,3,0.181818,0.022727,0.340909
+test,hybrid-rerank,bm25,44,13,28,3,0.272727,0.090909,0.477273
+test,hybrid-rerank,dense,44,10,28,6,0.090909,-0.113636,0.295455
+test,full,bm25,44,8,31,5,0.113636,-0.068182,0.318182
+test,full,standalone,44,21,20,3,0.636364,0.363636,0.909091
+test,dense,bm25,44,13,24,7,0.181818,-0.045455,0.409091
+test,hybrid,bm25,44,7,31,6,0.090909,-0.113636,0.295455

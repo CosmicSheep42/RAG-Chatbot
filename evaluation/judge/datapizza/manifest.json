@@ -1,0 +1,40 @@
+{
+  "source_zip": "datapizza-rag-evaluation-bundle.zip",
+  "source_zip_sha256": "6c1feb34f4eae8462f628a7ec848923db5ada2b2658dc8a6835500752531695b",
+  "source_zip_entries": 59,
+  "source_internal_sha256_entries_verified": 58,
+  "source_github_repository": "CosmicSheep42/RAG-Chatbot",
+  "source_main_commit_at_review": "49ca3a906317997b1244cb5af752ac6235d3e1ac",
+  "judge_model": "OpenAI GPT-6 (ChatGPT)",
+  "judge_type": "llm-as-a-judge",
+  "blind_mapping_opened_after_annotation": true,
+  "scores_per_response": [
+    "correctness",
+    "completeness"
+  ],
+  "score_range": [
+    0,
+    1,
+    2
+  ],
+  "evidence_support": "not_evaluated (null)",
+  "question_count": 56,
+  "responses_count": 336,
+  "test_questions": 44,
+  "dev_questions": 12,
+  "methodology_notes": "One single-pass blinded LLM reviewer using question, reference answer and some SRD gold passages. Subjective, not human-rated and not expert validated. Seed 42 fixed by source bundle.",
+  "problematic_references": [
+    "datapizza-medium-011",
+    "datapizza-medium-013",
+    "datapizza-medium-019",
+    "datapizza-medium-028",
+    "datapizza-medium-001"
+  ],
+  "uncertain_evidence_annotations": [
+    "datapizza-medium-004"
+  ],
+  "judge_archive_sha256": "d61cb9dba07866ef4a6af61204ddd2829411246b0cdb8175518eeaa1e6d825c1",
+  "imported_review_count": 336,
+  "published_source": "evaluation/published/datapizza/",
+  "human_adjudication": false
+}
