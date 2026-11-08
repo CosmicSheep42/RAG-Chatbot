@@ -89,3 +89,5 @@ evaluation/results/**/*.json
 evaluation/results/**/*.jsonl
 # Local analysis bundles are generated from published records and are not committed.
 exports/
+# Local judge archives are input artifacts and are not committed.
+datapizza_llm_judge_resultados.zip

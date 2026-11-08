@@ -1,4 +1,10 @@
-# Datapizza Benchmark Preparation
+# Datapizza Benchmark and Reproduction Guide
+
+The Datapizza benchmark has been executed locally for all supported configurations. This document now
+serves as the reproduction guide for the completed measurements, not only as preparation instructions.
+The published per-question benchmark records are in `evaluation/published/datapizza/`; the separate
+single-pass LLM-as-a-Judge results are in `evaluation/judge/datapizza/`. No new inference is required to
+inspect or verify either set of records.
 
 The repository contains 20 Datapizza D&D 5e Markdown documents in `knowledge-base/` and 56 original QA
 examples in `evaluation/dataset/datapizza/`. The split manifest contains 12 development and 44 test IDs.
@@ -35,8 +41,8 @@ docker compose -f docker-compose.benchmark.yml --profile standalone exec ollama 
 docker compose -f docker-compose.benchmark.yml --profile standalone exec ollama ollama pull nomic-embed-text
 ```
 
-Run one scenario at a time. These commands start containers and are intentionally not run by this
-preparation change:
+Run one scenario at a time. These commands start containers and reproduce new measurements; they are not
+needed to inspect the already-published results:
 
 ```bash
 docker compose -f docker-compose.benchmark.yml --profile standalone run --rm benchmark-standalone
@@ -80,7 +86,8 @@ python -m evaluation.benchmark \
   --output evaluation/results/datapizza/bm25/end-to-end/run-<id> --resume --retry-failed
 ```
 
-Export generated answers for human review and aggregate completed annotations:
+Export generated answers for manual review and aggregate completed annotations. The published judge results
+were produced separately by a blinded LLM-as-a-Judge workflow and must not be described as human review:
 
 ```bash
 python -m evaluation.manual_review export <run-directory>/records.jsonl reviews.jsonl

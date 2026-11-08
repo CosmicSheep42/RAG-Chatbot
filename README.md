@@ -5,7 +5,7 @@
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 ![Status](https://img.shields.io/badge/status-prototype-orange)
 
-A local Retrieval-Augmented Generation chatbot built as both a portfolio project and a reusable Python package.
+A locally executable, modular RAG system with pluggable providers, hybrid retrieval, optional reranking, API integration, and reproducible experimental evaluation. It is both an AI Engineering portfolio project and a reusable Python package.
 
 The project demonstrates a complete RAG workflow with pluggable generation, embedding, and vector-storage providers, hybrid retrieval, citations, optional reranking, temporary conversation memory, query rewriting, and tool calling. It can run as a standalone FastAPI application or be embedded into another Python system.
 
@@ -23,6 +23,8 @@ The project demonstrates a complete RAG workflow with pluggable generation, embe
 - Standalone FastAPI application.
 - Embeddable FastAPI router.
 - Programmatic asynchronous Python API.
+- Docker Compose benchmark scenarios and deterministic offline evaluation tools.
+- Unit and integration tests covering providers, indexing, retrieval, and orchestration.
 - Support for TXT, Markdown, PDF, DOCX, XLSX, CSV, JSON, HTML, and PPTX files.
 
 ## Architecture
@@ -114,7 +116,22 @@ The Datapizza evaluation used 20 D&D 5e Markdown documents and 56 questions (12 
 | Hybrid | 0.7446 | 0.7360 | 0.3298 |
 | Hybrid + rerank | 0.7576 | 0.7592 | 0.4017 |
 
-These are measurements on this fixed corpus, not universal performance claims. End-to-end latency and limitations are documented in the [results report](evaluation/RESULTS.md). Answer correctness, completeness, and evidence grounding have not yet been independently evaluated. An LLM-assisted evaluation is planned; the repository publishes an unscored blind-review input and rubric, not completed judge scores. Datapizza attribution and licensing details are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+These are measurements on this fixed corpus, not universal performance claims. End-to-end latency and limitations are documented in the [results report](evaluation/RESULTS.md).
+
+#### Answer Quality: LLM-as-a-Judge
+
+A separate, single-pass blinded evaluation by OpenAI GPT-6 via ChatGPT scored correctness and completeness on the same 336 generated answers. It is not a human evaluation, and evidence support was not scored:
+
+| Configuration | Correctness mean / 2 | Completeness mean / 2 | Correctness 2/2 |
+|---|---:|---:|---:|
+| Standalone | 0.091 | 0.091 | 0/44 |
+| BM25 RAG | 0.614 | 0.500 | 8/44 |
+| Dense RAG | 0.795 | 0.636 | 10/44 |
+| Hybrid RAG | 0.705 | 0.500 | 10/44 |
+| Hybrid + Rerank | 0.886 | 0.705 | 11/44 |
+| Full RAG | 0.727 | 0.614 | 10/44 |
+
+Hybrid + Rerank had the highest retrieval metrics and the highest average correctness in this exploratory evaluation. The scores are ordinal 0–2 judgments, not accuracy percentages; one judge, no human adjudication, a single D&D 5e domain, and ambiguous reference criteria limit the conclusion. Groundedness and claim-level citation support remain unavailable. See the [judge report](evaluation/judge/datapizza/report.md), [published benchmark records](evaluation/published/datapizza/), and [benchmark protocol](docs/datapizza-benchmark.md). Datapizza attribution and licensing details are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 Default models (Ollama):
 
@@ -394,6 +411,11 @@ Reranking may improve difficult searches, but it increases installation size, me
 - [`docs/architecture.md`](docs/architecture.md): architecture and index lifecycle.
 - [`docs/retrieval-pipeline.md`](docs/retrieval-pipeline.md): retrieval and context selection.
 - [`docs/security-model.md`](docs/security-model.md): deployment and security boundaries.
+- [`docs/datapizza-benchmark.md`](docs/datapizza-benchmark.md): benchmark protocol and reproduction commands.
+- [`evaluation/RESULTS.md`](evaluation/RESULTS.md): measured retrieval, latency, and evaluation results.
+- [`evaluation/judge/datapizza/report.md`](evaluation/judge/datapizza/report.md): LLM-as-a-Judge summary and limitations.
+- [`evaluation/published/datapizza/`](evaluation/published/datapizza/): auditable per-question benchmark records.
+- [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md): Datapizza attribution and third-party notices.
 
 ## License
 
