@@ -38,11 +38,11 @@ Every listed run completed without execution failures. Values are p50/p95 second
 
 The Full pipeline exposes total engine latency and application-level citation validity, but not separate retrieval and generation timings in these records. Its citation validity was `1.0`; this means returned source identifiers were valid, not that every answer claim was manually verified.
 
-No factual-correctness, completeness, groundedness, or claim-level citation scores are published: those require the existing manual review workflow and have not yet been completed.
+Exploratory correctness and completeness scores are published separately in the completed LLM-as-a-Judge import below. They are ordinal judgments from one blinded LLM reviewer, not independently verified accuracy. Human-adjudicated correctness, claim-level groundedness, and evidence-support scores are not available.
 
-## Auditable records and planned answer review
+## Auditable records and answer review
 
-Selected per-question records are published under [evaluation/published/datapizza/](published/datapizza/). They were derived from the completed local run directories without changing generated answers. The original local run directories remain outside version control. The deterministic export command is:
+Selected per-question records are published under [evaluation/published/datapizza/](./). They were derived from the completed local run directories without changing generated answers. The original local run directories remain outside version control. The deterministic export command is:
 
 ```bash
 .venv/bin/python -m evaluation.export_analysis_bundle \
@@ -53,7 +53,20 @@ Selected per-question records are published under [evaluation/published/datapizz
   --output exports/datapizza-rag-evaluation-bundle.zip
 ```
 
-The published data includes per-question retrieval and generation records, source manifests, checksums, and an unscored blind-review input. `judge_input.jsonl` hides configuration names; `blind_mapping.json` is used only after scoring. An LLM-as-a-Judge review is planned, but no factual or groundedness scores are asserted here. The review remains limited by the 56-question single-domain corpus and by the observability available in each configuration.
+The published data includes per-question retrieval and generation records, source manifests, checksums, and the original unscored blind-review input. The completed judge import is separate under [evaluation/judge/datapizza/](../../judge/datapizza/), so future bundle exports cannot overwrite it.
+
+The LLM-as-a-Judge test-split summary is:
+
+| Configuration | Correctness mean / 2 | Completeness mean / 2 | Correctness 2/2 |
+|---|---:|---:|---:|
+| Standalone | 0.091 | 0.091 | 0/44 |
+| BM25 RAG | 0.614 | 0.500 | 8/44 |
+| Dense RAG | 0.795 | 0.636 | 10/44 |
+| Hybrid RAG | 0.705 | 0.500 | 10/44 |
+| Hybrid + Rerank RAG | 0.886 | 0.705 | 11/44 |
+| Full RAG | 0.727 | 0.614 | 10/44 |
+
+These are ordinal 0–2 scores from one single-pass blinded LLM reviewer, not factual accuracy percentages. Human adjudication was not performed, evidence support was not evaluated for any of the 336 answers, and the judge may have made factual mistakes. Medium questions `001`, `011`, `013`, `019`, and `028` have potentially ambiguous reference criteria; `medium-004` has uncertain evidence annotations and no gold passages. They remain included in the aggregates.
 
 Verify the published aggregates without providers or model downloads:
 
@@ -65,8 +78,8 @@ Verify the published aggregates without providers or model downloads:
 
 On this corpus, Hybrid and Hybrid + rerank retrieved relevant evidence more reliably than BM25 or Dense alone. Reranking had the highest test nDCG and passage coverage, with a CPU latency cost. These are measurements on one 56-question D&D 5e dataset, not universal claims about RAG quality.
 
-The standalone and RAG answer outputs still require human review; heuristic refusal counters are not factual-accuracy measures. Llama's partial CPU offload and the small GPU constrain latency.
+The standalone and RAG answer outputs were reviewed by one LLM judge for correctness and completeness, but the results are exploratory rather than independently validated. Llama's partial CPU offload and the small GPU constrain latency. Better retrieval does not guarantee correct generation, and the evaluation does not isolate the causal contribution of reranking or the generation model.
 
 ## Reproduction
 
-The saved run manifests contain the effective configuration and fingerprints. To reproduce a new run, start the existing Ollama service with the persistent model volume, then use the documented commands in [docs/datapizza-benchmark.md](../docs/datapizza-benchmark.md). Resume an interrupted run only with its exact run directory and matching configuration fingerprint.
+The saved run manifests contain the effective configuration and fingerprints. To reproduce a new run, start the existing Ollama service with the persistent model volume, then use the documented commands in [docs/datapizza-benchmark.md](../../../docs/datapizza-benchmark.md). Resume an interrupted run only with its exact run directory and matching configuration fingerprint.
