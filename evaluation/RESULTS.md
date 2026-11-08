@@ -38,7 +38,7 @@ Every listed run completed without execution failures. Values are p50/p95 second
 
 The Full pipeline exposes total engine latency and application-level citation validity, but not separate retrieval and generation timings in these records. Its citation validity was `1.0`; this means returned source identifiers were valid, not that every answer claim was manually verified.
 
-No factual-correctness, completeness, groundedness, or claim-level citation scores are published: those require the existing manual review workflow and have not yet been completed.
+Exploratory correctness and completeness scores are published separately in the completed LLM-as-a-Judge import below. They are ordinal judgments from one blinded LLM reviewer, not independently verified accuracy. Human-adjudicated correctness, claim-level groundedness, and evidence-support scores are not available.
 
 ## Auditable records and answer review
 

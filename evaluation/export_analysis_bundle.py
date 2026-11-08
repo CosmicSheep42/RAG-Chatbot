@@ -285,10 +285,14 @@ def export_bundle(
             },
         )
         (published / "README.md").write_text(
-            "# Published Datapizza benchmark records\n\nThese files are sanitized, exact per-question records selected from local completed runs. Generated answers are unchanged. `judge_input.jsonl` hides configuration names; use `blind_mapping.json` only after scoring. Factual correctness and groundedness remain unreviewed.\n",
+            "# Published Datapizza benchmark records\n\nThese files are sanitized, exact per-question records selected from local completed runs. Generated answers are unchanged. `judge_input.jsonl` hides configuration names; use `blind_mapping.json` only after scoring. Completed LLM-as-a-Judge scores are published separately under `evaluation/judge/datapizza/`; human adjudication and groundedness scoring remain unavailable.\n",
             encoding="utf-8",
         )
-        shutil.copy2("evaluation/RESULTS.md", published / "RESULTS.md")
+        snapshot = Path("evaluation/RESULTS.md").read_text(encoding="utf-8")
+        snapshot = snapshot.replace("(published/datapizza/)", "(./)")
+        snapshot = snapshot.replace("(judge/datapizza/)", "(../../judge/datapizza/)")
+        snapshot = snapshot.replace("(../docs/datapizza-benchmark.md)", "(../../../docs/datapizza-benchmark.md)")
+        (published / "RESULTS.md").write_text(snapshot, encoding="utf-8")
         (published / "checksums.sha256").write_text(
             "".join(
                 f"{_sha256(path)}  {path.relative_to(published).as_posix()}\n"

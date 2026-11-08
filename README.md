@@ -29,6 +29,21 @@ The project demonstrates a complete RAG workflow with pluggable generation, embe
 
 ## Architecture
 
+```mermaid
+flowchart TD
+    U[User or API client] --> E[ChatbotEngine]
+    E --> R[Routing and query rewriting]
+    R --> Q[Retrieval and context assembly]
+    Q --> B[BM25]
+    Q --> D[Dense vector search]
+    Q --> H[Hybrid fusion]
+    H --> X[Optional cross-encoder reranker]
+    Q --> G[LLM generation]
+    G --> A[Answer and citations]
+```
+
+The production path is policy-driven: a request does not necessarily execute every retrieval branch or the optional reranker.
+
 ```text
 Python caller or FastAPI adapter
             |
