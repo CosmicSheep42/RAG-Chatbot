@@ -57,7 +57,7 @@ class ToolRegistry:
             return json.dumps(payload, ensure_ascii=True), [], payload
         try:
             return tool.handler(tool.definition, arguments, request_context=request_context)
-        except Exception as exc:
+        except Exception:
             logger.exception("Tool execution failed", extra={"tool_name": name})
             payload = {"error": f"Tool '{name}' failed."}
             return json.dumps(payload, ensure_ascii=True), [], payload
