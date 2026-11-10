@@ -126,6 +126,9 @@ class DocumentContextAssembler:
         coverage = self._evaluate_coverage(selected, policy)
         return selected, coverage
 
+    def evaluate_coverage(self, documents: list[Document], policy: RetrievalPolicy) -> CoverageReport:
+        return self._evaluate_coverage(documents, policy)
+
     def expand_with_retry(
         self,
         query: str,

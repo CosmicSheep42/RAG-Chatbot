@@ -76,7 +76,7 @@ class RetrievalService:
                     retry_coverage,
                     retry_policy,
                 )
-            if retry_confidence.score >= confidence.score or retry_coverage.score >= coverage.score:
+            if self._is_better_result(retry_confidence, retry_coverage, confidence, coverage):
                 expanded_documents = retry_expanded
                 coverage = retry_coverage
                 confidence = retry_confidence
@@ -94,6 +94,14 @@ class RetrievalService:
             reason_codes=confidence.reason_codes,
             metadata=metadata,
         )
+
+    @staticmethod
+    def _is_better_result(retry_confidence, retry_coverage, confidence, coverage) -> bool:
+        retry_answers = retry_confidence.decision == RetrievalDecision.ANSWER
+        current_answers = confidence.decision == RetrievalDecision.ANSWER
+        if retry_answers != current_answers:
+            return retry_answers
+        return (retry_confidence.score, retry_coverage.score) > (confidence.score, coverage.score)
 
     def _retrieve_candidates(self, query: str, policy: RetrievalPolicy) -> list[Any]:
         return self.retriever.retrieve(

@@ -9,11 +9,11 @@ class ContextBuilder:
         self.reserved_prompt_tokens = max(0, reserved_prompt_tokens)
 
     def format_context(self, documents: list[Any]) -> str:
-        return "\n\n".join(self._format_document(document, index) for index, document in enumerate(self._select_documents(documents), start=1))
+        return "\n\n".join(self._format_document(document, index) for index, document in enumerate(self.select_documents(documents), start=1))
 
     def build_citations(self, documents: list[Any]) -> list[dict[str, Any]]:
         citations: list[dict[str, Any]] = []
-        for index, document in enumerate(self._select_documents(documents), start=1):
+        for index, document in enumerate(self.select_documents(documents), start=1):
             metadata = getattr(document, "metadata", {}) or {}
             chunk_id = metadata.get("chunk_id")
             document_id = metadata.get("document_id")
@@ -34,7 +34,7 @@ class ContextBuilder:
             citations.append({key: value for key, value in citation.items() if value is not None})
         return citations
 
-    def _select_documents(self, documents: list[Any]) -> list[Any]:
+    def select_documents(self, documents: list[Any]) -> list[Any]:
         available_tokens = max(0, self.max_context_tokens - self.reserved_prompt_tokens)
         selected: list[Any] = []
         used_tokens = 0

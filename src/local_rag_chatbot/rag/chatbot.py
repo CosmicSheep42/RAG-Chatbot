@@ -170,24 +170,35 @@ class RAGChatbot:
             documents = retrieval_result.documents
             coverage = retrieval_result.coverage
             policy = retrieval_result.policy or policy
-            confidence = retrieval_result.confidence_score
-            confidence_assessment = retrieval_result.confidence
             if coverage is None:
                 raise RuntimeError("Retrieval did not produce coverage.")
 
-            if confidence_assessment is not None and confidence_assessment.decision == RetrievalDecision.REFUSE:
-                return self._refusal_response(
-                    generation_query, retrieval_query, policy, confidence_assessment, coverage
-                )
+            documents, coverage, confidence_assessment = await self._run_blocking(
+                self._select_and_assess_final_context,
+                retrieval_query,
+                list(documents),
+                policy,
+            )
+            confidence = confidence_assessment.score if confidence_assessment is not None else 0.0
+
             if confidence_assessment is None and confidence < self.settings.retrieval_confidence_threshold:
                 return self._refusal_response(generation_query, retrieval_query, policy, None, coverage)
 
             partial_context = self._is_partial_enumeration_allowed(retrieval_result)
             recovery_only = (
                 confidence_assessment is not None
-                and confidence_assessment.decision == RetrievalDecision.RETRY
+                and confidence_assessment.decision in {RetrievalDecision.RETRY, RetrievalDecision.REFUSE}
+                and self._is_recoverable_assessment(confidence_assessment)
             ) or (partial_context and self.settings.tool_calling_enabled)
             if recovery_only and not self.settings.tool_calling_enabled:
+                return self._refusal_response(
+                    generation_query, retrieval_query, policy, confidence_assessment, coverage
+                )
+            if (
+                confidence_assessment is not None
+                and confidence_assessment.decision == RetrievalDecision.REFUSE
+                and not recovery_only
+            ):
                 return self._refusal_response(
                     generation_query, retrieval_query, policy, confidence_assessment, coverage
                 )
@@ -343,8 +354,28 @@ class RAGChatbot:
             documents,
             policy,
         )
-        confidence = self.index_manager.confidence_estimator.assess(expanded, coverage, policy)
-        return expanded, coverage, confidence
+        return self._select_and_assess_final_context(query, expanded, policy)
+
+    def _select_and_assess_final_context(
+        self,
+        query: str,
+        documents: list[Any],
+        policy: RetrievalPolicy,
+    ) -> tuple[list[Any], CoverageReport, RetrievalConfidenceAssessment | None]:
+        selected = self.context_builder.select_documents(documents)
+        assembler = self.index_manager.context_assembler
+        if assembler is None:
+            raise RuntimeError("RAG context assembler is not initialized.")
+        coverage = assembler.evaluate_coverage(selected, policy)
+        confidence = self.index_manager.confidence_estimator.assess(selected, coverage, policy)
+        return selected, coverage, confidence
+
+    @staticmethod
+    def _is_recoverable_assessment(assessment: RetrievalConfidenceAssessment) -> bool:
+        return (
+            assessment.score >= 0.20
+            and RetrievalReason.NO_EVIDENCE.value not in assessment.reason_codes
+        )
 
     def _should_refuse_retrieval(self, retrieval_result: RetrievalResult) -> bool:
         assessment = retrieval_result.confidence
