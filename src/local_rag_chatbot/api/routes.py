@@ -143,8 +143,7 @@ def create_chat_router(
             return JSONResponse({"error": "Chatbot engine is not ready."}, status_code=503)
         try:
             async def execute_chat() -> ChatResponse:
-                _ = inference_timeout_seconds
-                return await engine.chat(
+                chat = engine.chat(
                     payload.query,
                     conversation_id=conversation_id,
                     request_context=RequestContext(
@@ -152,6 +151,10 @@ def create_chat_router(
                         conversation_id=conversation_id,
                     ),
                 )
+                if inference_timeout_seconds is None:
+                    return await chat
+                async with asyncio.timeout(inference_timeout_seconds):
+                    return await chat
 
             async def execute_with_capacity() -> ChatResponse:
                 if capacity_limiter is None:

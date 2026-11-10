@@ -55,7 +55,7 @@ class ChatbotEngine:
         return (
             self._initialized
             and not self._reindexing
-            and self._services.index_manager.has_indexed_documents
+            and self._services.index_manager.rag_status.value not in {"not_initialized", "error"}
         )
 
     def status(self) -> dict:
@@ -188,7 +188,7 @@ class ChatbotEngine:
 
         rewrite_result = self._rewrite_query(query, conversation_id)
         standalone_query = self._services.input_pipeline.process_for_rag(rewrite_result.standalone_query)
-        original_query = self._services.input_pipeline.process_for_rag(rewrite_result.original_query)
+        original_query = rewrite_result.original_query.strip()
         if not standalone_query or not original_query:
             raise ValueError("Query is empty after preprocessing.")
 
@@ -231,7 +231,7 @@ class ChatbotEngine:
         if not cleaned_query:
             raise ValueError("Query is empty after preprocessing.")
 
-        route_result = self._services.router.route(cleaned_query, True)
+        route_result = await asyncio.to_thread(self._services.router.route, cleaned_query, True)
         if route_result["route"] != "llm":
             self._remember(conversation_id, query, route_result["result"])
             return ChatResponse(
@@ -246,7 +246,7 @@ class ChatbotEngine:
         async with self._rag_query_slot():
             rewrite_result = await self._arewrite_query(query, conversation_id)
             standalone_query = self._services.input_pipeline.process_for_rag(rewrite_result.standalone_query)
-            original_query = self._services.input_pipeline.process_for_rag(rewrite_result.original_query)
+            original_query = rewrite_result.original_query.strip()
             if not standalone_query or not original_query:
                 raise ValueError("Query is empty after preprocessing.")
 

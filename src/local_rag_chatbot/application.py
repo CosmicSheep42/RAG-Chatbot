@@ -113,7 +113,7 @@ def create_application_services(
         from local_rag_chatbot.providers.llm import create_chat_model
 
         chat_model = create_chat_model(settings)
-    context_builder = ContextBuilder()
+    context_builder = ContextBuilder(max_context_tokens=settings.context_budget_tokens)
     tool_config_repository = ToolCallingConfigRepository(settings.tool_calling_config_file)
     tool_calling_config = tool_config_repository.load()
     answer_service = AnswerService(
@@ -153,6 +153,7 @@ def create_application_services(
         enabled=settings.query_rewriting_enabled and settings.conversation_memory_enabled,
         use_llm=settings.query_rewriting_use_llm,
         max_history_messages=settings.conversation_max_messages,
+        timeout_seconds=settings.query_rewriting_timeout_seconds,
     )
     router = EmbeddingRouter(
         settings=settings,

@@ -108,8 +108,9 @@ class ChromaVectorStoreBackend:
             )
             documents = list(retriever.invoke(query))
             return [
-                ScoredDocument(self._with_score(document, 1.0 - (rank / max(len(documents), 1))), 1.0 - (rank / max(len(documents), 1)))
-                for rank, document in enumerate(documents)
+                # MMR exposes selection order, not a comparable relevance score.
+                ScoredDocument(self._with_score(document, 0.0), 0.0)
+                for document in documents
             ]
         results = store.similarity_search_with_relevance_scores(query, k=k)
         return [

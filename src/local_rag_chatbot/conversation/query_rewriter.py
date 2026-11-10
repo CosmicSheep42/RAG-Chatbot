@@ -64,6 +64,7 @@ class QueryRewriter:
         use_llm: bool = True,
         max_history_messages: int = 8,
         max_history_chars: int = 4000,
+        timeout_seconds: float | None = None,
     ) -> None:
         self.chat_client = chat_client
         self.model = model
@@ -71,6 +72,7 @@ class QueryRewriter:
         self.use_llm = use_llm
         self.max_history_messages = max(0, max_history_messages)
         self.max_history_chars = max(200, max_history_chars)
+        self.timeout_seconds = timeout_seconds
 
     def rewrite(self, query: str, history: list[ConversationMessage]) -> QueryRewriteResult:
         original_query = str(query or "").strip()
@@ -140,7 +142,12 @@ class QueryRewriter:
             return QueryRewriteResult(original_query, original_query, False, method="fallback")
 
         try:
-            standalone_query = await self._arewrite_with_llm(original_query, recent_history)
+            rewrite = self._arewrite_with_llm(original_query, recent_history)
+            standalone_query = (
+                await asyncio.wait_for(rewrite, timeout=self.timeout_seconds)
+                if self.timeout_seconds is not None
+                else await rewrite
+            )
         except Exception as exc:
             return QueryRewriteResult(original_query, original_query, False, method="fallback", error=str(exc))
 

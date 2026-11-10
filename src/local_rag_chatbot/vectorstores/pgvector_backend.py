@@ -329,9 +329,8 @@ class PgVectorStoreBackend:
                     best_index = index
             selected.append(remaining.pop(best_index))
         for rank, item in enumerate(selected):
-            score = 1.0 - (rank / max(len(selected), 1))
-            item["score"] = score
-            item["document"].metadata["retrieval_dense_score"] = round(score, 6)
+            # Preserve vector relevance; MMR order is a diversity ranking.
+            item["document"].metadata["retrieval_dense_rank"] = rank + 1
         return selected
 
     def _ensure_schema(self, conn: Any, *, dimension: int | None) -> None:

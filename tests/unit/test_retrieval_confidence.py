@@ -33,3 +33,14 @@ def test_strong_multi_signal_evidence_is_answerable(document):
 
     assert assessment.decision is RetrievalDecision.ANSWER
     assert assessment.confidence >= 0.62
+
+
+def test_dense_rank_alone_is_not_semantic_relevance(document):
+    candidate = document("unrelated", context_role="hit", retrieval_dense_rank=1)
+
+    assessment = RetrievalConfidenceEstimator().assess(
+        [candidate], SimpleNamespace(sufficient=True, score=1.0), policy()
+    )
+
+    assert assessment.confidence == 0.0
+    assert assessment.decision is RetrievalDecision.REFUSE

@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import threading
 from typing import Any, Mapping, TYPE_CHECKING
 
 from local_rag_chatbot.app_errors import map_provider_error
@@ -126,6 +127,41 @@ class RAGChatbot:
                 extra=self._request_log_extra(request_context),
             )
             return None
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            return asyncio.run(
+                self.aanswer(
+                    retrieval_query,
+                    original_query=original_query,
+                    request_context=request_context,
+                )
+            )
+
+        # A synchronous caller may be embedded in an event-loop thread. Run the
+        # canonical async implementation in a worker instead of nesting loops.
+        result: dict[str, Any] | None = None
+        error: BaseException | None = None
+
+        def run() -> None:
+            nonlocal result, error
+            try:
+                result = asyncio.run(
+                    self.aanswer(
+                        retrieval_query,
+                        original_query=original_query,
+                        request_context=request_context,
+                    )
+                )
+            except BaseException as exc:  # propagate provider and cancellation errors to the sync caller
+                error = exc
+
+        thread = threading.Thread(target=run, name="rag-sync-answer", daemon=True)
+        thread.start()
+        thread.join()
+        if error is not None:
+            raise error
+        return result
 
     async def aanswer(
         self,
@@ -149,7 +185,8 @@ class RAGChatbot:
         try:
             with metrics.timer("retrieval_policy_seconds"):
                 policy = self.policy_resolver.resolve(retrieval_query)
-            retrieval_result = self.index_manager.retrieval_service.retrieve(
+            retrieval_result = await asyncio.to_thread(
+                self.index_manager.retrieval_service.retrieve,
                 retrieval_query,
                 policy,
                 request_context=request_context,
@@ -265,7 +302,9 @@ class RAGChatbot:
         assessment = retrieval_result.confidence
         if assessment is None:
             return retrieval_result.confidence_score < self.settings.retrieval_confidence_threshold
-        return assessment.decision == RetrievalDecision.REFUSE
+        if assessment.decision == RetrievalDecision.ANSWER:
+            return False
+        return not self._is_partial_enumeration_allowed(retrieval_result)
 
     def _is_partial_enumeration_allowed(self, retrieval_result: RetrievalResult) -> bool:
         assessment = retrieval_result.confidence
@@ -481,7 +520,12 @@ class RAGChatbot:
             )
 
         if final_tool_answer is not None:
-            return final_tool_answer, collected_documents, tool_events, tool_used
+            return (
+                self.answer_service.validate_citations(final_tool_answer, collected_documents),
+                collected_documents,
+                tool_events,
+                tool_used,
+            )
 
         fallback_answer = self.answer_service.generate(
             query,
@@ -600,7 +644,8 @@ class RAGChatbot:
                         executed_search_queries.add(query_arg)
 
                     with metrics.timer("tool_execution_seconds", tool=tool_call.name):
-                        tool_content, tool_documents, tool_payload = self.tool_registry.execute(
+                        tool_content, tool_documents, tool_payload = await asyncio.to_thread(
+                            self.tool_registry.execute,
                             tool_call.name,
                             tool_call.arguments,
                             request_context=request_context,
@@ -631,7 +676,12 @@ class RAGChatbot:
             )
 
         if final_tool_answer is not None:
-            return final_tool_answer, collected_documents, tool_events, tool_used
+            return (
+                self.answer_service.validate_citations(final_tool_answer, collected_documents),
+                collected_documents,
+                tool_events,
+                tool_used,
+            )
 
         fallback_answer = await self.answer_service.agenerate(
             query,

@@ -115,6 +115,7 @@ def create_app(
             runtime_controls=runtime_controls,
             capacity_limiter=capacity_limiter,
             request_timeout_seconds=config.request_timeout_seconds,
+            inference_timeout_seconds=config.inference_timeout_seconds,
         ),
         prefix="/api/v1",
     )
@@ -124,6 +125,7 @@ def create_app(
             runtime_controls=runtime_controls,
             capacity_limiter=capacity_limiter,
             request_timeout_seconds=config.request_timeout_seconds,
+            inference_timeout_seconds=config.inference_timeout_seconds,
         ),
         prefix="/api",
         include_in_schema=False,

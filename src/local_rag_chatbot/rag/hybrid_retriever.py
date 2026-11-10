@@ -159,6 +159,7 @@ class SimpleBM25Index:
         self.k1 = k1
         self.b = b
         self._tokenized_docs = [self._document_tokens(document) for document in documents]
+        self._term_frequencies = [Counter(tokens) for tokens in self._tokenized_docs]
         self._doc_lengths = [len(tokens) for tokens in self._tokenized_docs]
         self._avg_doc_length = sum(self._doc_lengths) / len(self._doc_lengths) if self._doc_lengths else 0.0
         self._doc_freqs: Counter[str] = Counter()
@@ -175,8 +176,7 @@ class SimpleBM25Index:
             return []
 
         scores: list[tuple[Document, float]] = []
-        for document, tokens, doc_length in zip(self.documents, self._tokenized_docs, self._doc_lengths):
-            token_counts = Counter(tokens)
+        for document, token_counts, doc_length in zip(self.documents, self._term_frequencies, self._doc_lengths):
             score = 0.0
             for term in query_terms:
                 frequency = token_counts.get(term)
