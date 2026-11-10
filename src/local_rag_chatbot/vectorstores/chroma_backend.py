@@ -9,6 +9,7 @@ import math
 import shutil
 from typing import Any
 from uuid import uuid4
+from hashlib import sha1
 
 from langchain_core.documents import Document
 
@@ -107,9 +108,18 @@ class ChromaVectorStoreBackend:
                 },
             )
             documents = list(retriever.invoke(query))
+            relevance_scores = {
+                self._document_key(document): self._normalize_relevance_score(score)
+                for document, score in store.similarity_search_with_relevance_scores(
+                    query,
+                    k=fetch_k or k,
+                )
+            }
             return [
-                # MMR exposes selection order, not a comparable relevance score.
-                ScoredDocument(self._with_score(document, 0.0), 0.0)
+                ScoredDocument(
+                    self._with_score(document, relevance_scores.get(self._document_key(document), 0.0)),
+                    relevance_scores.get(self._document_key(document), 0.0),
+                )
                 for document in documents
             ]
         results = store.similarity_search_with_relevance_scores(query, k=k)
@@ -247,6 +257,19 @@ class ChromaVectorStoreBackend:
         cloned = Document(page_content=document.page_content, metadata=metadata)
         cloned.metadata["retrieval_dense_score"] = round(score, 6)
         return cloned
+
+    def _document_key(self, document: Document) -> str:
+        metadata = document.metadata
+        return sha1(
+            "\x1f".join(
+                (
+                    str(metadata.get("chunk_id", "")),
+                    str(metadata.get("source", "")),
+                    str(metadata.get("chunk_index", "")),
+                    document.page_content,
+                )
+            ).encode("utf-8")
+        ).hexdigest()
 
     def _reset_chroma_client_cache(self) -> None:
         try:

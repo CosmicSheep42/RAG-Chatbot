@@ -258,6 +258,8 @@ class AppSettings:
                 errors.append(f"{name.upper()} must be > 0.")
         if self.context_budget_tokens <= 0:
             errors.append("CONTEXT_BUDGET_TOKENS must be > 0.")
+        if self.inference_timeout_seconds > self.request_timeout_seconds:
+            errors.append("INFERENCE_TIMEOUT_SECONDS must be <= REQUEST_TIMEOUT_SECONDS.")
         if self.query_rewriting_timeout_seconds > self.request_timeout_seconds:
             errors.append("QUERY_REWRITING_TIMEOUT_SECONDS must be <= REPLY_TIMEOUT_SECONDS.")
         uses_ollama = self.llm_provider == "ollama" or self.embedding_provider == "ollama"
@@ -374,9 +376,12 @@ def get_settings() -> AppSettings:
     prod_defaults = app_env == "prod"
     request_timeout_seconds = float(
         os.getenv(
-            "REPLY_TIMEOUT_SECONDS",
-            os.getenv("REQUEST_TIMEOUT_SECONDS", os.getenv("INFERENCE_TIMEOUT_SECONDS", "60")),
+            "REQUEST_TIMEOUT_SECONDS",
+            os.getenv("REPLY_TIMEOUT_SECONDS", "60"),
         )
+    )
+    inference_timeout_seconds = float(
+        os.getenv("INFERENCE_TIMEOUT_SECONDS", str(max(1.0, request_timeout_seconds - 5.0)))
     )
     settings = AppSettings(
         project_root=project_root,
@@ -419,7 +424,7 @@ def get_settings() -> AppSettings:
         max_input_chars=int(os.getenv("MAX_INPUT_CHARS", "1000")),
         rate_limit_requests=int(os.getenv("RATE_LIMIT_REQUESTS", "60" if prod_defaults else "20")),
         rate_limit_window_seconds=int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60")),
-        inference_timeout_seconds=request_timeout_seconds,
+        inference_timeout_seconds=inference_timeout_seconds,
         context_budget_tokens=int(os.getenv("CONTEXT_BUDGET_TOKENS", "6000")),
         hybrid_dense_k=int(os.getenv("HYBRID_DENSE_K", "10")),
         hybrid_dense_fetch_k=int(os.getenv("HYBRID_DENSE_FETCH_K", "20")),
@@ -455,7 +460,7 @@ def get_settings() -> AppSettings:
         query_rewriting_use_llm=_env_bool("QUERY_REWRITING_USE_LLM", "true"),
         query_rewriting_timeout_seconds=float(os.getenv("QUERY_REWRITING_TIMEOUT_SECONDS", "5")),
         ollama_connect_timeout_seconds=float(os.getenv("OLLAMA_CONNECT_TIMEOUT_SECONDS", "5")),
-        ollama_read_timeout_seconds=float(os.getenv("OLLAMA_READ_TIMEOUT_SECONDS", str(request_timeout_seconds))),
+        ollama_read_timeout_seconds=float(os.getenv("OLLAMA_READ_TIMEOUT_SECONDS", str(inference_timeout_seconds))),
         ollama_max_response_bytes=int(os.getenv("OLLAMA_MAX_RESPONSE_BYTES", str(4 * 1024 * 1024))),
         max_concurrent_inferences=int(os.getenv("MAX_CONCURRENT_INFERENCES", "2")),
         max_pending_inferences=int(os.getenv("MAX_PENDING_INFERENCES", "8" if prod_defaults else "4")),

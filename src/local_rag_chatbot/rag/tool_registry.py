@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import inspect
 import json
+import logging
 from typing import Any, Callable, Mapping
 
 from local_rag_chatbot.documents.tool_config_repository import ToolDefinition
@@ -13,6 +14,8 @@ ToolHandler = Callable[
     [ToolDefinition, Mapping[str, Any]],
     tuple[str, list[Any], dict[str, Any]],
 ]
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -55,7 +58,8 @@ class ToolRegistry:
         try:
             return tool.handler(tool.definition, arguments, request_context=request_context)
         except Exception as exc:
-            payload = {"error": f"Tool '{name}' failed: {exc}"}
+            logger.exception("Tool execution failed", extra={"tool_name": name})
+            payload = {"error": f"Tool '{name}' failed."}
             return json.dumps(payload, ensure_ascii=True), [], payload
 
     def _validate_handler_signature(self, name: str, handler: ToolHandler) -> None:

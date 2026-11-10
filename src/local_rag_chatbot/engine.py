@@ -45,6 +45,8 @@ class ChatbotEngine:
         self._rag_state_lock = asyncio.Lock()
         self._no_active_rag_queries = asyncio.Event()
         self._no_active_rag_queries.set()
+        self._conversation_locks: dict[str, asyncio.Lock] = {}
+        self._conversation_locks_guard = asyncio.Lock()
 
     @property
     def services(self) -> ApplicationServices:
@@ -227,6 +229,21 @@ class ChatbotEngine:
         )
 
     async def _chat_async(self, query: str, conversation_id: str | None, context: RequestContext) -> ChatResponse:
+        if conversation_id is None:
+            return await self._chat_async_unlocked(query, conversation_id, context)
+        lock = await self._conversation_lock(conversation_id)
+        async with lock:
+            try:
+                return await self._chat_async_unlocked(query, conversation_id, context)
+            finally:
+                await self._trim_conversation_locks()
+
+    async def _chat_async_unlocked(
+        self,
+        query: str,
+        conversation_id: str | None,
+        context: RequestContext,
+    ) -> ChatResponse:
         cleaned_query = self._services.input_pipeline.process_for_routing(query)
         if not cleaned_query:
             raise ValueError("Query is empty after preprocessing.")
@@ -283,6 +300,26 @@ class ChatbotEngine:
             standalone_query=result.get("standalone_query"),
             query_rewritten=result.get("query_rewritten", False),
         )
+
+    async def _conversation_lock(self, conversation_id: str) -> asyncio.Lock:
+        locks = getattr(self, "_conversation_locks", None)
+        guard = getattr(self, "_conversation_locks_guard", None)
+        if locks is None or guard is None:
+            locks = self._conversation_locks = {}
+            guard = self._conversation_locks_guard = asyncio.Lock()
+        async with guard:
+            return locks.setdefault(conversation_id, asyncio.Lock())
+
+    async def _trim_conversation_locks(self) -> None:
+        max_locks = max(1, int(getattr(self.config, "conversation_max_sessions", 1000)))
+        async with self._conversation_locks_guard:
+            if len(self._conversation_locks) <= max_locks:
+                return
+            for conversation_id, lock in list(self._conversation_locks.items()):
+                if len(self._conversation_locks) <= max_locks:
+                    break
+                if not lock.locked():
+                    self._conversation_locks.pop(conversation_id, None)
 
     def _rewrite_query(self, query: str, conversation_id: str | None):
         memory = self._services.conversation_store

@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import threading
 from typing import Any, Mapping, TYPE_CHECKING
 
 from local_rag_chatbot.app_errors import map_provider_error
@@ -138,30 +137,7 @@ class RAGChatbot:
                 )
             )
 
-        # A synchronous caller may be embedded in an event-loop thread. Run the
-        # canonical async implementation in a worker instead of nesting loops.
-        result: dict[str, Any] | None = None
-        error: BaseException | None = None
-
-        def run() -> None:
-            nonlocal result, error
-            try:
-                result = asyncio.run(
-                    self.aanswer(
-                        retrieval_query,
-                        original_query=original_query,
-                        request_context=request_context,
-                    )
-                )
-            except BaseException as exc:  # propagate provider and cancellation errors to the sync caller
-                error = exc
-
-        thread = threading.Thread(target=run, name="rag-sync-answer", daemon=True)
-        thread.start()
-        thread.join()
-        if error is not None:
-            raise error
-        return result
+        raise RuntimeError("RAGChatbot.answer() cannot run inside an active event loop; use await aanswer().")
 
     async def aanswer(
         self,
@@ -185,7 +161,7 @@ class RAGChatbot:
         try:
             with metrics.timer("retrieval_policy_seconds"):
                 policy = self.policy_resolver.resolve(retrieval_query)
-            retrieval_result = await asyncio.to_thread(
+            retrieval_result = await self._run_blocking(
                 self.index_manager.retrieval_service.retrieve,
                 retrieval_query,
                 policy,
@@ -199,28 +175,22 @@ class RAGChatbot:
             if coverage is None:
                 raise RuntimeError("Retrieval did not produce coverage.")
 
-            if self._should_refuse_retrieval(retrieval_result):
-                return {
-                    "result": (
-                        "I do not have enough reliable context to answer that safely. "
-                        "Try rephrasing the question or ask about a more specific document, source, or section."
-                    ),
-                    "source_documents": [],
-                    "retrieval_confidence": confidence,
-                    "retrieval_confidence_assessment": confidence_assessment.as_debug_payload()
-                    if confidence_assessment is not None
-                    else None,
-                    "retrieval_coverage": coverage.score,
-                    "retrieval_intent": policy.intent.value,
-                    "retrieval_dominant_source": coverage.dominant_source,
-                    "retrieval_coverage_reason": coverage.reason,
-                    "refused": True,
-                    "original_query": generation_query,
-                    "standalone_query": retrieval_query,
-                    "query_rewritten": generation_query != retrieval_query,
-                }
+            if confidence_assessment is not None and confidence_assessment.decision == RetrievalDecision.REFUSE:
+                return self._refusal_response(
+                    generation_query, retrieval_query, policy, confidence_assessment, coverage
+                )
+            if confidence_assessment is None and confidence < self.settings.retrieval_confidence_threshold:
+                return self._refusal_response(generation_query, retrieval_query, policy, None, coverage)
 
             partial_context = self._is_partial_enumeration_allowed(retrieval_result)
+            recovery_only = (
+                confidence_assessment is not None
+                and confidence_assessment.decision == RetrievalDecision.RETRY
+            ) or (partial_context and self.settings.tool_calling_enabled)
+            if recovery_only and not self.settings.tool_calling_enabled:
+                return self._refusal_response(
+                    generation_query, retrieval_query, policy, confidence_assessment, coverage
+                )
             result_text, final_documents, tool_events, tool_used = await self._agenerate_answer_with_optional_tools(
                 generation_query,
                 documents,
@@ -229,8 +199,44 @@ class RAGChatbot:
                 coverage=coverage,
                 confidence_assessment=confidence_assessment,
                 partial_context=partial_context,
+                recovery_only=recovery_only,
                 request_context=request_context,
             )
+            if recovery_only:
+                final_documents, final_coverage, final_confidence = await self._run_blocking(
+                    self._reassess_documents,
+                    retrieval_query,
+                    final_documents,
+                    policy,
+                )
+                final_partial = self._is_partial_enumeration_allowed(
+                    RetrievalResult(
+                        query=retrieval_query,
+                        documents=tuple(final_documents),
+                        candidates=tuple(final_documents),
+                        confidence=final_confidence,
+                        policy=policy,
+                        coverage=final_coverage,
+                    )
+                )
+                if final_confidence is None or (
+                    final_confidence.decision != RetrievalDecision.ANSWER and not final_partial
+                ):
+                    return self._refusal_response(
+                        generation_query, retrieval_query, policy, final_confidence, final_coverage
+                    )
+                result_text = await self.answer_service.agenerate(
+                    generation_query,
+                    list(final_documents),
+                    policy,
+                    coverage=final_coverage,
+                    partial_context=final_partial,
+                )
+                documents = tuple(final_documents)
+                coverage = final_coverage
+                confidence_assessment = final_confidence
+                confidence = final_confidence.score
+                partial_context = final_partial
             return {
                 "result": result_text,
                 "source_documents": list(final_documents),
@@ -297,6 +303,48 @@ class RAGChatbot:
             "standalone_query": retrieval_query,
             "query_rewritten": generation_query != retrieval_query,
         }
+
+    def _refusal_response(
+        self,
+        generation_query: str,
+        retrieval_query: str,
+        policy: RetrievalPolicy,
+        assessment: RetrievalConfidenceAssessment | None,
+        coverage: CoverageReport,
+    ) -> dict[str, Any]:
+        return {
+            "result": (
+                "I do not have enough reliable context to answer that safely. "
+                "Try rephrasing the question or ask about a more specific document, source, or section."
+            ),
+            "source_documents": [],
+            "retrieval_confidence": assessment.score if assessment is not None else 0.0,
+            "retrieval_confidence_assessment": assessment.as_debug_payload() if assessment is not None else None,
+            "retrieval_coverage": coverage.score,
+            "retrieval_intent": policy.intent.value,
+            "retrieval_dominant_source": coverage.dominant_source,
+            "retrieval_coverage_reason": coverage.reason,
+            "refused": True,
+            "original_query": generation_query,
+            "standalone_query": retrieval_query,
+            "query_rewritten": generation_query != retrieval_query,
+        }
+
+    def _reassess_documents(
+        self,
+        query: str,
+        documents: list[Any],
+        policy: RetrievalPolicy,
+    ) -> tuple[list[Any], CoverageReport, RetrievalConfidenceAssessment | None]:
+        if self.index_manager.context_assembler is None:
+            raise RuntimeError("RAG context assembler is not initialized.")
+        expanded, coverage = self.index_manager.context_assembler.expand_context(
+            query,
+            documents,
+            policy,
+        )
+        confidence = self.index_manager.confidence_estimator.assess(expanded, coverage, policy)
+        return expanded, coverage, confidence
 
     def _should_refuse_retrieval(self, retrieval_result: RetrievalResult) -> bool:
         assessment = retrieval_result.confidence
@@ -405,8 +453,11 @@ class RAGChatbot:
         coverage: CoverageReport | None = None,
         confidence_assessment: RetrievalConfidenceAssessment | None = None,
         partial_context: bool = False,
+        recovery_only: bool = False,
         request_context: RequestContext | None = None,
     ) -> tuple[str, list[Any], list[dict[str, Any]], bool]:
+        if recovery_only and not self.settings.tool_calling_enabled:
+            return "", list(documents), [], False
         if not self.settings.tool_calling_enabled:
             return (
                 self.answer_service.generate(query, list(documents), policy, coverage=coverage, partial_context=partial_context),
@@ -456,7 +507,8 @@ class RAGChatbot:
         final_tool_answer: str | None = None
 
         try:
-            for _ in range(self.settings.tool_calling_max_rounds + 1):
+            rounds = 1 if recovery_only else self.settings.tool_calling_max_rounds + 1
+            for _ in range(rounds):
                 with metrics.timer("tool_decision_seconds"):
                     response = self.chat_model.chat(messages, tools=tool_specs, model=self.settings.tool_calling_model)
                 self._append_assistant_message(messages, content=response.content, tool_calls=response.tool_calls)
@@ -519,6 +571,9 @@ class RAGChatbot:
                 extra=self._request_log_extra(request_context),
             )
 
+        if recovery_only:
+            return "", collected_documents, tool_events, tool_used
+
         if final_tool_answer is not None:
             return (
                 self.answer_service.validate_citations(final_tool_answer, collected_documents),
@@ -546,8 +601,11 @@ class RAGChatbot:
         coverage: CoverageReport | None = None,
         confidence_assessment: RetrievalConfidenceAssessment | None = None,
         partial_context: bool = False,
+        recovery_only: bool = False,
         request_context: RequestContext | None = None,
     ) -> tuple[str, list[Any], list[dict[str, Any]], bool]:
+        if recovery_only and not self.settings.tool_calling_enabled:
+            return "", list(documents), [], False
         if not self.settings.tool_calling_enabled:
             return (
                 await self.answer_service.agenerate(
@@ -609,7 +667,8 @@ class RAGChatbot:
         final_tool_answer: str | None = None
 
         try:
-            for _ in range(self.settings.tool_calling_max_rounds + 1):
+            rounds = 1 if recovery_only else self.settings.tool_calling_max_rounds + 1
+            for _ in range(rounds):
                 with metrics.timer("tool_decision_seconds"):
                     response = await self._achat(messages, tools=tool_specs, model=self.settings.tool_calling_model)
                 self._append_assistant_message(messages, content=response.content, tool_calls=response.tool_calls)
@@ -644,7 +703,7 @@ class RAGChatbot:
                         executed_search_queries.add(query_arg)
 
                     with metrics.timer("tool_execution_seconds", tool=tool_call.name):
-                        tool_content, tool_documents, tool_payload = await asyncio.to_thread(
+                        tool_content, tool_documents, tool_payload = await self._run_blocking(
                             self.tool_registry.execute,
                             tool_call.name,
                             tool_call.arguments,
@@ -675,6 +734,9 @@ class RAGChatbot:
                 extra=self._request_log_extra(request_context),
             )
 
+        if recovery_only:
+            return "", collected_documents, tool_events, tool_used
+
         if final_tool_answer is not None:
             return (
                 self.answer_service.validate_citations(final_tool_answer, collected_documents),
@@ -703,6 +765,19 @@ class RAGChatbot:
         if async_chat is not None:
             return await async_chat(messages, tools=tools, model=model)
         return await asyncio.to_thread(self.chat_model.chat, messages, tools=tools, model=model)
+
+    async def _run_blocking(self, function: Any, *args: Any, **kwargs: Any) -> Any:
+        task = asyncio.create_task(asyncio.to_thread(function, *args, **kwargs))
+        try:
+            return await asyncio.shield(task)
+        except asyncio.CancelledError:
+            # Keep the RAG activity slot held until the worker releases its
+            # backend resources; reindexing must not race a cancelled search.
+            try:
+                await asyncio.shield(task)
+            except Exception:
+                pass
+            raise
 
     def _append_assistant_message(
         self,

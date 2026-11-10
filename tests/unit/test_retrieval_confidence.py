@@ -44,3 +44,18 @@ def test_dense_rank_alone_is_not_semantic_relevance(document):
 
     assert assessment.confidence == 0.0
     assert assessment.decision is RetrievalDecision.REFUSE
+
+
+def test_configured_confidence_threshold_affects_answer_decision(document):
+    candidate = document(
+        "The answer",
+        context_role="hit",
+        retrieval_dense_score=0.8,
+        retrieval_sparse_score=4,
+    )
+    estimator = RetrievalConfidenceEstimator()
+    estimator.set_minimum_confidence(0.99)
+
+    assessment = estimator.assess([candidate], SimpleNamespace(sufficient=True, score=1.0), policy())
+
+    assert assessment.decision is RetrievalDecision.RETRY

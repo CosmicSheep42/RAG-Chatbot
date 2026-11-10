@@ -122,6 +122,10 @@ class RetrievalConfidenceAssessment:
 class RetrievalConfidenceEstimator:
     def __init__(self, config: RetrievalConfidenceConfig | None = None) -> None:
         self.config = config or RetrievalConfidenceConfig.default()
+        self.minimum_confidence: float | None = None
+
+    def set_minimum_confidence(self, threshold: float) -> None:
+        self.minimum_confidence = max(0.0, min(1.0, float(threshold)))
 
     def assess(
         self,
@@ -248,6 +252,8 @@ class RetrievalConfidenceEstimator:
         has_dense_only = RetrievalReason.DENSE_ONLY_WEAK in reason_codes
 
         if confidence >= profile.answer_threshold and has_strong_signal:
+            if self.minimum_confidence is not None and confidence < self.minimum_confidence:
+                return RetrievalDecision.RETRY
             if has_insufficient_coverage:
                 if policy.partial_when_incomplete and policy.intent in {QueryIntent.ENUMERATION, QueryIntent.AGGREGATION}:
                     reason_codes.append(RetrievalReason.PARTIAL_ENUMERATION_EVIDENCE)

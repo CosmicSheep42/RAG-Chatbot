@@ -59,6 +59,21 @@ def test_context_references_and_citations_share_stable_ids():
     assert [citation["citation_id"] for citation in citations] == ["S1", "S2"]
 
 
+def test_context_budget_skips_oversized_document_and_keeps_later_evidence():
+    builder = ContextBuilder(max_context_tokens=80, reserved_prompt_tokens=20)
+    documents = [
+        Document("x" * 1000, metadata={"source": "large.md", "chunk_id": "large"}),
+        Document("short useful evidence", metadata={"source": "small.md", "chunk_id": "small"}),
+    ]
+
+    context = builder.format_context(documents)
+    citations = builder.build_citations(documents)
+
+    assert "large.md" not in context
+    assert "small.md" in context
+    assert [citation["source"] for citation in citations] == ["small.md"]
+
+
 def test_invalid_citation_references_are_removed():
     document = Document("supported", metadata={"source": "guide.md", "document_id": "d", "chunk_id": "1"})
     service = object.__new__(AnswerService)
