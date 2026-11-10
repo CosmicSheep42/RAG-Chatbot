@@ -5,7 +5,7 @@ from langchain_core.documents import Document
 from local_rag_chatbot.rag.context_builder import ContextBuilder
 from local_rag_chatbot.rag.context_assembler import DocumentContextAssembler
 from local_rag_chatbot.rag.index_manager import IndexManager, RAGIndexStatus
-from local_rag_chatbot.rag.retrieval_confidence import RetrievalDecision
+from local_rag_chatbot.rag.retrieval_confidence import RetrievalConfidenceEstimator, RetrievalDecision
 from local_rag_chatbot.rag.retrieval_policy import QueryIntent, RetrievalPolicy
 from local_rag_chatbot.rag.retrieval_service import RetrievalService
 from local_rag_chatbot.rag.chatbot import RAGChatbot
@@ -72,6 +72,34 @@ def test_context_budget_skips_oversized_document_and_keeps_later_evidence():
     assert "large.md" not in context
     assert "small.md" in context
     assert [citation["source"] for citation in citations] == ["small.md"]
+
+
+def test_confidence_is_based_on_context_that_generation_receives():
+    large = Document(
+        "x" * 1000,
+        metadata={"source": "large.md", "chunk_id": "large", "context_role": "hit", "retrieval_dense_score": 0.95},
+    )
+    small = Document("unrelated", metadata={"source": "small.md", "chunk_id": "small"})
+    builder = ContextBuilder(max_context_tokens=80, reserved_prompt_tokens=20)
+    coverage = SimpleNamespace(sufficient=True, score=1.0, dominant_source="small.md", reason="ok")
+
+    class Assembler:
+        def evaluate_coverage(self, documents, _policy):
+            return coverage if documents else SimpleNamespace(sufficient=False, score=0.0, dominant_source=None, reason="empty")
+
+    chatbot = object.__new__(RAGChatbot)
+    chatbot.context_builder = builder
+    chatbot.index_manager = SimpleNamespace(
+        context_assembler=Assembler(),
+        confidence_estimator=RetrievalConfidenceEstimator(),
+    )
+
+    selected, _coverage, assessment = chatbot._select_and_assess_final_context(
+        "question", [large, small], _policy()
+    )
+
+    assert [document.metadata["source"] for document in selected] == ["small.md"]
+    assert assessment.decision is RetrievalDecision.REFUSE
 
 
 def test_invalid_citation_references_are_removed():

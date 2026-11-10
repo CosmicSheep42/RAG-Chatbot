@@ -22,6 +22,7 @@ class RetrievalReason(str, Enum):
     INSUFFICIENT_COVERAGE = "INSUFFICIENT_COVERAGE"
     STRONG_RERANK_EVIDENCE = "STRONG_RERANK_EVIDENCE"
     STRONG_MULTI_SIGNAL_EVIDENCE = "STRONG_MULTI_SIGNAL_EVIDENCE"
+    STRONG_DENSE_EVIDENCE = "STRONG_DENSE_EVIDENCE"
     PARTIAL_ENUMERATION_EVIDENCE = "PARTIAL_ENUMERATION_EVIDENCE"
     DENSE_ONLY_WEAK = "DENSE_ONLY_WEAK"
     SPARSE_ONLY_WEAK = "SPARSE_ONLY_WEAK"
@@ -190,6 +191,8 @@ class RetrievalConfidenceEstimator:
 
         if independent_signals >= 2 and confidence >= profile.answer_threshold:
             reason_codes.append(RetrievalReason.STRONG_MULTI_SIGNAL_EVIDENCE)
+        elif dense_evidence >= profile.answer_threshold:
+            reason_codes.append(RetrievalReason.STRONG_DENSE_EVIDENCE)
         elif reranker_evidence is not None and reranker_evidence >= profile.strong_reranker_threshold:
             reason_codes.append(RetrievalReason.STRONG_RERANK_EVIDENCE)
 
@@ -245,6 +248,7 @@ class RetrievalConfidenceEstimator:
         has_insufficient_coverage = RetrievalReason.INSUFFICIENT_COVERAGE in reason_codes
         has_strong_signal = (
             RetrievalReason.STRONG_MULTI_SIGNAL_EVIDENCE in reason_codes
+            or RetrievalReason.STRONG_DENSE_EVIDENCE in reason_codes
             or RetrievalReason.STRONG_RERANK_EVIDENCE in reason_codes
             or RetrievalReason.EXACT_LEXICAL_MATCH in reason_codes
         )

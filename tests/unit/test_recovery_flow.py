@@ -36,9 +36,15 @@ def _chatbot(initial, final, answer="grounded"):
         def expand_context(self, _query, documents, _policy):
             return list(documents), coverage
 
+        def evaluate_coverage(self, _documents, _policy):
+            return coverage
+
     class Estimator:
+        calls = 0
+
         def assess(self, _documents, _coverage, _policy):
-            return final
+            self.calls += 1
+            return initial if self.calls == 1 else final
 
     class Retrieval:
         def retrieve(self, *_args, **_kwargs):
@@ -56,6 +62,7 @@ def _chatbot(initial, final, answer="grounded"):
         context_assembler=Assembler(),
         confidence_estimator=Estimator(),
     )
+    chatbot.context_builder = SimpleNamespace(select_documents=lambda documents: list(documents))
     chatbot.policy_resolver = SimpleNamespace(resolve=lambda _query: policy)
 
     async def generate(*_args, **_kwargs):
@@ -77,6 +84,16 @@ async def test_recoverable_retry_is_reassessed_before_generation():
     result = await chatbot.aanswer("question")
 
     assert result["result"] == "grounded"
+    assert result["refused"] is False
+    assert result["tool_calling_used"] is True
+
+
+@pytest.mark.asyncio
+async def test_recoverable_refusal_attempts_bounded_recovery():
+    chatbot = _chatbot(_assessment(RetrievalDecision.REFUSE, 0.3), _assessment(RetrievalDecision.ANSWER, 0.9))
+
+    result = await chatbot.aanswer("question")
+
     assert result["refused"] is False
     assert result["tool_calling_used"] is True
 

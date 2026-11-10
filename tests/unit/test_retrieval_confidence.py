@@ -59,3 +59,18 @@ def test_configured_confidence_threshold_affects_answer_decision(document):
     assessment = estimator.assess([candidate], SimpleNamespace(sufficient=True, score=1.0), policy())
 
     assert assessment.decision is RetrievalDecision.RETRY
+
+
+def test_strong_dense_only_evidence_can_answer_without_reranker(document):
+    candidate = document(
+        "The application restricts concurrent connections to eight.",
+        context_role="hit",
+        retrieval_dense_score=0.95,
+    )
+
+    assessment = RetrievalConfidenceEstimator().assess(
+        [candidate], SimpleNamespace(sufficient=True, score=1.0), policy()
+    )
+
+    assert assessment.decision is RetrievalDecision.ANSWER
+    assert "STRONG_DENSE_EVIDENCE" in assessment.reason_codes
