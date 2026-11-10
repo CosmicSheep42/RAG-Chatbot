@@ -29,4 +29,3 @@ def test_sync_answer_uses_same_async_execution_path():
 async def test_sync_answer_is_safe_when_called_inside_event_loop():
     expected = {"result": "grounded"}
     assert _chatbot(expected).answer("question") == expected
-
