@@ -222,6 +222,8 @@ class RetrievalConfidenceEstimator:
             scores.append(reranker_evidence)
         if lexical_evidence > 0:
             scores.append(min(0.62, 0.12 + 0.50 * lexical_evidence))
+        if dense_evidence > 0:
+            scores.append(dense_evidence)
         if lexical_evidence > 0 and dense_evidence > 0:
             scores.append(min(0.86, 0.18 + 0.38 * lexical_evidence + 0.22 * dense_evidence + agreement))
         if exact_match:

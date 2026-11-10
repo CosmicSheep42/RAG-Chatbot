@@ -194,7 +194,11 @@ class RAGChatbot:
                 return self._refusal_response(
                     generation_query, retrieval_query, policy, confidence_assessment, coverage
                 )
-            if confidence_assessment is not None and confidence_assessment.decision == RetrievalDecision.REFUSE:
+            if (
+                confidence_assessment is not None
+                and confidence_assessment.decision == RetrievalDecision.REFUSE
+                and not recovery_only
+            ):
                 return self._refusal_response(
                     generation_query, retrieval_query, policy, confidence_assessment, coverage
                 )
