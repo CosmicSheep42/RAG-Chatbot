@@ -85,7 +85,11 @@ def test_confidence_is_based_on_context_that_generation_receives():
 
     class Assembler:
         def evaluate_coverage(self, documents, _policy):
-            return coverage if documents else SimpleNamespace(sufficient=False, score=0.0, dominant_source=None, reason="empty")
+            return (
+                coverage
+                if documents
+                else SimpleNamespace(sufficient=False, score=0.0, dominant_source=None, reason="empty")
+            )
 
     chatbot = object.__new__(RAGChatbot)
     chatbot.context_builder = builder
@@ -94,9 +98,7 @@ def test_confidence_is_based_on_context_that_generation_receives():
         confidence_estimator=RetrievalConfidenceEstimator(),
     )
 
-    selected, _coverage, assessment = chatbot._select_and_assess_final_context(
-        "question", [large, small], _policy()
-    )
+    selected, _coverage, assessment = chatbot._select_and_assess_final_context("question", [large, small], _policy())
 
     assert [document.metadata["source"] for document in selected] == ["small.md"]
     assert assessment.decision is RetrievalDecision.REFUSE
