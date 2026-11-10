@@ -57,6 +57,7 @@ def _chatbot(initial, final, answer="grounded"):
         confidence_estimator=Estimator(),
     )
     chatbot.policy_resolver = SimpleNamespace(resolve=lambda _query: policy)
+
     async def generate(*_args, **_kwargs):
         return answer
 
