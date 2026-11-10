@@ -30,6 +30,6 @@ def create_chat_model(settings: AppSettings) -> ChatModel:
             base_url=settings.openai_base_url or None,
             default_model=settings.generation_model,
             temperature=settings.generation_temperature,
-            timeout_seconds=settings.request_timeout_seconds,
+            timeout_seconds=settings.inference_timeout_seconds,
         )
     raise ConfigurationError(f"Unsupported LLM_PROVIDER: {settings.llm_provider}")

@@ -26,6 +26,7 @@ def test_sync_answer_uses_same_async_execution_path():
 
 
 @pytest.mark.asyncio
-async def test_sync_answer_is_safe_when_called_inside_event_loop():
+async def test_sync_answer_directs_event_loop_callers_to_async_api():
     expected = {"result": "grounded"}
-    assert _chatbot(expected).answer("question") == expected
+    with pytest.raises(RuntimeError, match="use await aanswer"):
+        _chatbot(expected).answer("question")

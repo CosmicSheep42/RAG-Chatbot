@@ -48,6 +48,10 @@ ENTITY_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
+PRESERVED_TOKEN_PATTERN = re.compile(
+    r"\b(?:[A-Za-z0-9][A-Za-z0-9._/-]*\d[A-Za-z0-9._/-]*|[A-Za-z0-9_-]+\.(?:txt|md|pdf|docx|xlsx|csv|json|html?))\b"
+)
+
 COMPARE_PATTERN = re.compile(
     r"\b(compare|comparar|compare os|compare as)\s+(.+?)\s+(?:e|and|vs\.?|versus)\s+(.+?)(?:[?.!]|$)",
     re.IGNORECASE,
@@ -102,7 +106,7 @@ class QueryRewriter:
         except Exception as exc:
             return QueryRewriteResult(original_query, original_query, False, method="fallback", error=str(exc))
 
-        if not self._valid_rewrite(original_query, standalone_query):
+        if not self._valid_rewrite(original_query, standalone_query, recent_history):
             return QueryRewriteResult(
                 original_query,
                 original_query,
@@ -151,7 +155,7 @@ class QueryRewriter:
         except Exception as exc:
             return QueryRewriteResult(original_query, original_query, False, method="fallback", error=str(exc))
 
-        if not self._valid_rewrite(original_query, standalone_query):
+        if not self._valid_rewrite(original_query, standalone_query, recent_history):
             return QueryRewriteResult(
                 original_query,
                 original_query,
@@ -278,7 +282,12 @@ class QueryRewriter:
             selected.append(message)
         return list(reversed(selected))
 
-    def _valid_rewrite(self, original_query: str, standalone_query: str) -> bool:
+    def _valid_rewrite(
+        self,
+        original_query: str,
+        standalone_query: str,
+        history: list[ConversationMessage] | None = None,
+    ) -> bool:
         text = str(standalone_query or "").strip()
         if not text:
             return False
@@ -286,6 +295,17 @@ class QueryRewriter:
             return False
         if "\n\n" in text:
             return False
+        rewritten = text.casefold()
+        if any(token.casefold() not in rewritten for token in PRESERVED_TOKEN_PATTERN.findall(original_query)):
+            return False
+        if history is not None:
+            known_history = " ".join(message.content for message in history).casefold()
+            original = original_query.casefold()
+            if any(
+                token.casefold() not in known_history and token.casefold() not in original
+                for token in PRESERVED_TOKEN_PATTERN.findall(text)
+            ):
+                return False
         return True
 
     def _last_user_message(self, history: list[ConversationMessage]) -> str | None:

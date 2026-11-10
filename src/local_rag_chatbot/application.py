@@ -79,6 +79,8 @@ def create_indexing_services(
         ignored_directory_paths=_ignored_directory_paths(settings),
     )
     document_splitter = DocumentSplitter(settings.chunk_size, settings.chunk_overlap)
+    confidence_estimator = RetrievalConfidenceEstimator()
+    confidence_estimator.set_minimum_confidence(settings.retrieval_confidence_threshold)
     index_manager = IndexManager(
         settings=settings,
         document_repository=document_repository,
@@ -88,7 +90,7 @@ def create_indexing_services(
         embeddings=embeddings,
         vector_backend=vector_backend,
         retrieval_tuning=_retrieval_tuning(settings),
-        confidence_estimator=RetrievalConfidenceEstimator(),
+        confidence_estimator=confidence_estimator,
     )
     return IndexingServices(
         settings=settings,
