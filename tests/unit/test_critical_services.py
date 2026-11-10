@@ -8,6 +8,8 @@ from local_rag_chatbot.rag.index_manager import IndexManager, RAGIndexStatus
 from local_rag_chatbot.rag.retrieval_confidence import RetrievalDecision
 from local_rag_chatbot.rag.retrieval_policy import QueryIntent, RetrievalPolicy
 from local_rag_chatbot.rag.retrieval_service import RetrievalService
+from local_rag_chatbot.rag.chatbot import RAGChatbot
+from local_rag_chatbot.rag.answer_service import AnswerService
 
 
 def _policy() -> RetrievalPolicy:
@@ -39,6 +41,30 @@ def test_context_builder_preserves_source_metadata_and_deduplicates_citations():
     assert "<UNTRUSTED_DOCUMENT_CONTENT>" in context
     assert len(citations) == 1
     assert citations[0]["source_name"] == "platform-overview.md"
+    assert 'reference="S1"' in context
+
+
+def test_context_references_and_citations_share_stable_ids():
+    documents = [
+        Document("first", metadata={"source": "guide.md", "document_id": "d", "chunk_id": "1"}),
+        Document("first", metadata={"source": "guide.md", "document_id": "d", "chunk_id": "1"}),
+        Document("second", metadata={"source": "guide.md", "document_id": "d", "chunk_id": "2"}),
+    ]
+    builder = ContextBuilder()
+
+    context = builder.format_context(documents)
+    citations = builder.build_citations(documents)
+
+    assert context.count("reference=") == 2
+    assert [citation["citation_id"] for citation in citations] == ["S1", "S2"]
+
+
+def test_invalid_citation_references_are_removed():
+    document = Document("supported", metadata={"source": "guide.md", "document_id": "d", "chunk_id": "1"})
+    service = object.__new__(AnswerService)
+    service.context_builder = ContextBuilder()
+
+    assert service.validate_citations("Fact [S1]. Fake [S99].", [document]) == "Fact [S1]. Fake ."
 
 
 def test_retrieval_service_retries_and_keeps_the_better_result():
@@ -132,3 +158,11 @@ def test_index_manager_marks_empty_corpus_and_failures_without_partial_state():
         raise AssertionError("prepare should propagate indexing failures")
     assert manager.rag_status == RAGIndexStatus.ERROR
     assert manager.rag_error == "index failed"
+
+
+def test_retry_decision_is_not_generation_permission():
+    chatbot = object.__new__(RAGChatbot)
+    chatbot.settings = SimpleNamespace(retrieval_confidence_threshold=0.5)
+    retry = SimpleNamespace(confidence=SimpleNamespace(decision=RetrievalDecision.RETRY), confidence_score=0.9)
+
+    assert chatbot._should_refuse_retrieval(retry)

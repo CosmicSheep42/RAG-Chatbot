@@ -111,4 +111,10 @@ class RetrievalService:
             retrieval_limit=policy.retry_retrieval_limit,
             context_limit=policy.retry_context_limit,
             source_chunk_limit=max(policy.source_chunk_limit, policy.retry_context_limit),
+            dense_k=max(policy.dense_k or policy.retrieval_limit, policy.retry_retrieval_limit),
+            dense_fetch_k=max(
+                policy.dense_fetch_k or policy.retry_retrieval_limit,
+                policy.retry_retrieval_limit * 2,
+            ),
+            sparse_k=max(policy.sparse_k or policy.retrieval_limit, policy.retry_retrieval_limit),
         )

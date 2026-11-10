@@ -392,8 +392,6 @@ def _lexical_evidence(sparse_score: float | None) -> float:
 def _dense_evidence(evidence: CandidateRetrievalEvidence) -> float:
     if evidence.dense_score is not None and evidence.dense_score > 0:
         return max(0.0, min(0.65, evidence.dense_score))
-    if evidence.dense_rank is not None and evidence.dense_rank > 0:
-        return max(0.0, min(0.35, 0.35 / evidence.dense_rank))
     return 0.0
 
 

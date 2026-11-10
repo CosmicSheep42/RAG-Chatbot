@@ -79,6 +79,7 @@ class AppSettings:
     rate_limit_requests: int
     rate_limit_window_seconds: int
     inference_timeout_seconds: float
+    context_budget_tokens: int
     hybrid_dense_k: int
     hybrid_dense_fetch_k: int
     hybrid_sparse_k: int
@@ -255,6 +256,8 @@ class AppSettings:
         ):
             if getattr(self, name) <= 0:
                 errors.append(f"{name.upper()} must be > 0.")
+        if self.context_budget_tokens <= 0:
+            errors.append("CONTEXT_BUDGET_TOKENS must be > 0.")
         if self.query_rewriting_timeout_seconds > self.request_timeout_seconds:
             errors.append("QUERY_REWRITING_TIMEOUT_SECONDS must be <= REPLY_TIMEOUT_SECONDS.")
         uses_ollama = self.llm_provider == "ollama" or self.embedding_provider == "ollama"
@@ -417,6 +420,7 @@ def get_settings() -> AppSettings:
         rate_limit_requests=int(os.getenv("RATE_LIMIT_REQUESTS", "60" if prod_defaults else "20")),
         rate_limit_window_seconds=int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60")),
         inference_timeout_seconds=request_timeout_seconds,
+        context_budget_tokens=int(os.getenv("CONTEXT_BUDGET_TOKENS", "6000")),
         hybrid_dense_k=int(os.getenv("HYBRID_DENSE_K", "10")),
         hybrid_dense_fetch_k=int(os.getenv("HYBRID_DENSE_FETCH_K", "20")),
         hybrid_sparse_k=int(os.getenv("HYBRID_SPARSE_K", "10")),

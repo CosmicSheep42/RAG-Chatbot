@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import re
 from typing import Any, TYPE_CHECKING
 
 from local_rag_chatbot.observability import metrics
@@ -39,14 +40,11 @@ class AnswerService:
     ) -> PromptTemplate:
         from langchain_core.prompts import PromptTemplate
 
+        instruction = self.policy_instruction(policy, coverage=coverage, partial_context=partial_context) or ""
+        instruction += " Cite factual claims with only valid evidence references such as [S1]; never invent a reference."
         return PromptTemplate.from_template(self.answer_prompt_template).partial(
             master_prompt=self.prompt_loader(),
-            policy_instruction=self.policy_instruction(
-                policy,
-                coverage=coverage,
-                partial_context=partial_context,
-            )
-            or "",
+            policy_instruction=instruction,
         )
 
     def build_chat_system_prompt(
@@ -58,16 +56,13 @@ class AnswerService:
         coverage: CoverageReport | None = None,
         partial_context: bool = False,
     ) -> str:
+        instruction = self.policy_instruction(policy, coverage=coverage, partial_context=partial_context) or ""
+        instruction += " Cite factual claims with only valid evidence references such as [S1]; never invent a reference."
         return self.system_prompt_template.format(
             master_prompt=self.prompt_loader(),
             user_question=query,
             current_context=self.context_builder.format_context(documents),
-            retrieval_guidance=self.policy_instruction(
-                policy,
-                coverage=coverage,
-                partial_context=partial_context,
-            )
-            or "",
+            retrieval_guidance=instruction,
         )
 
     def generate(
@@ -88,7 +83,7 @@ class AnswerService:
                 [{"role": "user", "content": prompt}],
                 model=self.generation_model,
             )
-        return response.content.strip()
+        return self.validate_citations(response.content.strip(), documents)
 
     async def agenerate(
         self,
@@ -108,7 +103,15 @@ class AnswerService:
                 [{"role": "user", "content": prompt}],
                 model=self.generation_model,
             )
-        return response.content.strip()
+        return self.validate_citations(response.content.strip(), documents)
+
+    def validate_citations(self, answer: str, documents: list[Any]) -> str:
+        valid_ids = {citation["citation_id"] for citation in self.context_builder.build_citations(documents)}
+        return re.sub(
+            r"\[(S\d+)\]",
+            lambda match: match.group(0) if match.group(1) in valid_ids else "",
+            answer,
+        )
 
     async def _achat(
         self,
