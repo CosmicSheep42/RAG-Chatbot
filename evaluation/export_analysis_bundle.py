@@ -320,7 +320,9 @@ def export_bundle(
         snapshot = Path("evaluation/RESULTS.md").read_text(encoding="utf-8")
         snapshot = snapshot.replace("(published/datapizza/)", "(../datapizza/)")
         snapshot = snapshot.replace("(published/datapizza-current/)", "(./)")
-        snapshot = snapshot.replace("(comparisons/baseline-vs-current/REPORT.md)", "(../../comparisons/baseline-vs-current/REPORT.md)")
+        snapshot = snapshot.replace(
+            "(comparisons/baseline-vs-current/REPORT.md)", "(../../comparisons/baseline-vs-current/REPORT.md)"
+        )
         snapshot = snapshot.replace("(judge/datapizza/)", "(../../judge/datapizza/)")
         snapshot = snapshot.replace("(../docs/datapizza-benchmark.md)", "(../../../docs/datapizza-benchmark.md)")
         (published / "RESULTS.md").write_text(snapshot, encoding="utf-8")
