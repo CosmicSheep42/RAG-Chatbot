@@ -31,6 +31,7 @@ def test_bm25_benchmark_smoke_produces_structured_results(tmp_path):
     retrieval = run_retrieval(examples, BM25Retriever(corpus), configuration="bm25", split="dev", top_k=3)
     assert retrieval["records"]
     assert retrieval["records"][0]["status"] == "success"
+    assert "retrieval_sparse_score" in retrieval["records"][0]["retrieved_documents"][0]
     json.dumps(retrieval, allow_nan=False)
 
     class FakeAnswerer:
@@ -158,15 +159,44 @@ def test_standalone_answerer_does_not_include_retrieval_context():
 
 
 def test_full_engine_records_pipeline_time_instead_of_generation_time():
+    class Document:
+        page_content = "selected evidence"
+        metadata = {"source": "guide.md", "source_char_start": 4, "source_char_end": 21}
+
+    class Chatbot:
+        def __init__(self):
+            class RetrievalService:
+                def retrieve(self, *_args, **_kwargs):
+                    return type("Result", (), {"documents": [Document()]})()
+
+            self.index_manager = type(
+                "IndexManager",
+                (),
+                {"retrieval_service": RetrievalService()},
+            )()
+
+        async def achat(self, *_args, **_kwargs):
+            self.index_manager.retrieval_service.retrieve("question", None)
+            return {
+                "source_documents": [Document()],
+                "retrieval_confidence_assessment": {"decision": "answer", "confidence": 0.9},
+                "refused": False,
+                "partial_context": True,
+                "tool_calls": [{"name": "search_documents"}],
+            }
+
     class Engine:
+        _services = type("Services", (), {"chatbot": Chatbot()})()
+
         async def chat(self, question):
+            await self._services.chatbot.achat(question)
             return type(
                 "Response",
                 (),
                 {
-                    "result": "pipeline answer",
+                    "result": "pipeline answer [S1]",
                     "sources": [type("Source", (), {"source": "guide.md", "snippet": "evidence"})()],
-                    "citations": [type("Citation", (), {"source_name": "guide.md"})()],
+                    "citations": [type("Citation", (), {"source_name": "guide.md", "citation_id": "S1"})()],
                 },
             )()
 
@@ -184,8 +214,17 @@ def test_full_engine_records_pipeline_time_instead_of_generation_time():
     assert timing["pipeline_seconds"] >= 0
     assert "generation_seconds" not in timing
     assert "retrieval_latency_p50_seconds" not in result["summary"]
-    assert result["records"][0]["context_available"] is False
+    assert result["records"][0]["context_available"] is True
     assert result["records"][0]["metrics"]["evidence_availability"] is None
+    assert result["records"][0]["selected_context"] == ["selected evidence"]
+    assert result["records"][0]["pipeline_trace"]["retrieval_confidence_assessment"]["confidence"] == 0.9
+    assert result["records"][0]["pipeline_trace"]["selected_evidence"][0]["document_id"] == "guide.md"
+    assert (
+        result["records"][0]["pipeline_trace"]["retrieval_attempts"][0]["documents"][0]["content"]
+        == "selected evidence"
+    )
+    assert result["records"][0]["citation_identifiers"] == ["S1"]
+    json.dumps(result, allow_nan=False)
 
 
 def test_abstention_summary_uses_category_denominators():

@@ -1,0 +1,95 @@
+{
+  "publication": "datapizza-current",
+  "evaluated_git_commit": "9d9031c830a7655abe6a27222ddbde4004821712",
+  "initial_working_tree": "clean",
+  "production_code_changed_during_benchmark": false,
+  "benchmark_harness_changed": true,
+  "benchmark_harness_change": "Per-question capture of actual Full ChatbotEngine trace, selected evidence, retrieval attempts/signals, confidence, refusal, tool calls, query rewrite, and citation identifiers; retrieval score serialization for all retrieval modes.",
+  "benchmark_harness_diff_sha256": "b76be0014e346cc8aaac5da5df0b67a2fccd695d1d03aa8c8f5c60ddf1f819f0",
+  "dataset": {
+    "name": "Datapizza D&D 5e",
+    "revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+    "questions": 56,
+    "development_questions": 12,
+    "test_questions": 44,
+    "documents": 20,
+    "dataset_sha256": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+    "corpus_sha256": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56"
+  },
+  "benchmark_parameters": {
+    "chunk_size": 500,
+    "chunk_overlap": 100,
+    "chunker_version": "structural-v2",
+    "top_k": 5,
+    "temperature": 0,
+    "generation_output_limit": 2048,
+    "vector_store": "Chroma",
+    "index_namespace": "rag",
+    "inference_concurrency": 1,
+    "retrieval_policy": {"candidate_k": 10, "final_k": 5},
+    "reranking_mode": "auto",
+    "reranker_device": "cpu"
+  },
+  "models": {
+    "generation": {"provider": "Ollama", "name": "llama3.2:3b", "model_id": "a80c4f17acd5"},
+    "embedding": {"provider": "Ollama", "name": "nomic-embed-text:latest", "model_id": "0a109f422b47"},
+    "reranker": {"name": "BAAI/bge-reranker-base", "availability": "unavailable; sentence-transformers not installed"}
+  },
+  "host": {
+    "os": "Debian GNU/Linux 13",
+    "kernel": "Linux 6.12.116+deb13-amd64 x86_64",
+    "python_in_benchmark_container": "3.12.16",
+    "cpu": "Intel Core i5-12500H, 12 cores / 16 threads",
+    "memory_gib": 15.3,
+    "gpu": "No usable NVIDIA driver; nvidia-smi could not communicate with driver",
+    "docker_engine": "26.1.5+dfsg1",
+    "benchmark_image": "rag-chatbot-benchmark:local",
+    "benchmark_image_id": "sha256:a68cf7fe899cbd77d791bc25c48daa9937b36fec935702a63c1927d3ef491fc9",
+    "ollama_version": "0.40.16",
+    "persistent_index_volume": "rag-chatbot_benchmark-data",
+    "persistent_model_volume": "rag-chatbot_ollama (read-only source; benchmark used a writable copy)"
+  },
+  "key_runtime_dependencies": {
+    "chromadb": "0.5.0",
+    "langchain": "0.3.30",
+    "langchain-community": "0.3.27",
+    "langchain-ollama": "0.2.1",
+    "ollama_python_client": "0.6.3",
+    "pydantic": "2.14.3",
+    "numpy": "1.26.4",
+    "sentence-transformers": "not installed"
+  },
+  "full_installed_dependency_list": "dependency-versions.txt",
+  "execution": {
+    "matrix_cells": 20,
+    "completed_cells": 16,
+    "unavailable_cells": 4,
+    "completed_question_executions_in_selected_matrix": 448,
+    "additional_successful_duplicate_executions_excluded_from_aggregates": 180,
+    "total_successful_local_question_executions_including_duplicates": 628,
+    "question_failures_in_completed_cells": 0,
+    "matrix_start_utc": "2026-11-12T00:34:18Z",
+    "last_selected_run_completed_utc": "2026-11-12T02:56:09Z",
+    "elapsed_wall_time": "2 hours 21 minutes 50 seconds",
+    "development_split_finished_before_held_out_test": true,
+    "parameters_changed_after_test_started": false,
+    "reranker_build_attempt": "INSTALL_RERANKER=true build stopped after sustained package downloads of approximately 50–80 KB/s; no alternate inference used"
+  },
+  "validation": {
+    "dataset_validation": "passed",
+    "static_preflight": "passed for configuration and Chroma; provider probes are not implemented by the static preflight",
+    "provider_smoke_tests": "passed: Ollama generation and embeddings returned real responses",
+    "docker_compose_configuration": "passed for CPU and GPU compose configurations",
+    "automated_tests_after_harness_changes": "88 passed, 1 warning",
+    "index_manifest": "matched all 20 corpus files and requested chunk settings; no hash mismatch",
+    "historical_publication_before_export": "verified: 20 runs, 56 questions, 336 responses"
+  },
+  "quality_review": {
+    "current_blinded_review": "pending; no judge scores generated",
+    "historical_judge_scores_reused": false,
+    "answerable_questions_in_test": 44,
+    "refusal_heuristic": "existing deterministic text heuristic; not a human or LLM judgment"
+  },
+  "trace_limitations": "The production API exposes the final confidence decision and tool events, but no explicit internal retrieval-retry event counter. The raw records preserve confidence decisions and observed retrieval calls; recovery_attempts is null rather than inferred.",
+  "private_host_paths_or_credentials_published": false
+}

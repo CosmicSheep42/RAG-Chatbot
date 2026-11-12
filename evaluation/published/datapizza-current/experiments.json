@@ -1,0 +1,1422 @@
+[
+  {
+    "configuration": "bm25",
+    "mode": "end-to-end",
+    "split": "dev",
+    "source_run": "evaluation/results/datapizza-current/bm25/end-to-end/run-cpu-dev-bm25-e2e",
+    "manifest": {
+      "benchmark_version": "1",
+      "dataset_name": "datapizza",
+      "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+      "configuration": "bm25",
+      "dataset_checksum": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+      "corpus_checksum": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56",
+      "split": "dev",
+      "top_k": 5,
+      "chunk_size": 500,
+      "chunk_overlap": 100,
+      "chunker_version": "structural-v2",
+      "index_namespace": "rag",
+      "git_commit": null,
+      "python": "3.12.16 (main, Nov  5 2026, 07:58:20) [GCC 14.2.0]",
+      "platform": "Linux-6.12.116+deb13-amd64-x86_64-with-glibc2.41",
+      "timestamp_utc": "2026-11-12T00:44:07.304655+00:00",
+      "provider": "ollama",
+      "generation_model": "llama3.2:3b",
+      "embedding_provider": null,
+      "embedding_model": null,
+      "vector_store_provider": null,
+      "retrieval_configuration": "bm25",
+      "configuration_snapshot": {
+        "dataset_name": "datapizza",
+        "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+        "dataset_checksum": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+        "corpus_checksum": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56",
+        "split": "dev",
+        "configuration": "bm25",
+        "experiment_mode": "end-to-end",
+        "top_k": 5,
+        "chunk_size": 500,
+        "chunk_overlap": 100,
+        "chunker_version": "structural-v2",
+        "llm_provider": "ollama",
+        "generation_model": "llama3.2:3b",
+        "generation_temperature": 0.0,
+        "generation_output_limit": 2048,
+        "generation_context_limit": null,
+        "embedding_provider": null,
+        "embedding_model": null,
+        "vector_store_provider": null,
+        "reranker_model": null,
+        "reranker_device": null,
+        "reranking_mode": "auto",
+        "dense_retrieval_limits": {
+          "hybrid_dense_k": 10,
+          "hybrid_dense_fetch_k": 20
+        },
+        "sparse_retrieval_limits": {
+          "hybrid_sparse_k": 10
+        },
+        "fusion_weights": {
+          "dense": 0.5,
+          "sparse": 0.5
+        },
+        "retrieval_policy": {
+          "candidate_k": 10,
+          "final_k": 5
+        },
+        "evidence_coverage_threshold": 0.8,
+        "prompt_fingerprints": {
+          "src/local_rag_chatbot/resources/prompts/master_prompt.json": "2301bfa569db1340c9f48614624b081270eeeede8c87aa74d4fcb2abefba2ba2",
+          "src/local_rag_chatbot/resources/prompts/tool_calling.json": "c2af1406f1efd16f7919e4b9ee57fb0e373ac32b4790dbbbd5069b58db2cd10f"
+        }
+      },
+      "configuration_fingerprint": "2b56e6f225666c9e968d644cf6e46714964f60d3b63446db36ad0169a665da3f",
+      "experiment_mode": "end-to-end",
+      "question_count": 12,
+      "passage_coverage_threshold": 0.8,
+      "run_status": "completed",
+      "attempted_count": 12,
+      "successful_count": 12,
+      "failed_count": 0,
+      "completed_at_utc": "2026-11-12T00:49:09.286515+00:00"
+    }
+  },
+  {
+    "configuration": "bm25",
+    "mode": "end-to-end",
+    "split": "test",
+    "source_run": "evaluation/results/datapizza-current/bm25/end-to-end/run-cpu-test-bm25-e2e",
+    "manifest": {
+      "benchmark_version": "1",
+      "dataset_name": "datapizza",
+      "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+      "configuration": "bm25",
+      "dataset_checksum": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+      "corpus_checksum": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56",
+      "split": "test",
+      "top_k": 5,
+      "chunk_size": 500,
+      "chunk_overlap": 100,
+      "chunker_version": "structural-v2",
+      "index_namespace": "rag",
+      "git_commit": null,
+      "python": "3.12.16 (main, Nov  5 2026, 07:58:20) [GCC 14.2.0]",
+      "platform": "Linux-6.12.116+deb13-amd64-x86_64-with-glibc2.41",
+      "timestamp_utc": "2026-11-12T01:17:27.225761+00:00",
+      "provider": "ollama",
+      "generation_model": "llama3.2:3b",
+      "embedding_provider": null,
+      "embedding_model": null,
+      "vector_store_provider": null,
+      "retrieval_configuration": "bm25",
+      "configuration_snapshot": {
+        "dataset_name": "datapizza",
+        "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+        "dataset_checksum": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+        "corpus_checksum": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56",
+        "split": "test",
+        "configuration": "bm25",
+        "experiment_mode": "end-to-end",
+        "top_k": 5,
+        "chunk_size": 500,
+        "chunk_overlap": 100,
+        "chunker_version": "structural-v2",
+        "llm_provider": "ollama",
+        "generation_model": "llama3.2:3b",
+        "generation_temperature": 0.0,
+        "generation_output_limit": 2048,
+        "generation_context_limit": null,
+        "embedding_provider": null,
+        "embedding_model": null,
+        "vector_store_provider": null,
+        "reranker_model": null,
+        "reranker_device": null,
+        "reranking_mode": "auto",
+        "dense_retrieval_limits": {
+          "hybrid_dense_k": 10,
+          "hybrid_dense_fetch_k": 20
+        },
+        "sparse_retrieval_limits": {
+          "hybrid_sparse_k": 10
+        },
+        "fusion_weights": {
+          "dense": 0.5,
+          "sparse": 0.5
+        },
+        "retrieval_policy": {
+          "candidate_k": 10,
+          "final_k": 5
+        },
+        "evidence_coverage_threshold": 0.8,
+        "prompt_fingerprints": {
+          "src/local_rag_chatbot/resources/prompts/master_prompt.json": "2301bfa569db1340c9f48614624b081270eeeede8c87aa74d4fcb2abefba2ba2",
+          "src/local_rag_chatbot/resources/prompts/tool_calling.json": "c2af1406f1efd16f7919e4b9ee57fb0e373ac32b4790dbbbd5069b58db2cd10f"
+        }
+      },
+      "configuration_fingerprint": "49f785c8d9dae5c07e91dd95de852ee0c1d3d0c57d4ac148382fcaeab01f9bf1",
+      "experiment_mode": "end-to-end",
+      "question_count": 44,
+      "passage_coverage_threshold": 0.8,
+      "run_status": "completed",
+      "attempted_count": 44,
+      "successful_count": 44,
+      "failed_count": 0,
+      "completed_at_utc": "2026-11-12T01:35:39.068238+00:00"
+    }
+  },
+  {
+    "configuration": "bm25",
+    "mode": "retrieval-only",
+    "split": "dev",
+    "source_run": "evaluation/results/datapizza-current/bm25/retrieval-only/run-cpu-dev-bm25-retrieval-signals",
+    "manifest": {
+      "benchmark_version": "1",
+      "dataset_name": "datapizza",
+      "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+      "configuration": "bm25",
+      "dataset_checksum": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+      "corpus_checksum": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56",
+      "split": "dev",
+      "top_k": 5,
+      "chunk_size": 500,
+      "chunk_overlap": 100,
+      "chunker_version": "structural-v2",
+      "index_namespace": "rag",
+      "git_commit": null,
+      "python": "3.12.16 (main, Nov  5 2026, 07:58:20) [GCC 14.2.0]",
+      "platform": "Linux-6.12.116+deb13-amd64-x86_64-with-glibc2.41",
+      "timestamp_utc": "2026-11-12T02:55:43.788021+00:00",
+      "provider": "ollama",
+      "generation_model": null,
+      "embedding_provider": null,
+      "embedding_model": null,
+      "vector_store_provider": null,
+      "retrieval_configuration": "bm25",
+      "configuration_snapshot": {
+        "dataset_name": "datapizza",
+        "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+        "dataset_checksum": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+        "corpus_checksum": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56",
+        "split": "dev",
+        "configuration": "bm25",
+        "experiment_mode": "retrieval-only",
+        "top_k": 5,
+        "chunk_size": 500,
+        "chunk_overlap": 100,
+        "chunker_version": "structural-v2",
+        "llm_provider": "ollama",
+        "generation_model": "llama3.2:3b",
+        "generation_temperature": 0.0,
+        "generation_output_limit": 2048,
+        "generation_context_limit": null,
+        "embedding_provider": null,
+        "embedding_model": null,
+        "vector_store_provider": null,
+        "reranker_model": null,
+        "reranker_device": null,
+        "reranking_mode": "auto",
+        "dense_retrieval_limits": {
+          "hybrid_dense_k": 10,
+          "hybrid_dense_fetch_k": 20
+        },
+        "sparse_retrieval_limits": {
+          "hybrid_sparse_k": 10
+        },
+        "fusion_weights": {
+          "dense": 0.5,
+          "sparse": 0.5
+        },
+        "retrieval_policy": {
+          "candidate_k": 10,
+          "final_k": 5
+        },
+        "evidence_coverage_threshold": 0.8,
+        "prompt_fingerprints": {
+          "src/local_rag_chatbot/resources/prompts/master_prompt.json": "2301bfa569db1340c9f48614624b081270eeeede8c87aa74d4fcb2abefba2ba2",
+          "src/local_rag_chatbot/resources/prompts/tool_calling.json": "c2af1406f1efd16f7919e4b9ee57fb0e373ac32b4790dbbbd5069b58db2cd10f"
+        }
+      },
+      "configuration_fingerprint": "1edac332e2505f98f7c9c055653bd2a7aa69cc7278acab5e4f62cc4cff31bb44",
+      "experiment_mode": "retrieval-only",
+      "question_count": 12,
+      "passage_coverage_threshold": 0.8,
+      "run_status": "completed",
+      "attempted_count": 12,
+      "successful_count": 12,
+      "failed_count": 0,
+      "completed_at_utc": "2026-11-12T02:55:43.958222+00:00"
+    }
+  },
+  {
+    "configuration": "bm25",
+    "mode": "retrieval-only",
+    "split": "test",
+    "source_run": "evaluation/results/datapizza-current/bm25/retrieval-only/run-cpu-test-bm25-retrieval-signals",
+    "manifest": {
+      "benchmark_version": "1",
+      "dataset_name": "datapizza",
+      "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+      "configuration": "bm25",
+      "dataset_checksum": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+      "corpus_checksum": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56",
+      "split": "test",
+      "top_k": 5,
+      "chunk_size": 500,
+      "chunk_overlap": 100,
+      "chunker_version": "structural-v2",
+      "index_namespace": "rag",
+      "git_commit": null,
+      "python": "3.12.16 (main, Nov  5 2026, 07:58:20) [GCC 14.2.0]",
+      "platform": "Linux-6.12.116+deb13-amd64-x86_64-with-glibc2.41",
+      "timestamp_utc": "2026-11-12T02:55:54.899173+00:00",
+      "provider": "ollama",
+      "generation_model": null,
+      "embedding_provider": null,
+      "embedding_model": null,
+      "vector_store_provider": null,
+      "retrieval_configuration": "bm25",
+      "configuration_snapshot": {
+        "dataset_name": "datapizza",
+        "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+        "dataset_checksum": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+        "corpus_checksum": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56",
+        "split": "test",
+        "configuration": "bm25",
+        "experiment_mode": "retrieval-only",
+        "top_k": 5,
+        "chunk_size": 500,
+        "chunk_overlap": 100,
+        "chunker_version": "structural-v2",
+        "llm_provider": "ollama",
+        "generation_model": "llama3.2:3b",
+        "generation_temperature": 0.0,
+        "generation_output_limit": 2048,
+        "generation_context_limit": null,
+        "embedding_provider": null,
+        "embedding_model": null,
+        "vector_store_provider": null,
+        "reranker_model": null,
+        "reranker_device": null,
+        "reranking_mode": "auto",
+        "dense_retrieval_limits": {
+          "hybrid_dense_k": 10,
+          "hybrid_dense_fetch_k": 20
+        },
+        "sparse_retrieval_limits": {
+          "hybrid_sparse_k": 10
+        },
+        "fusion_weights": {
+          "dense": 0.5,
+          "sparse": 0.5
+        },
+        "retrieval_policy": {
+          "candidate_k": 10,
+          "final_k": 5
+        },
+        "evidence_coverage_threshold": 0.8,
+        "prompt_fingerprints": {
+          "src/local_rag_chatbot/resources/prompts/master_prompt.json": "2301bfa569db1340c9f48614624b081270eeeede8c87aa74d4fcb2abefba2ba2",
+          "src/local_rag_chatbot/resources/prompts/tool_calling.json": "c2af1406f1efd16f7919e4b9ee57fb0e373ac32b4790dbbbd5069b58db2cd10f"
+        }
+      },
+      "configuration_fingerprint": "eace0d18b890ed72efb201dc0abe405762d6ea7ce7addd9181f89a20e7a46487",
+      "experiment_mode": "retrieval-only",
+      "question_count": 44,
+      "passage_coverage_threshold": 0.8,
+      "run_status": "completed",
+      "attempted_count": 44,
+      "successful_count": 44,
+      "failed_count": 0,
+      "completed_at_utc": "2026-11-12T02:55:55.686352+00:00"
+    }
+  },
+  {
+    "configuration": "dense",
+    "mode": "end-to-end",
+    "split": "dev",
+    "source_run": "evaluation/results/datapizza-current/dense/end-to-end/run-cpu-dev-dense-e2e",
+    "manifest": {
+      "benchmark_version": "1",
+      "dataset_name": "datapizza",
+      "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+      "configuration": "dense",
+      "dataset_checksum": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+      "corpus_checksum": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56",
+      "split": "dev",
+      "top_k": 5,
+      "chunk_size": 500,
+      "chunk_overlap": 100,
+      "chunker_version": "structural-v2",
+      "index_namespace": "rag",
+      "git_commit": null,
+      "python": "3.12.16 (main, Nov  5 2026, 07:58:20) [GCC 14.2.0]",
+      "platform": "Linux-6.12.116+deb13-amd64-x86_64-with-glibc2.41",
+      "timestamp_utc": "2026-11-12T00:49:19.797424+00:00",
+      "provider": "ollama",
+      "generation_model": "llama3.2:3b",
+      "embedding_provider": "ollama",
+      "embedding_model": "nomic-embed-text",
+      "vector_store_provider": "chroma",
+      "reranker_model": null,
+      "initialization_seconds": 0.9017431809988921,
+      "retrieval_limits": {
+        "dense_k": 10,
+        "dense_fetch_k": 20,
+        "sparse_k": 10,
+        "candidate_k": 10,
+        "final_k": 5
+      },
+      "configuration_snapshot": {
+        "dataset_name": "datapizza",
+        "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+        "dataset_checksum": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+        "corpus_checksum": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56",
+        "split": "dev",
+        "configuration": "dense",
+        "experiment_mode": "end-to-end",
+        "top_k": 5,
+        "chunk_size": 500,
+        "chunk_overlap": 100,
+        "chunker_version": "structural-v2",
+        "llm_provider": "ollama",
+        "generation_model": "llama3.2:3b",
+        "generation_temperature": 0.0,
+        "generation_output_limit": 2048,
+        "generation_context_limit": null,
+        "embedding_provider": "ollama",
+        "embedding_model": "nomic-embed-text",
+        "vector_store_provider": "chroma",
+        "reranker_model": null,
+        "reranker_device": null,
+        "reranking_mode": "false",
+        "dense_retrieval_limits": {
+          "hybrid_dense_k": 10,
+          "hybrid_dense_fetch_k": 20
+        },
+        "sparse_retrieval_limits": {
+          "hybrid_sparse_k": 10
+        },
+        "fusion_weights": {
+          "dense": 0.5,
+          "sparse": 0.5
+        },
+        "retrieval_policy": {
+          "candidate_k": 10,
+          "final_k": 5
+        },
+        "evidence_coverage_threshold": 0.8,
+        "prompt_fingerprints": {
+          "src/local_rag_chatbot/resources/prompts/master_prompt.json": "2301bfa569db1340c9f48614624b081270eeeede8c87aa74d4fcb2abefba2ba2",
+          "src/local_rag_chatbot/resources/prompts/tool_calling.json": "c2af1406f1efd16f7919e4b9ee57fb0e373ac32b4790dbbbd5069b58db2cd10f"
+        }
+      },
+      "configuration_fingerprint": "05c4e5d9b48b2d24dc1c353ac47303f3587ce5ca1dfac855bc61a2e39d7d0416",
+      "experiment_mode": "end-to-end",
+      "question_count": 12,
+      "passage_coverage_threshold": 0.8,
+      "run_status": "completed",
+      "attempted_count": 12,
+      "successful_count": 12,
+      "failed_count": 0,
+      "completed_at_utc": "2026-11-12T00:54:55.743140+00:00"
+    }
+  },
+  {
+    "configuration": "dense",
+    "mode": "end-to-end",
+    "split": "test",
+    "source_run": "evaluation/results/datapizza-current/dense/end-to-end/run-cpu-test-dense-e2e",
+    "manifest": {
+      "benchmark_version": "1",
+      "dataset_name": "datapizza",
+      "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+      "configuration": "dense",
+      "dataset_checksum": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+      "corpus_checksum": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56",
+      "split": "test",
+      "top_k": 5,
+      "chunk_size": 500,
+      "chunk_overlap": 100,
+      "chunker_version": "structural-v2",
+      "index_namespace": "rag",
+      "git_commit": null,
+      "python": "3.12.16 (main, Nov  5 2026, 07:58:20) [GCC 14.2.0]",
+      "platform": "Linux-6.12.116+deb13-amd64-x86_64-with-glibc2.41",
+      "timestamp_utc": "2026-11-12T01:35:53.767643+00:00",
+      "provider": "ollama",
+      "generation_model": "llama3.2:3b",
+      "embedding_provider": "ollama",
+      "embedding_model": "nomic-embed-text",
+      "vector_store_provider": "chroma",
+      "reranker_model": null,
+      "initialization_seconds": 0.7908995860016148,
+      "retrieval_limits": {
+        "dense_k": 10,
+        "dense_fetch_k": 20,
+        "sparse_k": 10,
+        "candidate_k": 10,
+        "final_k": 5
+      },
+      "configuration_snapshot": {
+        "dataset_name": "datapizza",
+        "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+        "dataset_checksum": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+        "corpus_checksum": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56",
+        "split": "test",
+        "configuration": "dense",
+        "experiment_mode": "end-to-end",
+        "top_k": 5,
+        "chunk_size": 500,
+        "chunk_overlap": 100,
+        "chunker_version": "structural-v2",
+        "llm_provider": "ollama",
+        "generation_model": "llama3.2:3b",
+        "generation_temperature": 0.0,
+        "generation_output_limit": 2048,
+        "generation_context_limit": null,
+        "embedding_provider": "ollama",
+        "embedding_model": "nomic-embed-text",
+        "vector_store_provider": "chroma",
+        "reranker_model": null,
+        "reranker_device": null,
+        "reranking_mode": "false",
+        "dense_retrieval_limits": {
+          "hybrid_dense_k": 10,
+          "hybrid_dense_fetch_k": 20
+        },
+        "sparse_retrieval_limits": {
+          "hybrid_sparse_k": 10
+        },
+        "fusion_weights": {
+          "dense": 0.5,
+          "sparse": 0.5
+        },
+        "retrieval_policy": {
+          "candidate_k": 10,
+          "final_k": 5
+        },
+        "evidence_coverage_threshold": 0.8,
+        "prompt_fingerprints": {
+          "src/local_rag_chatbot/resources/prompts/master_prompt.json": "2301bfa569db1340c9f48614624b081270eeeede8c87aa74d4fcb2abefba2ba2",
+          "src/local_rag_chatbot/resources/prompts/tool_calling.json": "c2af1406f1efd16f7919e4b9ee57fb0e373ac32b4790dbbbd5069b58db2cd10f"
+        }
+      },
+      "configuration_fingerprint": "8e8200d7cf8a824226004ad5db547e7b2abaf42d682a19b9d54dc88a4f9080f4",
+      "experiment_mode": "end-to-end",
+      "question_count": 44,
+      "passage_coverage_threshold": 0.8,
+      "run_status": "completed",
+      "attempted_count": 44,
+      "successful_count": 44,
+      "failed_count": 0,
+      "completed_at_utc": "2026-11-12T01:55:44.669595+00:00"
+    }
+  },
+  {
+    "configuration": "dense",
+    "mode": "retrieval-only",
+    "split": "dev",
+    "source_run": "evaluation/results/datapizza-current/dense/retrieval-only/run-cpu-dev-dense-retrieval-signals",
+    "manifest": {
+      "benchmark_version": "1",
+      "dataset_name": "datapizza",
+      "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+      "configuration": "dense",
+      "dataset_checksum": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+      "corpus_checksum": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56",
+      "split": "dev",
+      "top_k": 5,
+      "chunk_size": 500,
+      "chunk_overlap": 100,
+      "chunker_version": "structural-v2",
+      "index_namespace": "rag",
+      "git_commit": null,
+      "python": "3.12.16 (main, Nov  5 2026, 07:58:20) [GCC 14.2.0]",
+      "platform": "Linux-6.12.116+deb13-amd64-x86_64-with-glibc2.41",
+      "timestamp_utc": "2026-11-12T02:55:45.718944+00:00",
+      "provider": "ollama",
+      "generation_model": "llama3.2:3b",
+      "embedding_provider": "ollama",
+      "embedding_model": "nomic-embed-text",
+      "vector_store_provider": "chroma",
+      "reranker_model": null,
+      "initialization_seconds": 0.8024900169984903,
+      "retrieval_limits": {
+        "dense_k": 10,
+        "dense_fetch_k": 20,
+        "sparse_k": 10,
+        "candidate_k": 10,
+        "final_k": 5
+      },
+      "configuration_snapshot": {
+        "dataset_name": "datapizza",
+        "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+        "dataset_checksum": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+        "corpus_checksum": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56",
+        "split": "dev",
+        "configuration": "dense",
+        "experiment_mode": "retrieval-only",
+        "top_k": 5,
+        "chunk_size": 500,
+        "chunk_overlap": 100,
+        "chunker_version": "structural-v2",
+        "llm_provider": "ollama",
+        "generation_model": "llama3.2:3b",
+        "generation_temperature": 0.0,
+        "generation_output_limit": 2048,
+        "generation_context_limit": null,
+        "embedding_provider": "ollama",
+        "embedding_model": "nomic-embed-text",
+        "vector_store_provider": "chroma",
+        "reranker_model": null,
+        "reranker_device": null,
+        "reranking_mode": "false",
+        "dense_retrieval_limits": {
+          "hybrid_dense_k": 10,
+          "hybrid_dense_fetch_k": 20
+        },
+        "sparse_retrieval_limits": {
+          "hybrid_sparse_k": 10
+        },
+        "fusion_weights": {
+          "dense": 0.5,
+          "sparse": 0.5
+        },
+        "retrieval_policy": {
+          "candidate_k": 10,
+          "final_k": 5
+        },
+        "evidence_coverage_threshold": 0.8,
+        "prompt_fingerprints": {
+          "src/local_rag_chatbot/resources/prompts/master_prompt.json": "2301bfa569db1340c9f48614624b081270eeeede8c87aa74d4fcb2abefba2ba2",
+          "src/local_rag_chatbot/resources/prompts/tool_calling.json": "c2af1406f1efd16f7919e4b9ee57fb0e373ac32b4790dbbbd5069b58db2cd10f"
+        }
+      },
+      "configuration_fingerprint": "9e1e4f569243537124680a05206848c7d09bb09f4f596757f6b481a1de47b3c2",
+      "experiment_mode": "retrieval-only",
+      "question_count": 12,
+      "passage_coverage_threshold": 0.8,
+      "run_status": "completed",
+      "attempted_count": 12,
+      "successful_count": 12,
+      "failed_count": 0,
+      "completed_at_utc": "2026-11-12T02:55:49.206214+00:00"
+    }
+  },
+  {
+    "configuration": "dense",
+    "mode": "retrieval-only",
+    "split": "test",
+    "source_run": "evaluation/results/datapizza-current/dense/retrieval-only/run-cpu-test-dense-retrieval-signals",
+    "manifest": {
+      "benchmark_version": "1",
+      "dataset_name": "datapizza",
+      "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+      "configuration": "dense",
+      "dataset_checksum": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+      "corpus_checksum": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56",
+      "split": "test",
+      "top_k": 5,
+      "chunk_size": 500,
+      "chunk_overlap": 100,
+      "chunker_version": "structural-v2",
+      "index_namespace": "rag",
+      "git_commit": null,
+      "python": "3.12.16 (main, Nov  5 2026, 07:58:20) [GCC 14.2.0]",
+      "platform": "Linux-6.12.116+deb13-amd64-x86_64-with-glibc2.41",
+      "timestamp_utc": "2026-11-12T02:55:57.367041+00:00",
+      "provider": "ollama",
+      "generation_model": "llama3.2:3b",
+      "embedding_provider": "ollama",
+      "embedding_model": "nomic-embed-text",
+      "vector_store_provider": "chroma",
+      "reranker_model": null,
+      "initialization_seconds": 0.7079716410007677,
+      "retrieval_limits": {
+        "dense_k": 10,
+        "dense_fetch_k": 20,
+        "sparse_k": 10,
+        "candidate_k": 10,
+        "final_k": 5
+      },
+      "configuration_snapshot": {
+        "dataset_name": "datapizza",
+        "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+        "dataset_checksum": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+        "corpus_checksum": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56",
+        "split": "test",
+        "configuration": "dense",
+        "experiment_mode": "retrieval-only",
+        "top_k": 5,
+        "chunk_size": 500,
+        "chunk_overlap": 100,
+        "chunker_version": "structural-v2",
+        "llm_provider": "ollama",
+        "generation_model": "llama3.2:3b",
+        "generation_temperature": 0.0,
+        "generation_output_limit": 2048,
+        "generation_context_limit": null,
+        "embedding_provider": "ollama",
+        "embedding_model": "nomic-embed-text",
+        "vector_store_provider": "chroma",
+        "reranker_model": null,
+        "reranker_device": null,
+        "reranking_mode": "false",
+        "dense_retrieval_limits": {
+          "hybrid_dense_k": 10,
+          "hybrid_dense_fetch_k": 20
+        },
+        "sparse_retrieval_limits": {
+          "hybrid_sparse_k": 10
+        },
+        "fusion_weights": {
+          "dense": 0.5,
+          "sparse": 0.5
+        },
+        "retrieval_policy": {
+          "candidate_k": 10,
+          "final_k": 5
+        },
+        "evidence_coverage_threshold": 0.8,
+        "prompt_fingerprints": {
+          "src/local_rag_chatbot/resources/prompts/master_prompt.json": "2301bfa569db1340c9f48614624b081270eeeede8c87aa74d4fcb2abefba2ba2",
+          "src/local_rag_chatbot/resources/prompts/tool_calling.json": "c2af1406f1efd16f7919e4b9ee57fb0e373ac32b4790dbbbd5069b58db2cd10f"
+        }
+      },
+      "configuration_fingerprint": "df802c07e9080c7d0f423db066c3fc1f6bcf2c2566bacbf02eb4b561acbbaa20",
+      "experiment_mode": "retrieval-only",
+      "question_count": 44,
+      "passage_coverage_threshold": 0.8,
+      "run_status": "completed",
+      "attempted_count": 44,
+      "successful_count": 44,
+      "failed_count": 0,
+      "completed_at_utc": "2026-11-12T02:56:00.107373+00:00"
+    }
+  },
+  {
+    "configuration": "full",
+    "mode": "end-to-end",
+    "split": "dev",
+    "source_run": "evaluation/results/datapizza-current/full/end-to-end/run-cpu-dev-full-e2e-traced",
+    "manifest": {
+      "benchmark_version": "1",
+      "dataset_name": "datapizza",
+      "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+      "configuration": "full",
+      "dataset_checksum": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+      "corpus_checksum": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56",
+      "split": "dev",
+      "top_k": 5,
+      "chunk_size": 500,
+      "chunk_overlap": 100,
+      "chunker_version": "structural-v2",
+      "index_namespace": "rag",
+      "git_commit": null,
+      "python": "3.12.16 (main, Nov  5 2026, 07:58:20) [GCC 14.2.0]",
+      "platform": "Linux-6.12.116+deb13-amd64-x86_64-with-glibc2.41",
+      "timestamp_utc": "2026-11-12T01:08:42.539042+00:00",
+      "provider": "ollama",
+      "generation_model": "llama3.2:3b",
+      "embedding_provider": "ollama",
+      "embedding_model": "nomic-embed-text",
+      "vector_store_provider": "chroma",
+      "reranker_device": "cpu",
+      "reranker_model": "BAAI/bge-reranker-base",
+      "initialization_seconds": 0.6728655810002238,
+      "timing_note": "full mode records total engine query time as pipeline_seconds; component timings are not exposed by the public engine API",
+      "configuration_snapshot": {
+        "dataset_name": "datapizza",
+        "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+        "dataset_checksum": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+        "corpus_checksum": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56",
+        "split": "dev",
+        "configuration": "full",
+        "experiment_mode": "end-to-end",
+        "top_k": 5,
+        "chunk_size": 500,
+        "chunk_overlap": 100,
+        "chunker_version": "structural-v2",
+        "llm_provider": "ollama",
+        "generation_model": "llama3.2:3b",
+        "generation_temperature": 0.0,
+        "generation_output_limit": 2048,
+        "generation_context_limit": null,
+        "embedding_provider": "ollama",
+        "embedding_model": "nomic-embed-text",
+        "vector_store_provider": "chroma",
+        "reranker_model": "BAAI/bge-reranker-base",
+        "reranker_device": "cpu",
+        "reranking_mode": "auto",
+        "dense_retrieval_limits": {
+          "hybrid_dense_k": 10,
+          "hybrid_dense_fetch_k": 20
+        },
+        "sparse_retrieval_limits": {
+          "hybrid_sparse_k": 10
+        },
+        "fusion_weights": {
+          "dense": 0.5,
+          "sparse": 0.5
+        },
+        "retrieval_policy": {
+          "candidate_k": 10,
+          "final_k": 5
+        },
+        "evidence_coverage_threshold": 0.8,
+        "prompt_fingerprints": {
+          "src/local_rag_chatbot/resources/prompts/master_prompt.json": "2301bfa569db1340c9f48614624b081270eeeede8c87aa74d4fcb2abefba2ba2",
+          "src/local_rag_chatbot/resources/prompts/tool_calling.json": "c2af1406f1efd16f7919e4b9ee57fb0e373ac32b4790dbbbd5069b58db2cd10f"
+        }
+      },
+      "configuration_fingerprint": "19e5504d55a5f0e4f92a153b72669d34e4974b6734ced2756301a8bc6896a7b1",
+      "experiment_mode": "end-to-end",
+      "question_count": 12,
+      "passage_coverage_threshold": 0.8,
+      "run_status": "completed",
+      "attempted_count": 12,
+      "successful_count": 12,
+      "failed_count": 0,
+      "completed_at_utc": "2026-11-12T01:12:10.205328+00:00"
+    }
+  },
+  {
+    "configuration": "full",
+    "mode": "end-to-end",
+    "split": "test",
+    "source_run": "evaluation/results/datapizza-current/full/end-to-end/run-cpu-test-full-e2e-traced",
+    "manifest": {
+      "benchmark_version": "1",
+      "dataset_name": "datapizza",
+      "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+      "configuration": "full",
+      "dataset_checksum": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+      "corpus_checksum": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56",
+      "split": "test",
+      "top_k": 5,
+      "chunk_size": 500,
+      "chunk_overlap": 100,
+      "chunker_version": "structural-v2",
+      "index_namespace": "rag",
+      "git_commit": null,
+      "python": "3.12.16 (main, Nov  5 2026, 07:58:20) [GCC 14.2.0]",
+      "platform": "Linux-6.12.116+deb13-amd64-x86_64-with-glibc2.41",
+      "timestamp_utc": "2026-11-12T02:15:56.515420+00:00",
+      "provider": "ollama",
+      "generation_model": "llama3.2:3b",
+      "embedding_provider": "ollama",
+      "embedding_model": "nomic-embed-text",
+      "vector_store_provider": "chroma",
+      "reranker_device": "cpu",
+      "reranker_model": "BAAI/bge-reranker-base",
+      "initialization_seconds": 0.787356931999966,
+      "timing_note": "full mode records total engine query time as pipeline_seconds; component timings are not exposed by the public engine API",
+      "configuration_snapshot": {
+        "dataset_name": "datapizza",
+        "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+        "dataset_checksum": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+        "corpus_checksum": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56",
+        "split": "test",
+        "configuration": "full",
+        "experiment_mode": "end-to-end",
+        "top_k": 5,
+        "chunk_size": 500,
+        "chunk_overlap": 100,
+        "chunker_version": "structural-v2",
+        "llm_provider": "ollama",
+        "generation_model": "llama3.2:3b",
+        "generation_temperature": 0.0,
+        "generation_output_limit": 2048,
+        "generation_context_limit": null,
+        "embedding_provider": "ollama",
+        "embedding_model": "nomic-embed-text",
+        "vector_store_provider": "chroma",
+        "reranker_model": "BAAI/bge-reranker-base",
+        "reranker_device": "cpu",
+        "reranking_mode": "auto",
+        "dense_retrieval_limits": {
+          "hybrid_dense_k": 10,
+          "hybrid_dense_fetch_k": 20
+        },
+        "sparse_retrieval_limits": {
+          "hybrid_sparse_k": 10
+        },
+        "fusion_weights": {
+          "dense": 0.5,
+          "sparse": 0.5
+        },
+        "retrieval_policy": {
+          "candidate_k": 10,
+          "final_k": 5
+        },
+        "evidence_coverage_threshold": 0.8,
+        "prompt_fingerprints": {
+          "src/local_rag_chatbot/resources/prompts/master_prompt.json": "2301bfa569db1340c9f48614624b081270eeeede8c87aa74d4fcb2abefba2ba2",
+          "src/local_rag_chatbot/resources/prompts/tool_calling.json": "c2af1406f1efd16f7919e4b9ee57fb0e373ac32b4790dbbbd5069b58db2cd10f"
+        }
+      },
+      "configuration_fingerprint": "4cd66116808dc11eda9d3714a50776101ee44b14ebf991ab3127eba78fbfa6dd",
+      "experiment_mode": "end-to-end",
+      "question_count": 44,
+      "passage_coverage_threshold": 0.8,
+      "run_status": "completed",
+      "attempted_count": 44,
+      "successful_count": 44,
+      "failed_count": 0,
+      "completed_at_utc": "2026-11-12T02:49:26.210747+00:00"
+    }
+  },
+  {
+    "configuration": "hybrid",
+    "mode": "end-to-end",
+    "split": "dev",
+    "source_run": "evaluation/results/datapizza-current/hybrid/end-to-end/run-cpu-dev-hybrid-e2e",
+    "manifest": {
+      "benchmark_version": "1",
+      "dataset_name": "datapizza",
+      "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+      "configuration": "hybrid",
+      "dataset_checksum": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+      "corpus_checksum": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56",
+      "split": "dev",
+      "top_k": 5,
+      "chunk_size": 500,
+      "chunk_overlap": 100,
+      "chunker_version": "structural-v2",
+      "index_namespace": "rag",
+      "git_commit": null,
+      "python": "3.12.16 (main, Nov  5 2026, 07:58:20) [GCC 14.2.0]",
+      "platform": "Linux-6.12.116+deb13-amd64-x86_64-with-glibc2.41",
+      "timestamp_utc": "2026-11-12T00:55:04.467434+00:00",
+      "provider": "ollama",
+      "generation_model": "llama3.2:3b",
+      "embedding_provider": "ollama",
+      "embedding_model": "nomic-embed-text",
+      "vector_store_provider": "chroma",
+      "reranker_model": null,
+      "initialization_seconds": 0.5935841189966595,
+      "retrieval_limits": {
+        "dense_k": 10,
+        "dense_fetch_k": 20,
+        "sparse_k": 10,
+        "candidate_k": 10,
+        "final_k": 5
+      },
+      "configuration_snapshot": {
+        "dataset_name": "datapizza",
+        "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+        "dataset_checksum": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+        "corpus_checksum": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56",
+        "split": "dev",
+        "configuration": "hybrid",
+        "experiment_mode": "end-to-end",
+        "top_k": 5,
+        "chunk_size": 500,
+        "chunk_overlap": 100,
+        "chunker_version": "structural-v2",
+        "llm_provider": "ollama",
+        "generation_model": "llama3.2:3b",
+        "generation_temperature": 0.0,
+        "generation_output_limit": 2048,
+        "generation_context_limit": null,
+        "embedding_provider": "ollama",
+        "embedding_model": "nomic-embed-text",
+        "vector_store_provider": "chroma",
+        "reranker_model": null,
+        "reranker_device": null,
+        "reranking_mode": "false",
+        "dense_retrieval_limits": {
+          "hybrid_dense_k": 10,
+          "hybrid_dense_fetch_k": 20
+        },
+        "sparse_retrieval_limits": {
+          "hybrid_sparse_k": 10
+        },
+        "fusion_weights": {
+          "dense": 0.5,
+          "sparse": 0.5
+        },
+        "retrieval_policy": {
+          "candidate_k": 10,
+          "final_k": 5
+        },
+        "evidence_coverage_threshold": 0.8,
+        "prompt_fingerprints": {
+          "src/local_rag_chatbot/resources/prompts/master_prompt.json": "2301bfa569db1340c9f48614624b081270eeeede8c87aa74d4fcb2abefba2ba2",
+          "src/local_rag_chatbot/resources/prompts/tool_calling.json": "c2af1406f1efd16f7919e4b9ee57fb0e373ac32b4790dbbbd5069b58db2cd10f"
+        }
+      },
+      "configuration_fingerprint": "a80700c5ae3f8c485acf551a68f79d7f35163b7576439bd4e477d404ba80a42a",
+      "reranking_status": {
+        "configured_mode": "false",
+        "active": false,
+        "status": "disabled",
+        "reason": "Reranking was disabled by configuration."
+      },
+      "experiment_mode": "end-to-end",
+      "question_count": 12,
+      "passage_coverage_threshold": 0.8,
+      "run_status": "completed",
+      "attempted_count": 12,
+      "successful_count": 12,
+      "failed_count": 0,
+      "completed_at_utc": "2026-11-12T01:00:24.166861+00:00"
+    }
+  },
+  {
+    "configuration": "hybrid",
+    "mode": "end-to-end",
+    "split": "test",
+    "source_run": "evaluation/results/datapizza-current/hybrid/end-to-end/run-cpu-test-hybrid-e2e",
+    "manifest": {
+      "benchmark_version": "1",
+      "dataset_name": "datapizza",
+      "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+      "configuration": "hybrid",
+      "dataset_checksum": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+      "corpus_checksum": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56",
+      "split": "test",
+      "top_k": 5,
+      "chunk_size": 500,
+      "chunk_overlap": 100,
+      "chunker_version": "structural-v2",
+      "index_namespace": "rag",
+      "git_commit": null,
+      "python": "3.12.16 (main, Nov  5 2026, 07:58:20) [GCC 14.2.0]",
+      "platform": "Linux-6.12.116+deb13-amd64-x86_64-with-glibc2.41",
+      "timestamp_utc": "2026-11-12T01:57:17.202772+00:00",
+      "provider": "ollama",
+      "generation_model": "llama3.2:3b",
+      "embedding_provider": "ollama",
+      "embedding_model": "nomic-embed-text",
+      "vector_store_provider": "chroma",
+      "reranker_model": null,
+      "initialization_seconds": 0.7594841760001145,
+      "retrieval_limits": {
+        "dense_k": 10,
+        "dense_fetch_k": 20,
+        "sparse_k": 10,
+        "candidate_k": 10,
+        "final_k": 5
+      },
+      "configuration_snapshot": {
+        "dataset_name": "datapizza",
+        "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+        "dataset_checksum": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+        "corpus_checksum": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56",
+        "split": "test",
+        "configuration": "hybrid",
+        "experiment_mode": "end-to-end",
+        "top_k": 5,
+        "chunk_size": 500,
+        "chunk_overlap": 100,
+        "chunker_version": "structural-v2",
+        "llm_provider": "ollama",
+        "generation_model": "llama3.2:3b",
+        "generation_temperature": 0.0,
+        "generation_output_limit": 2048,
+        "generation_context_limit": null,
+        "embedding_provider": "ollama",
+        "embedding_model": "nomic-embed-text",
+        "vector_store_provider": "chroma",
+        "reranker_model": null,
+        "reranker_device": null,
+        "reranking_mode": "false",
+        "dense_retrieval_limits": {
+          "hybrid_dense_k": 10,
+          "hybrid_dense_fetch_k": 20
+        },
+        "sparse_retrieval_limits": {
+          "hybrid_sparse_k": 10
+        },
+        "fusion_weights": {
+          "dense": 0.5,
+          "sparse": 0.5
+        },
+        "retrieval_policy": {
+          "candidate_k": 10,
+          "final_k": 5
+        },
+        "evidence_coverage_threshold": 0.8,
+        "prompt_fingerprints": {
+          "src/local_rag_chatbot/resources/prompts/master_prompt.json": "2301bfa569db1340c9f48614624b081270eeeede8c87aa74d4fcb2abefba2ba2",
+          "src/local_rag_chatbot/resources/prompts/tool_calling.json": "c2af1406f1efd16f7919e4b9ee57fb0e373ac32b4790dbbbd5069b58db2cd10f"
+        }
+      },
+      "configuration_fingerprint": "ab6c5e5dc81ff45d22247c7ccfc53841709133915e9a9c0a916188c8645dd549",
+      "reranking_status": {
+        "configured_mode": "false",
+        "active": false,
+        "status": "disabled",
+        "reason": "Reranking was disabled by configuration."
+      },
+      "experiment_mode": "end-to-end",
+      "question_count": 44,
+      "passage_coverage_threshold": 0.8,
+      "run_status": "completed",
+      "attempted_count": 44,
+      "successful_count": 44,
+      "failed_count": 0,
+      "completed_at_utc": "2026-11-12T02:15:47.115298+00:00"
+    }
+  },
+  {
+    "configuration": "hybrid",
+    "mode": "retrieval-only",
+    "split": "dev",
+    "source_run": "evaluation/results/datapizza-current/hybrid/retrieval-only/run-cpu-dev-hybrid-retrieval-signals",
+    "manifest": {
+      "benchmark_version": "1",
+      "dataset_name": "datapizza",
+      "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+      "configuration": "hybrid",
+      "dataset_checksum": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+      "corpus_checksum": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56",
+      "split": "dev",
+      "top_k": 5,
+      "chunk_size": 500,
+      "chunk_overlap": 100,
+      "chunker_version": "structural-v2",
+      "index_namespace": "rag",
+      "git_commit": null,
+      "python": "3.12.16 (main, Nov  5 2026, 07:58:20) [GCC 14.2.0]",
+      "platform": "Linux-6.12.116+deb13-amd64-x86_64-with-glibc2.41",
+      "timestamp_utc": "2026-11-12T02:55:51.102262+00:00",
+      "provider": "ollama",
+      "generation_model": "llama3.2:3b",
+      "embedding_provider": "ollama",
+      "embedding_model": "nomic-embed-text",
+      "vector_store_provider": "chroma",
+      "reranker_model": null,
+      "initialization_seconds": 0.6049373610003386,
+      "retrieval_limits": {
+        "dense_k": 10,
+        "dense_fetch_k": 20,
+        "sparse_k": 10,
+        "candidate_k": 10,
+        "final_k": 5
+      },
+      "configuration_snapshot": {
+        "dataset_name": "datapizza",
+        "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+        "dataset_checksum": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+        "corpus_checksum": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56",
+        "split": "dev",
+        "configuration": "hybrid",
+        "experiment_mode": "retrieval-only",
+        "top_k": 5,
+        "chunk_size": 500,
+        "chunk_overlap": 100,
+        "chunker_version": "structural-v2",
+        "llm_provider": "ollama",
+        "generation_model": "llama3.2:3b",
+        "generation_temperature": 0.0,
+        "generation_output_limit": 2048,
+        "generation_context_limit": null,
+        "embedding_provider": "ollama",
+        "embedding_model": "nomic-embed-text",
+        "vector_store_provider": "chroma",
+        "reranker_model": null,
+        "reranker_device": null,
+        "reranking_mode": "false",
+        "dense_retrieval_limits": {
+          "hybrid_dense_k": 10,
+          "hybrid_dense_fetch_k": 20
+        },
+        "sparse_retrieval_limits": {
+          "hybrid_sparse_k": 10
+        },
+        "fusion_weights": {
+          "dense": 0.5,
+          "sparse": 0.5
+        },
+        "retrieval_policy": {
+          "candidate_k": 10,
+          "final_k": 5
+        },
+        "evidence_coverage_threshold": 0.8,
+        "prompt_fingerprints": {
+          "src/local_rag_chatbot/resources/prompts/master_prompt.json": "2301bfa569db1340c9f48614624b081270eeeede8c87aa74d4fcb2abefba2ba2",
+          "src/local_rag_chatbot/resources/prompts/tool_calling.json": "c2af1406f1efd16f7919e4b9ee57fb0e373ac32b4790dbbbd5069b58db2cd10f"
+        }
+      },
+      "configuration_fingerprint": "ed4156b15d58106b29a6adc2edfc4181614b0cffb380b12cf338621baf0ae83f",
+      "reranking_status": {
+        "configured_mode": "false",
+        "active": false,
+        "status": "disabled",
+        "reason": "Reranking was disabled by configuration."
+      },
+      "experiment_mode": "retrieval-only",
+      "question_count": 12,
+      "passage_coverage_threshold": 0.8,
+      "run_status": "completed",
+      "attempted_count": 12,
+      "successful_count": 12,
+      "failed_count": 0,
+      "completed_at_utc": "2026-11-12T02:55:52.898084+00:00"
+    }
+  },
+  {
+    "configuration": "hybrid",
+    "mode": "retrieval-only",
+    "split": "test",
+    "source_run": "evaluation/results/datapizza-current/hybrid/retrieval-only/run-cpu-test-hybrid-retrieval-signals",
+    "manifest": {
+      "benchmark_version": "1",
+      "dataset_name": "datapizza",
+      "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+      "configuration": "hybrid",
+      "dataset_checksum": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+      "corpus_checksum": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56",
+      "split": "test",
+      "top_k": 5,
+      "chunk_size": 500,
+      "chunk_overlap": 100,
+      "chunker_version": "structural-v2",
+      "index_namespace": "rag",
+      "git_commit": null,
+      "python": "3.12.16 (main, Nov  5 2026, 07:58:20) [GCC 14.2.0]",
+      "platform": "Linux-6.12.116+deb13-amd64-x86_64-with-glibc2.41",
+      "timestamp_utc": "2026-11-12T02:56:01.941191+00:00",
+      "provider": "ollama",
+      "generation_model": "llama3.2:3b",
+      "embedding_provider": "ollama",
+      "embedding_model": "nomic-embed-text",
+      "vector_store_provider": "chroma",
+      "reranker_model": null,
+      "initialization_seconds": 0.6062674159984454,
+      "retrieval_limits": {
+        "dense_k": 10,
+        "dense_fetch_k": 20,
+        "sparse_k": 10,
+        "candidate_k": 10,
+        "final_k": 5
+      },
+      "configuration_snapshot": {
+        "dataset_name": "datapizza",
+        "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+        "dataset_checksum": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+        "corpus_checksum": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56",
+        "split": "test",
+        "configuration": "hybrid",
+        "experiment_mode": "retrieval-only",
+        "top_k": 5,
+        "chunk_size": 500,
+        "chunk_overlap": 100,
+        "chunker_version": "structural-v2",
+        "llm_provider": "ollama",
+        "generation_model": "llama3.2:3b",
+        "generation_temperature": 0.0,
+        "generation_output_limit": 2048,
+        "generation_context_limit": null,
+        "embedding_provider": "ollama",
+        "embedding_model": "nomic-embed-text",
+        "vector_store_provider": "chroma",
+        "reranker_model": null,
+        "reranker_device": null,
+        "reranking_mode": "false",
+        "dense_retrieval_limits": {
+          "hybrid_dense_k": 10,
+          "hybrid_dense_fetch_k": 20
+        },
+        "sparse_retrieval_limits": {
+          "hybrid_sparse_k": 10
+        },
+        "fusion_weights": {
+          "dense": 0.5,
+          "sparse": 0.5
+        },
+        "retrieval_policy": {
+          "candidate_k": 10,
+          "final_k": 5
+        },
+        "evidence_coverage_threshold": 0.8,
+        "prompt_fingerprints": {
+          "src/local_rag_chatbot/resources/prompts/master_prompt.json": "2301bfa569db1340c9f48614624b081270eeeede8c87aa74d4fcb2abefba2ba2",
+          "src/local_rag_chatbot/resources/prompts/tool_calling.json": "c2af1406f1efd16f7919e4b9ee57fb0e373ac32b4790dbbbd5069b58db2cd10f"
+        }
+      },
+      "configuration_fingerprint": "2547281f460a6b162735811d8d3fbc1a5f65b18249d7b40815fa2d86abf322fa",
+      "reranking_status": {
+        "configured_mode": "false",
+        "active": false,
+        "status": "disabled",
+        "reason": "Reranking was disabled by configuration."
+      },
+      "experiment_mode": "retrieval-only",
+      "question_count": 44,
+      "passage_coverage_threshold": 0.8,
+      "run_status": "completed",
+      "attempted_count": 44,
+      "successful_count": 44,
+      "failed_count": 0,
+      "completed_at_utc": "2026-11-12T02:56:08.527425+00:00"
+    }
+  },
+  {
+    "configuration": "standalone",
+    "mode": "end-to-end",
+    "split": "dev",
+    "source_run": "evaluation/results/datapizza-current/standalone/end-to-end/run-cpu-dev-standalone-e2e",
+    "manifest": {
+      "benchmark_version": "1",
+      "dataset_name": "datapizza",
+      "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+      "configuration": "standalone",
+      "dataset_checksum": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+      "corpus_checksum": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56",
+      "split": "dev",
+      "top_k": 5,
+      "chunk_size": 500,
+      "chunk_overlap": 100,
+      "chunker_version": "structural-v2",
+      "index_namespace": "rag",
+      "git_commit": null,
+      "python": "3.12.16 (main, Nov  5 2026, 07:58:20) [GCC 14.2.0]",
+      "platform": "Linux-6.12.116+deb13-amd64-x86_64-with-glibc2.41",
+      "timestamp_utc": "2026-11-12T01:13:08.437018+00:00",
+      "provider": "ollama",
+      "generation_model": "llama3.2:3b",
+      "embedding_provider": null,
+      "embedding_model": null,
+      "vector_store_provider": null,
+      "configuration_snapshot": {
+        "dataset_name": "datapizza",
+        "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+        "dataset_checksum": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+        "corpus_checksum": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56",
+        "split": "dev",
+        "configuration": "standalone",
+        "experiment_mode": "end-to-end",
+        "top_k": 5,
+        "chunk_size": 500,
+        "chunk_overlap": 100,
+        "chunker_version": "structural-v2",
+        "llm_provider": "ollama",
+        "generation_model": "llama3.2:3b",
+        "generation_temperature": 0.0,
+        "generation_output_limit": 2048,
+        "generation_context_limit": null,
+        "embedding_provider": null,
+        "embedding_model": null,
+        "vector_store_provider": null,
+        "reranker_model": null,
+        "reranker_device": null,
+        "reranking_mode": "auto",
+        "dense_retrieval_limits": {
+          "hybrid_dense_k": 10,
+          "hybrid_dense_fetch_k": 20
+        },
+        "sparse_retrieval_limits": {
+          "hybrid_sparse_k": 10
+        },
+        "fusion_weights": {
+          "dense": 0.5,
+          "sparse": 0.5
+        },
+        "retrieval_policy": {
+          "candidate_k": 10,
+          "final_k": 5
+        },
+        "evidence_coverage_threshold": 0.8,
+        "prompt_fingerprints": {
+          "src/local_rag_chatbot/resources/prompts/master_prompt.json": "2301bfa569db1340c9f48614624b081270eeeede8c87aa74d4fcb2abefba2ba2",
+          "src/local_rag_chatbot/resources/prompts/tool_calling.json": "c2af1406f1efd16f7919e4b9ee57fb0e373ac32b4790dbbbd5069b58db2cd10f"
+        }
+      },
+      "configuration_fingerprint": "61ad79d474f585ccc40fb6a5119ab177dbf2b471eb9725c688b245af1ebd6c48",
+      "experiment_mode": "end-to-end",
+      "question_count": 12,
+      "passage_coverage_threshold": 0.8,
+      "run_status": "completed",
+      "attempted_count": 12,
+      "successful_count": 12,
+      "failed_count": 0,
+      "completed_at_utc": "2026-11-12T01:14:41.427669+00:00"
+    }
+  },
+  {
+    "configuration": "standalone",
+    "mode": "end-to-end",
+    "split": "test",
+    "source_run": "evaluation/results/datapizza-current/standalone/end-to-end/run-cpu-test-standalone-e2e",
+    "manifest": {
+      "benchmark_version": "1",
+      "dataset_name": "datapizza",
+      "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+      "configuration": "standalone",
+      "dataset_checksum": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+      "corpus_checksum": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56",
+      "split": "test",
+      "top_k": 5,
+      "chunk_size": 500,
+      "chunk_overlap": 100,
+      "chunker_version": "structural-v2",
+      "index_namespace": "rag",
+      "git_commit": null,
+      "python": "3.12.16 (main, Nov  5 2026, 07:58:20) [GCC 14.2.0]",
+      "platform": "Linux-6.12.116+deb13-amd64-x86_64-with-glibc2.41",
+      "timestamp_utc": "2026-11-12T02:49:35.208994+00:00",
+      "provider": "ollama",
+      "generation_model": "llama3.2:3b",
+      "embedding_provider": null,
+      "embedding_model": null,
+      "vector_store_provider": null,
+      "configuration_snapshot": {
+        "dataset_name": "datapizza",
+        "dataset_revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+        "dataset_checksum": "f8586a6be4f181c2c29c130d3160fa6a63027aba3e046f574e8e4bfb669f5e84",
+        "corpus_checksum": "90eff5a4f481ae3852e91d398afdc6194ee9fa96173ced18ad24383887e98e56",
+        "split": "test",
+        "configuration": "standalone",
+        "experiment_mode": "end-to-end",
+        "top_k": 5,
+        "chunk_size": 500,
+        "chunk_overlap": 100,
+        "chunker_version": "structural-v2",
+        "llm_provider": "ollama",
+        "generation_model": "llama3.2:3b",
+        "generation_temperature": 0.0,
+        "generation_output_limit": 2048,
+        "generation_context_limit": null,
+        "embedding_provider": null,
+        "embedding_model": null,
+        "vector_store_provider": null,
+        "reranker_model": null,
+        "reranker_device": null,
+        "reranking_mode": "auto",
+        "dense_retrieval_limits": {
+          "hybrid_dense_k": 10,
+          "hybrid_dense_fetch_k": 20
+        },
+        "sparse_retrieval_limits": {
+          "hybrid_sparse_k": 10
+        },
+        "fusion_weights": {
+          "dense": 0.5,
+          "sparse": 0.5
+        },
+        "retrieval_policy": {
+          "candidate_k": 10,
+          "final_k": 5
+        },
+        "evidence_coverage_threshold": 0.8,
+        "prompt_fingerprints": {
+          "src/local_rag_chatbot/resources/prompts/master_prompt.json": "2301bfa569db1340c9f48614624b081270eeeede8c87aa74d4fcb2abefba2ba2",
+          "src/local_rag_chatbot/resources/prompts/tool_calling.json": "c2af1406f1efd16f7919e4b9ee57fb0e373ac32b4790dbbbd5069b58db2cd10f"
+        }
+      },
+      "configuration_fingerprint": "bc6eda8f556109f31d282e519266373fad0fa9e662a9263929a89fee5fd8f83d",
+      "experiment_mode": "end-to-end",
+      "question_count": 44,
+      "passage_coverage_threshold": 0.8,
+      "run_status": "completed",
+      "attempted_count": 44,
+      "successful_count": 44,
+      "failed_count": 0,
+      "completed_at_utc": "2026-11-12T02:55:26.869471+00:00"
+    }
+  }
+]

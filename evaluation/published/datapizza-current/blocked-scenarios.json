@@ -1,0 +1,14 @@
+{
+  "status": "attempted_but_unavailable",
+  "reason": "The optional sentence-transformers dependency required by the configured BAAI/bge-reranker-base cross-encoder is not installed in the benchmark image. The retriever raised before executing any questions.",
+  "model_substituted": false,
+  "attempts": [
+    {"configuration": "hybrid-rerank", "mode": "retrieval-only", "split": "dev", "retry_run_id": "cpu-dev-rerank-retrieval-blocked", "cli_exit_code": 1, "manifest_written": false, "questions_executed": 0},
+    {"configuration": "hybrid-rerank", "mode": "retrieval-only", "split": "test", "retry_run_id": "cpu-test-rerank-retrieval-blocked", "cli_exit_code": 1, "manifest_written": false, "questions_executed": 0},
+    {"configuration": "hybrid-rerank", "mode": "end-to-end", "split": "dev", "retry_run_id": "cpu-dev-rerank-e2e-blocked", "cli_exit_code": 1, "manifest_written": false, "questions_executed": 0},
+    {"configuration": "hybrid-rerank", "mode": "end-to-end", "split": "test", "retry_run_id": "cpu-test-rerank-e2e-blocked", "cli_exit_code": 1, "manifest_written": false, "questions_executed": 0}
+  ],
+  "note": "Each cell was attempted initially and retried after diagnosis with the unique IDs above. The CLI exits during retriever construction before it creates the requested run directory/manifest, so this file is the durable record of those failed attempts.",
+  "recovery_attempt": "A CPU reranker image build with INSTALL_RERANKER=true was attempted and stopped because package downloads sustained approximately 50–80 KB/s. The existing exact BAAI model was not present locally, and no inference was fabricated.",
+  "full_configuration_note": "Full end-to-end used the production engine with reranking_mode=auto, but the optional cross-encoder was unavailable. The engine trace records RERANKER_UNAVAILABLE; Full is measured as executed in this environment, not as a reranker-enabled result."
+}

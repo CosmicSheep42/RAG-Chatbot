@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import random
+import re
 import shutil
 import tempfile
 import zipfile
@@ -147,6 +148,17 @@ def _responses(runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
                     "citations": record.get("citations"),
                     "route": record.get("route"),
                     "refused": record.get("refused"),
+                    "citation_identifiers": record.get(
+                        "citation_identifiers", re.findall(r"\[(S\d+)\]", record.get("answer") or "")
+                    ),
+                    "available_citation_identifiers": record.get("available_citation_identifiers", []),
+                    "invalid_citation_identifiers": record.get("invalid_citation_identifiers", []),
+                    "pipeline_trace": record.get("pipeline_trace"),
+                    "retrieval_confidence_assessment": record.get("retrieval_confidence_assessment"),
+                    "partial_answer": record.get("partial_answer"),
+                    "tool_calls": record.get("tool_calls", []),
+                    "recovery_attempts": record.get("recovery_attempts"),
+                    "query_rewrite": record.get("query_rewrite"),
                     "timing": record.get("timing", {}),
                     "metrics": record.get("metrics", {}),
                 }
@@ -169,6 +181,17 @@ def _evidence(runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
                     "selected_context": record.get("selected_context"),
                     "context_available": record.get("context_available"),
                     "citations": record.get("citations"),
+                    "citation_identifiers": record.get(
+                        "citation_identifiers", re.findall(r"\[(S\d+)\]", record.get("answer") or "")
+                    ),
+                    "available_citation_identifiers": record.get("available_citation_identifiers", []),
+                    "invalid_citation_identifiers": record.get("invalid_citation_identifiers", []),
+                    "pipeline_trace": record.get("pipeline_trace"),
+                    "retrieval_confidence_assessment": record.get("retrieval_confidence_assessment"),
+                    "partial_answer": record.get("partial_answer"),
+                    "tool_calls": record.get("tool_calls", []),
+                    "recovery_attempts": record.get("recovery_attempts"),
+                    "query_rewrite": record.get("query_rewrite"),
                 }
             )
     return sorted(rows, key=lambda row: (row["split"], row["question_id"], row["configuration"], row["mode"]))
@@ -229,7 +252,8 @@ def export_bundle(
     zip_path: Path | None,
     selection_path: Path | None = None,
 ) -> dict[str, Any]:
-    runs = _load_runs(results, _load_selection(selection_path))
+    selection = _load_selection(selection_path)
+    runs = _load_runs(results, selection)
     questions = _questions(dataset, dataset / "splits.json")
     question_map = {row["question_id"]: row for row in questions}
     responses = _responses(runs)
@@ -259,6 +283,11 @@ def export_bundle(
                 for run in runs
             ],
         )
+        _write_json(published / "selection.json", selection)
+        for name in ("environment.json", "blocked-scenarios.json"):
+            source = results / name
+            if source.is_file():
+                shutil.copy2(source, published / name)
         for run in runs:
             name = f"{run['configuration']}-{run['mode']}-{run['split']}.jsonl"
             _write_jsonl(
@@ -285,11 +314,13 @@ def export_bundle(
             },
         )
         (published / "README.md").write_text(
-            "# Published Datapizza benchmark records\n\nThese files are sanitized, exact per-question records selected from local completed runs. Generated answers are unchanged. `judge_input.jsonl` hides configuration names; use `blind_mapping.json` only after scoring. Completed LLM-as-a-Judge scores are published separately under `evaluation/judge/datapizza/`; human adjudication and groundedness scoring remain unavailable.\n",
+            "# Published Datapizza benchmark records\n\nThese files are exact per-question records selected from local completed runs. Generated answers are unchanged. `judge_input.jsonl` hides configuration names; use `blind_mapping.json` only after scoring. `review_template.jsonl` is unscored. Existing records under `evaluation/judge/datapizza/` belong only to the historical publication and do not score these answers.\n",
             encoding="utf-8",
         )
         snapshot = Path("evaluation/RESULTS.md").read_text(encoding="utf-8")
-        snapshot = snapshot.replace("(published/datapizza/)", "(./)")
+        snapshot = snapshot.replace("(published/datapizza/)", "(../datapizza/)")
+        snapshot = snapshot.replace("(published/datapizza-current/)", "(./)")
+        snapshot = snapshot.replace("(comparisons/baseline-vs-current/REPORT.md)", "(../../comparisons/baseline-vs-current/REPORT.md)")
         snapshot = snapshot.replace("(judge/datapizza/)", "(../../judge/datapizza/)")
         snapshot = snapshot.replace("(../docs/datapizza-benchmark.md)", "(../../../docs/datapizza-benchmark.md)")
         (published / "RESULTS.md").write_text(snapshot, encoding="utf-8")
