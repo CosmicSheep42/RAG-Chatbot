@@ -1,10 +1,22 @@
 # Datapizza Benchmark and Reproduction Guide
 
-The Datapizza benchmark has been executed locally for all supported configurations. This document now
-serves as the reproduction guide for the completed measurements, not only as preparation instructions.
-The published per-question benchmark records are in `evaluation/published/datapizza/`; the separate
-single-pass LLM-as-a-Judge results are in `evaluation/judge/datapizza/`. No new inference is required to
-inspect or verify either set of records.
+The Datapizza benchmark has been executed against the current implementation. This document is both the
+reproduction guide and a record of the current run's limits. The historical GPU publication remains in
+`evaluation/published/datapizza/`; current CPU results are separate in
+`evaluation/published/datapizza-current/`. The prior judge scores in `evaluation/judge/datapizza/` apply
+only to historical answers. Current blinded review input is included in the current publication and is
+pending scoring.
+
+The matrix attempted all 20 cells. Sixteen completed using the real local Ollama models; the four
+Hybrid + Rerank cells stopped before question execution because `sentence-transformers` was absent. No
+alternate model was substituted. Full used the production engine with `reranking_mode=auto`, but without
+the optional cross-encoder. Environment, effective model identifiers, run IDs, checksums, and failed cells
+are recorded in `evaluation/published/datapizza-current/`. Verify both publications independently:
+
+```bash
+python3 -m evaluation.verify_published_results evaluation/published/datapizza
+python3 -m evaluation.verify_published_results evaluation/published/datapizza-current
+```
 
 The repository contains 20 Datapizza D&D 5e Markdown documents in `knowledge-base/` and 56 original QA
 examples in `evaluation/dataset/datapizza/`. The split manifest contains 12 development and 44 test IDs.
@@ -41,8 +53,8 @@ docker compose -f docker-compose.benchmark.yml --profile standalone exec ollama 
 docker compose -f docker-compose.benchmark.yml --profile standalone exec ollama ollama pull nomic-embed-text
 ```
 
-Run one scenario at a time. These commands start containers and reproduce new measurements; they are not
-needed to inspect the already-published results:
+Run one scenario at a time. These commands execute new measurements; they are not needed to inspect or
+verify the existing publications:
 
 ```bash
 docker compose -f docker-compose.benchmark.yml --profile standalone run --rm benchmark-standalone
@@ -117,7 +129,24 @@ directory with ownership for UID/GID 10001. Do not run the benchmark as a privil
 
 ## Pilot protocol
 
-When live execution is intentionally started later: run static preflight, run one or two-question
-provider smoke tests per scenario, run the 12-question development split, freeze the effective manifest,
-run the 44-question test split, then export and review answers with the manual rubric. Do not tune after
-looking at held-out test results.
+For a new experiment, validate the dataset, run static preflight and minimal provider smoke tests, run the
+development split, freeze its effective configuration, and only then run the held-out split. The checked-in
+dataset and annotations are immutable. Do not tune after looking at held-out answers. The historical and
+current answer-quality datasets are distinct; never attach historical judge scores to new generations.
+
+To export the current selected runs into a **new, unused** versioned destination (the exporter replaces
+an existing destination directory):
+
+```bash
+python3 -m evaluation.export_analysis_bundle \
+  --results evaluation/results/datapizza-current \
+  --dataset evaluation/dataset/datapizza \
+  --corpus knowledge-base \
+  --selection evaluation/published/datapizza-current.selection.json \
+  --published evaluation/published/datapizza-current-rerun-<id> \
+  --no-zip --output /tmp/datapizza-current.zip
+```
+
+The result comparison is at `evaluation/comparisons/baseline-vs-current/REPORT.md`. Current latency is
+CPU-only and should not be compared directly with the historical GPU-enabled run. The current judge review
+template is intentionally blank until a consistent reviewer is available.

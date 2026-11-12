@@ -1,0 +1,18 @@
+{
+  "bm25/retrieval-only/dev": "bm25/retrieval-only/run-cpu-dev-bm25-retrieval-signals",
+  "bm25/retrieval-only/test": "bm25/retrieval-only/run-cpu-test-bm25-retrieval-signals",
+  "dense/retrieval-only/dev": "dense/retrieval-only/run-cpu-dev-dense-retrieval-signals",
+  "dense/retrieval-only/test": "dense/retrieval-only/run-cpu-test-dense-retrieval-signals",
+  "hybrid/retrieval-only/dev": "hybrid/retrieval-only/run-cpu-dev-hybrid-retrieval-signals",
+  "hybrid/retrieval-only/test": "hybrid/retrieval-only/run-cpu-test-hybrid-retrieval-signals",
+  "standalone/end-to-end/dev": "standalone/end-to-end/run-cpu-dev-standalone-e2e",
+  "standalone/end-to-end/test": "standalone/end-to-end/run-cpu-test-standalone-e2e",
+  "bm25/end-to-end/dev": "bm25/end-to-end/run-cpu-dev-bm25-e2e",
+  "bm25/end-to-end/test": "bm25/end-to-end/run-cpu-test-bm25-e2e",
+  "dense/end-to-end/dev": "dense/end-to-end/run-cpu-dev-dense-e2e",
+  "dense/end-to-end/test": "dense/end-to-end/run-cpu-test-dense-e2e",
+  "hybrid/end-to-end/dev": "hybrid/end-to-end/run-cpu-dev-hybrid-e2e",
+  "hybrid/end-to-end/test": "hybrid/end-to-end/run-cpu-test-hybrid-e2e",
+  "full/end-to-end/dev": "full/end-to-end/run-cpu-dev-full-e2e-traced",
+  "full/end-to-end/test": "full/end-to-end/run-cpu-test-full-e2e-traced"
+}

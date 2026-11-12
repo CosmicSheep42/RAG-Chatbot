@@ -13,6 +13,7 @@ import json
 import math
 import os
 import platform
+import re
 import statistics
 import subprocess
 import sys
@@ -49,6 +50,18 @@ from .metrics import (
 
 CONFIGURATIONS = ("standalone", "dense", "bm25", "hybrid", "hybrid-rerank", "full")
 MODES = ("retrieval-only", "end-to-end")
+RETRIEVAL_SIGNAL_KEYS = (
+    "retrieval_dense_score",
+    "retrieval_dense_rank",
+    "retrieval_sparse_score",
+    "retrieval_sparse_rank",
+    "retrieval_fused_rrf_score",
+    "retrieval_metadata_boost",
+    "retrieval_reranker_score",
+    "retrieval_final_ranking_score",
+    "retrieval_rank_score",
+    "retrieval_score",
+)
 
 
 def validate_configuration_mode(configuration: str, mode: str) -> None:
@@ -92,15 +105,59 @@ class EngineAnswerer:
         self.context_available = False
         self.last_route: str | None = None
         self.last_refused: bool | None = None
+        self.last_trace: dict[str, Any] | None = None
+        self.last_citation_ids: list[str] = []
+        self.available_citation_ids: list[str] = []
+        self.invalid_citation_ids: list[str] = []
+        self.retrieval_attempts: list[dict[str, Any]] = []
+        chatbot = getattr(getattr(engine, "_services", None), "chatbot", None)
+        if chatbot is not None:
+            original_achat = chatbot.achat
+
+            async def capture_trace(*args: Any, **kwargs: Any) -> Any:
+                self.last_trace = await original_achat(*args, **kwargs)
+                return self.last_trace
+
+            chatbot.achat = capture_trace
+            retrieval_service = getattr(getattr(chatbot, "index_manager", None), "retrieval_service", None)
+            if retrieval_service is not None:
+                original_retrieve = retrieval_service.retrieve
+
+                def capture_retrieval(*args: Any, **kwargs: Any) -> Any:
+                    result = original_retrieve(*args, **kwargs)
+                    self.retrieval_attempts.append(
+                        {"query": str(args[0]) if args else "", "documents": list(result.documents)}
+                    )
+                    return result
+
+                retrieval_service.retrieve = capture_retrieval
 
     def answer(self, question: str, documents: list[Document]) -> tuple[str, list[str]]:
+        self.last_trace = None
+        self.retrieval_attempts = []
         if self.event_loop is None:
             response = asyncio.run(self.engine.chat(question))
         else:
             response = self.event_loop.run_until_complete(self.engine.chat(question))
-        self.last_retrieved = [source.source for source in response.sources]
+        trace = self.last_trace
+        selected = trace.get("source_documents", []) if trace else []
+        candidates = self.retrieval_attempts[0]["documents"] if self.retrieval_attempts else []
+        self.last_retrieved = (
+            [str(document.metadata.get("source", "")) for document in candidates]
+            if self.retrieval_attempts
+            else [str(document.metadata.get("source", "")) for document in selected]
+            if trace
+            else [source.source for source in response.sources]
+        )
+        self.last_context = [document.page_content for document in selected] if trace else None
+        self.context_available = trace is not None
         self.last_route = getattr(response, "route", None)
-        self.last_refused = getattr(response, "refused", None)
+        self.last_refused = trace.get("refused") if trace else None
+        self.last_citation_ids = re.findall(r"\[(S\d+)\]", response.result)
+        self.available_citation_ids = [citation.citation_id for citation in response.citations]
+        self.invalid_citation_ids = [
+            citation_id for citation_id in self.last_citation_ids if citation_id not in self.available_citation_ids
+        ]
         return response.result, [citation.source_name or "" for citation in response.citations]
 
 
@@ -108,11 +165,21 @@ class AnswerServiceAdapter:
     def __init__(self, answer_service: Any, policy_resolver: Any) -> None:
         self.answer_service = answer_service
         self.policy_resolver = policy_resolver
+        self.last_citation_ids: list[str] = []
+        self.available_citation_ids: list[str] = []
+        self.invalid_citation_ids: list[str] = []
 
     def answer(self, question: str, documents: list[Document]) -> tuple[str, list[str]]:
         policy = self.policy_resolver.resolve(question)
         answer = self.answer_service.generate(question, documents, policy)
-        return answer, []
+        citations = self.answer_service.context_builder.build_citations(documents)
+        sources = {citation["citation_id"]: str(citation["source_name"]) for citation in citations}
+        self.available_citation_ids = list(sources)
+        self.last_citation_ids = re.findall(r"\[(S\d+)\]", answer)
+        self.invalid_citation_ids = [
+            citation_id for citation_id in self.last_citation_ids if citation_id not in sources
+        ]
+        return answer, [sources.get(citation_id, citation_id) for citation_id in self.last_citation_ids]
 
 
 class BM25Retriever:
@@ -120,7 +187,13 @@ class BM25Retriever:
         self.index = SimpleBM25Index(documents)
 
     def retrieve(self, question: str, limit: int) -> list[Document]:
-        return [document for document, _score in self.index.search(question, limit)]
+        return [
+            Document(
+                page_content=document.page_content,
+                metadata={**document.metadata, "retrieval_sparse_score": score},
+            )
+            for document, score in self.index.search(question, limit)
+        ]
 
 
 class DenseRetriever:
@@ -310,6 +383,7 @@ def run_retrieval(
                 "rank": rank,
                 "start_char": document.metadata.get("source_char_start"),
                 "end_char": document.metadata.get("source_char_end"),
+                **{key: document.metadata[key] for key in RETRIEVAL_SIGNAL_KEYS if key in document.metadata},
             }
             for rank, document in enumerate(documents, 1)
         ]
@@ -427,6 +501,41 @@ def run_end_to_end(
         )
         context_available = getattr(answerer, "context_available", None)
         context = getattr(answerer, "last_context", None)
+        pipeline_trace = getattr(answerer, "last_trace", None)
+        if pipeline_trace is not None:
+            retrieval_attempts = getattr(answerer, "retrieval_attempts", [])
+            pipeline_trace = {
+                **{key: value for key, value in pipeline_trace.items() if key != "source_documents"},
+                "retrieval_attempts": [
+                    {
+                        "query": attempt["query"],
+                        "documents": [
+                            {
+                                "document_id": str(document.metadata.get("source", "")),
+                                "start_char": document.metadata.get("source_char_start"),
+                                "end_char": document.metadata.get("source_char_end"),
+                                "content": document.page_content,
+                                "retrieval_signals": {
+                                    key: document.metadata[key]
+                                    for key in RETRIEVAL_SIGNAL_KEYS
+                                    if key in document.metadata
+                                },
+                            }
+                            for document in attempt["documents"]
+                        ],
+                    }
+                    for attempt in retrieval_attempts
+                ],
+                "selected_evidence": [
+                    {
+                        "document_id": str(document.metadata.get("source", "")),
+                        "start_char": document.metadata.get("source_char_start"),
+                        "end_char": document.metadata.get("source_char_end"),
+                        "content": document.page_content,
+                    }
+                    for document in pipeline_trace.get("source_documents", [])
+                ],
+            }
         if context_available is None:
             context_available = True
         if context_available and context is None:
@@ -452,8 +561,28 @@ def run_end_to_end(
                 "context_available": context_available,
                 "answer": answer,
                 "citations": citations,
+                "citation_identifiers": getattr(answerer, "last_citation_ids", re.findall(r"\[(S\d+)\]", answer)),
+                "available_citation_identifiers": getattr(answerer, "available_citation_ids", []),
+                "invalid_citation_identifiers": getattr(answerer, "invalid_citation_ids", []),
                 "route": getattr(answerer, "last_route", None),
                 "refused": getattr(answerer, "last_refused", None),
+                "pipeline_trace": pipeline_trace,
+                "retrieval_confidence_assessment": (
+                    pipeline_trace.get("retrieval_confidence_assessment") if pipeline_trace else None
+                ),
+                "partial_answer": pipeline_trace.get("partial_context") if pipeline_trace else None,
+                "tool_calls": pipeline_trace.get("tool_calls", []) if pipeline_trace else [],
+                # shortcut: engine API exposes retry decisions, not internal retry events; add a counter when it does.
+                "recovery_attempts": None,
+                "query_rewrite": (
+                    {
+                        "original_query": pipeline_trace.get("original_query"),
+                        "standalone_query": pipeline_trace.get("standalone_query"),
+                        "query_rewritten": pipeline_trace.get("query_rewritten"),
+                    }
+                    if pipeline_trace
+                    else None
+                ),
                 "metrics": {
                     "fact_coverage": (
                         _json_metric(fact_coverage(answer, example.required_facts)) if example.answerable else None
