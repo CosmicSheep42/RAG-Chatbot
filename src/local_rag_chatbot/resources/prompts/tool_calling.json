@@ -8,10 +8,12 @@
       "executor": "search_documents",
       "parameters": {
         "type": "object",
+        "additionalProperties": false,
         "properties": {
           "query": {
             "type": "string",
-            "description": "A refined search query focused on the missing information."
+            "description": "A refined search query focused on the missing information.",
+            "minLength": 1
           },
           "top_k": {
             "type": "integer",

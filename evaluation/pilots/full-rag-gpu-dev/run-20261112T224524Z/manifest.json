@@ -1,0 +1,60 @@
+{
+  "run_id": "run-20261112T224524Z",
+  "started_at_utc": "2026-11-12T22:45:24.468122+00:00",
+  "finished_at_utc": "2026-11-12T22:48:11.017756+00:00",
+  "git_revision": "ceb42f26e60e5ded5401981995c284322761b210",
+  "working_tree_dirty": null,
+  "working_tree_status_available": false,
+  "working_tree_paths": [],
+  "working_tree_fingerprint_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "python_version": "3.12.16",
+  "runtime_dependencies": {
+    "local-rag-chatbot": "0.1.0",
+    "langchain": "0.3.30",
+    "langchain-core": "0.3.85",
+    "chromadb": "0.5.0",
+    "langchain-ollama": "0.2.1",
+    "ollama": "0.6.3"
+  },
+  "gpu": {
+    "model": "NVIDIA GeForce RTX 3050 Laptop GPU",
+    "vram_mib": 4096,
+    "driver": "550.163.01",
+    "runtime_confirmation": "see REPORT.md"
+  },
+  "ollama": {
+    "image": "ollama/ollama:0.32.1",
+    "generation_model": "llama3.2:3b",
+    "embedding_model": "nomic-embed-text",
+    "reranker": "unavailable; not installed"
+  },
+  "effective_rag_configuration": {
+    "pipeline": "ChatbotEngine Full production RAG",
+    "temperature": 0,
+    "chunk_size": 500,
+    "chunk_overlap": 100,
+    "top_k": 5,
+    "max_concurrent_inferences": 1,
+    "reranker_device": "cpu",
+    "recovery": "current production behavior"
+  },
+  "dataset": {
+    "name": "Datapizza AI Lab D&D 5e RAG Evaluation Dataset",
+    "revision": "f2428dce66ea418a785998fa6ec57bc561b72239",
+    "manifest_sha256": "823913a672ef770a5d2b0ee18d3026b710ba5afbb1e10d0b28a186adbf5c20f3"
+  },
+  "question_ids": [
+    "datapizza-easy-006",
+    "datapizza-easy-009",
+    "datapizza-easy-012",
+    "datapizza-easy-016",
+    "datapizza-easy-018",
+    "datapizza-easy-019",
+    "datapizza-medium-011",
+    "datapizza-medium-014",
+    "datapizza-medium-015",
+    "datapizza-medium-016",
+    "datapizza-medium-020",
+    "datapizza-medium-023"
+  ]
+}

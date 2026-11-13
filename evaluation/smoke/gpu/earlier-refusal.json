@@ -1,0 +1,19 @@
+{
+  "status": "success",
+  "label": "single-question-smoke-test-not-benchmark",
+  "question_id": "datapizza-easy-016",
+  "split": "dev",
+  "question": "How do the defensive capabilities provided by the Draconic Sorcery subclass compare to those available to a Fiend Patron Warlock, considering both subclass features and Eldritch Invocation options?",
+  "answer": "I do not have enough reliable context to answer that safely. Try rephrasing the question or ask about a more specific document, source, or section.",
+  "refused": true,
+  "tool_calling_used": false,
+  "tool_calls": [],
+  "citations": [],
+  "sources": [],
+  "generation_model": "llama3.2:3b",
+  "embedding_provider": "ollama",
+  "embedding_model": "nomic-embed-text",
+  "initialization_seconds": 0.229,
+  "query_seconds": 7.017,
+  "finished_at_utc": "2026-11-12T04:11:14.650123+00:00"
+}

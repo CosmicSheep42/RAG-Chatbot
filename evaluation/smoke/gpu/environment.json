@@ -1,0 +1,88 @@
+{
+  "label": "gpu-smoke-environment-not-benchmark",
+  "recorded_at_utc": "2026-11-12",
+  "git_base_commit": "ceb42f26e60e5ded5401981995c284322761b210",
+  "working_tree_was_dirty": true,
+  "os": "Debian GNU/Linux 13 (trixie), x86_64, kernel 6.12.116-deb13-amd64",
+  "gpu": {
+    "model": "NVIDIA GeForce RTX 3050 Laptop GPU",
+    "vram_mib": 4096,
+    "driver": "550.163.01",
+    "cuda_driver_compatibility": "12.4",
+    "host_nvidia_smi": "PASS",
+    "device_nodes_in_gpu_container": ["/dev/nvidia0", "/dev/nvidiactl", "/dev/nvidia-uvm"],
+    "nvidia_container_toolkit_cli": "installed",
+    "docker_nvidia_runtime": "available",
+    "gpu_reservation_inspected": true
+  },
+  "docker": {
+    "engine": "26.1.5+dfsg1",
+    "compose": "2.26.1-4",
+    "ollama_image": "ollama/ollama:0.32.1",
+    "compose_cpu_config_validation": "PASS",
+    "compose_gpu_config_validation": "PASS"
+  },
+  "ollama": {
+    "generation_model": "llama3.2:3b",
+    "embedding_model": "nomic-embed-text",
+    "reranker_downloaded_or_loaded": false,
+    "max_parallel_inferences": 1,
+    "max_loaded_models": 1,
+    "generation_placement": "100% GPU reported by ollama ps",
+    "embedding_placement": "100% GPU reported by ollama ps",
+    "generation_observed_gpu_memory_mib": 2541,
+    "embedding_observed_gpu_memory_mib": 401,
+    "generation_observed_peak_utilization_percent": 94
+  },
+  "smoke_tests": {
+    "generation_short_prompt": {
+      "status": "PASS",
+      "latency_seconds": 2.823,
+      "latency_includes_model_load": true,
+      "out_of_memory": false
+    },
+    "embedding_provider": {
+      "status": "PASS",
+      "provider": "OllamaEmbeddings",
+      "dimensions": 768,
+      "latency_seconds": 1.984,
+      "values_finite": true
+    },
+    "production_engine_questions": [
+      {
+        "question_id": "datapizza-easy-016",
+        "split": "dev",
+        "status": "completed_with_refusal",
+        "latency_seconds": 7.017,
+        "citations": 0
+      },
+      {
+        "question_id": "datapizza-medium-014",
+        "split": "dev",
+        "status": "answered_with_citations",
+        "latency_seconds": 5.498,
+        "citations": 5,
+        "citation_source_alignment": true
+      }
+    ],
+    "registered_search_tool": {
+      "status": "PASS",
+      "argument_top_k": "10",
+      "returned_documents": 6,
+      "latency_seconds": 1.636
+    }
+  },
+    "limitations": [
+    "No complete benchmark scenarios or question batches were run.",
+    "The successful RAG answer did not require model-issued tool calling; tool argument normalization was separately exercised through the production registry.",
+    "The two smoke questions do not measure answer accuracy or establish an overall quality improvement.",
+    "CPU-only inference was not run; only CPU Compose configuration was validated."
+    ],
+    "automated_tests": {
+      "status": "PASS",
+      "passed": 120,
+      "coverage_percent": 52.16,
+      "ruff_check": "PASS",
+      "ruff_format": "PASS"
+    }
+}

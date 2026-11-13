@@ -71,7 +71,19 @@ def _chatbot(initial, final, answer="grounded"):
     chatbot.answer_service = SimpleNamespace(agenerate=generate)
 
     async def recover(*_args, **_kwargs):
-        return "", [source, recovered], [{"name": "search_documents"}], True
+        return (
+            "",
+            [source, recovered],
+            [
+                {
+                    "name": "search_documents",
+                    "arguments": {"query": "question"},
+                    "payload": {"status": "success_empty"},
+                    "new_document_count": 0,
+                }
+            ],
+            True,
+        )
 
     chatbot._agenerate_answer_with_optional_tools = recover
     return chatbot
@@ -113,6 +125,80 @@ async def test_failed_recovery_refuses_without_generation():
 
     assert result["refused"] is True
     assert generated is False
+    assert result["tool_calls"][0]["payload"]["status"] == "success_empty"
+    assert result["tool_calling_used"] is True
+
+
+@pytest.mark.asyncio
+async def test_remaining_retry_runs_standalone_search_and_reassesses_evidence():
+    chatbot = _chatbot(
+        _assessment(RetrievalDecision.RETRY, 0.4),
+        _assessment(RetrievalDecision.ANSWER, 0.9),
+    )
+    assessments = iter(
+        [
+            _assessment(RetrievalDecision.RETRY, 0.4),
+            _assessment(RetrievalDecision.RETRY, 0.45),
+            _assessment(RetrievalDecision.ANSWER, 0.9),
+        ]
+    )
+    chatbot.index_manager.confidence_estimator.assess = lambda *_args: next(assessments)
+    fallback_calls = []
+    extra = Document("new grounded evidence", metadata={"source": "guide.md", "chunk_id": "3"})
+
+    def search(query, top_k=4, request_context=None):
+        fallback_calls.append((query, top_k))
+        return "{}", [extra], {"status": "success"}
+
+    chatbot.tool_registry = SimpleNamespace(execute=lambda _name, args, request_context=None: search(**args))
+
+    async def recover(*_args, **_kwargs):
+        return (
+            "",
+            [Document("irrelevant new heading", metadata={"source": "guide.md", "chunk_id": "2"})],
+            [
+                {
+                    "name": "search_documents",
+                    "arguments": {"query": "different query"},
+                    "payload": {"status": "success"},
+                    "new_document_count": 1,
+                }
+            ],
+            True,
+        )
+
+    chatbot._agenerate_answer_with_optional_tools = recover
+    result = await chatbot.aanswer("question")
+
+    assert result["refused"] is False
+    assert result["result"] == "grounded"
+    assert fallback_calls == [("question", 4)]
+    assert result["retrieval_confidence"] == 0.9
+    assert len(result["tool_calls"]) == 2
+
+
+def test_reassessment_keeps_new_retrieved_evidence_ahead_of_expansion_filler():
+    chatbot = _chatbot(_assessment(RetrievalDecision.RETRY, 0.4), _assessment(RetrievalDecision.ANSWER, 0.9))
+    filler = Document("expanded filler", metadata={"source": "guide.md", "chunk_id": "1"})
+    initial = Document("initial retrieved evidence", metadata={"source": "guide.md", "chunk_id": "0"})
+    recovered = Document("recovered answer evidence", metadata={"source": "guide.md", "chunk_id": "2"})
+    coverage = chatbot.index_manager.context_assembler.evaluate_coverage([], _policy())
+    chatbot.index_manager.context_assembler.expand_context = lambda *_args: ([filler], coverage)
+    seen = []
+    chatbot.index_manager.confidence_estimator.assess = lambda docs, *_args: (
+        seen.extend(docs) or _assessment(RetrievalDecision.ANSWER, 0.9)
+    )
+
+    selected, _, assessment = chatbot._reassess_documents(
+        "question",
+        [initial, recovered],
+        _policy(),
+        preferred_documents=[recovered],
+    )
+
+    assert selected == [recovered, filler]
+    assert seen == [recovered, filler]
+    assert assessment.decision == RetrievalDecision.ANSWER
 
 
 @pytest.mark.asyncio
