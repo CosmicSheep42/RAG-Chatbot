@@ -19,7 +19,7 @@ class RetrievalReason(str, Enum):
     WEAK_RERANK = "WEAK_RERANK"
     RERANKER_UNAVAILABLE = "RERANKER_UNAVAILABLE"
     RETRIEVERS_DISAGREE = "RETRIEVERS_DISAGREE"
-    INSUFFICIENT_COVERAGE = "INSUFFICIENT_COVERAGE"
+    INSUFFICIENT_STRUCTURAL_COVERAGE = "INSUFFICIENT_STRUCTURAL_COVERAGE"
     STRONG_RERANK_EVIDENCE = "STRONG_RERANK_EVIDENCE"
     STRONG_MULTI_SIGNAL_EVIDENCE = "STRONG_MULTI_SIGNAL_EVIDENCE"
     STRONG_DENSE_EVIDENCE = "STRONG_DENSE_EVIDENCE"
@@ -70,7 +70,6 @@ class RetrievalConfidenceProfile:
     retry_threshold: float
     strong_reranker_threshold: float
     weak_reranker_threshold: float
-    min_coverage_score: float
     low_margin_threshold: float = 0.08
 
 
@@ -81,7 +80,6 @@ class RetrievalConfidenceConfig:
         retry_threshold=0.35,
         strong_reranker_threshold=0.70,
         weak_reranker_threshold=0.25,
-        min_coverage_score=0.20,
     )
     intent_profiles: dict[QueryIntent, RetrievalConfidenceProfile] = field(default_factory=dict)
 
@@ -89,12 +87,12 @@ class RetrievalConfidenceConfig:
     def default(cls) -> RetrievalConfidenceConfig:
         return cls(
             intent_profiles={
-                QueryIntent.ENUMERATION: RetrievalConfidenceProfile(0.66, 0.40, 0.72, 0.28, 0.55),
-                QueryIntent.AGGREGATION: RetrievalConfidenceProfile(0.66, 0.42, 0.72, 0.30, 0.55),
-                QueryIntent.SUMMARY: RetrievalConfidenceProfile(0.58, 0.34, 0.66, 0.22, 0.25),
-                QueryIntent.BROAD_SEMANTIC: RetrievalConfidenceProfile(0.60, 0.35, 0.68, 0.24, 0.25),
-                QueryIntent.COMPARISON: RetrievalConfidenceProfile(0.64, 0.40, 0.70, 0.28, 0.45),
-                QueryIntent.METADATA_LOOKUP: RetrievalConfidenceProfile(0.60, 0.34, 0.68, 0.24, 0.20),
+                QueryIntent.ENUMERATION: RetrievalConfidenceProfile(0.66, 0.40, 0.72, 0.28),
+                QueryIntent.AGGREGATION: RetrievalConfidenceProfile(0.66, 0.42, 0.72, 0.30),
+                QueryIntent.SUMMARY: RetrievalConfidenceProfile(0.58, 0.34, 0.66, 0.22),
+                QueryIntent.BROAD_SEMANTIC: RetrievalConfidenceProfile(0.60, 0.35, 0.68, 0.24),
+                QueryIntent.COMPARISON: RetrievalConfidenceProfile(0.64, 0.40, 0.70, 0.28),
+                QueryIntent.METADATA_LOOKUP: RetrievalConfidenceProfile(0.60, 0.34, 0.68, 0.24),
             }
         )
 
@@ -190,10 +188,9 @@ class RetrievalConfidenceEstimator:
             reason_codes.append(RetrievalReason.AMBIGUOUS_EVIDENCE)
 
         coverage_sufficient = bool(getattr(coverage, "sufficient", False))
-        coverage_score = _float_value(getattr(coverage, "score", None)) or 0.0
         coverage_required = _coverage_required(policy)
-        if coverage_required and (not coverage_sufficient or coverage_score < profile.min_coverage_score):
-            reason_codes.append(RetrievalReason.INSUFFICIENT_COVERAGE)
+        if coverage_required and not coverage_sufficient:
+            reason_codes.append(RetrievalReason.INSUFFICIENT_STRUCTURAL_COVERAGE)
 
         if independent_signals >= 2 and confidence >= profile.answer_threshold:
             reason_codes.append(RetrievalReason.STRONG_MULTI_SIGNAL_EVIDENCE)
@@ -249,7 +246,7 @@ class RetrievalConfidenceEstimator:
         coverage_required: bool,
         reason_codes: list[RetrievalReason],
     ) -> RetrievalDecision:
-        has_insufficient_coverage = RetrievalReason.INSUFFICIENT_COVERAGE in reason_codes
+        has_insufficient_coverage = RetrievalReason.INSUFFICIENT_STRUCTURAL_COVERAGE in reason_codes
         has_strong_signal = (
             RetrievalReason.STRONG_MULTI_SIGNAL_EVIDENCE in reason_codes
             or RetrievalReason.STRONG_DENSE_EVIDENCE in reason_codes
@@ -321,7 +318,7 @@ class RetrievalConfidenceEstimator:
                 _dense_evidence(top),
             ),
             "reranker_margin": _reranker_margin(top, evidence[1] if len(evidence) > 1 else None),
-            "coverage_score": round(_float_value(getattr(coverage, "score", None)) or 0.0, 6),
+            "structural_coverage_score": round(_float_value(getattr(coverage, "score", None)) or 0.0, 6),
             "coverage_sufficient": bool(getattr(coverage, "sufficient", False)),
             "coverage_reason": getattr(coverage, "reason", ""),
             "intent": policy.intent.value,

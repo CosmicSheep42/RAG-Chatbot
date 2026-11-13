@@ -29,6 +29,12 @@ RUN_DIR = RUN_ROOT / RUN_ID
 DOC_KEYS = (
     "source",
     "source_name",
+    "context_role",
+    "header_path",
+    "hierarchy_path",
+    "section",
+    "structural_type",
+    "chunk_index",
     "document_id",
     "chunk_id",
     "source_char_start",
@@ -41,7 +47,12 @@ DOC_KEYS = (
     "retrieval_final_ranking_score",
     "retrieval_score",
 )
-REFUSAL_PATTERN = re.compile(r"\b(?:not enough|cannot answer|can't answer|unable to answer|do not have enough)\b", re.I)
+REFUSAL_PATTERN = re.compile(
+    r"^\s*(?:I\s+(?:do not have enough|don't have enough|cannot answer|can't answer|"
+    r"am unable to answer|cannot provide information|can't provide information|cannot help|can't help)|"
+    r"I(?:'m| am) unable to assist)\b",
+    re.I,
+)
 
 
 def _document(document: Any) -> dict[str, Any]:
@@ -70,6 +81,8 @@ def _model(value: Any) -> Any:
 
 
 def _git_revision() -> str:
+    if revision := os.getenv("PILOT_GIT_REVISION"):
+        return revision
     try:
         return subprocess.run(
             ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, capture_output=True, check=True
@@ -137,15 +150,45 @@ def _metrics(records: list[dict[str, Any]]) -> dict[str, Any]:
         "tool_execution_failures": sum(c.get("payload", {}).get("status") == "execution_error" for c in calls),
         "empty_searches": sum(c.get("payload", {}).get("status") == "success_empty" for c in search_calls),
         "searches_returning_documents": sum(c.get("payload", {}).get("status") == "success" for c in search_calls),
-        "successful_recovery_searches": sum(
-            c.get("new_relevant_document_count", 0) > 0
+        "duplicate_only_searches": sum(
+            c.get("payload", {}).get("status") == "success"
+            and c.get("result_count", 0) > 0
+            and c.get("new_document_count", 0) == 0
+            for c in search_calls
+        ),
+        "new_recovered_documents_selected_in_final_context": sum(
+            c.get("new_evidence_selected_count", 0) for c in search_calls
+        ),
+        "questions_with_new_recovered_evidence_selected": sum(
+            any(c.get("new_evidence_selected_count", 0) > 0 for c in r.get("recovery", {}).get("tool_events", []))
+            for r in done
+        ),
+        "questions_recovered_to_answer_decision": sum(
+            bool(r.get("recovery", {}).get("recovered_to_answer_decision")) for r in done
+        ),
+        "recovery_searches_introducing_new_documents": sum(
+            c.get("new_document_count", 0) > 0
             for r in done
             if r.get("recovery", {}).get("attempted")
             for c in r.get("recovery", {}).get("tool_events", [])
             if c.get("name") == "search_documents"
         ),
-        "questions_with_relevant_evidence_recovery": sum(
-            any(c.get("new_relevant_document_count", 0) > 0 for c in r.get("recovery", {}).get("tool_events", []))
+        "successful_recovery_searches": sum(
+            c.get("new_gold_overlap_document_count", 0) > 0
+            for r in done
+            if r.get("recovery", {}).get("attempted")
+            for c in r.get("recovery", {}).get("tool_events", [])
+            if c.get("name") == "search_documents"
+        ),
+        "recovery_searches_with_new_evidence_selected": sum(
+            c.get("new_evidence_selected_count", 0) > 0
+            for r in done
+            if r.get("recovery", {}).get("attempted")
+            for c in r.get("recovery", {}).get("tool_events", [])
+            if c.get("name") == "search_documents"
+        ),
+        "questions_with_gold_overlap_recovery": sum(
+            any(c.get("new_gold_overlap_document_count", 0) > 0 for c in r.get("recovery", {}).get("tool_events", []))
             for r in done
             if r.get("recovery", {}).get("attempted")
         ),
@@ -337,18 +380,32 @@ async def main() -> None:
                 tool_events.extend(captured_tool_events)
                 search_events = [e for e in tool_events if e.get("name") == "search_documents"]
                 initial_keys = {_key(d) for d in initial_docs}
+                selected_keys = {_key(d) for d in selected_docs}
                 known_keys = set(initial_keys)
                 recovered = []
                 for event in search_events:
                     added_documents = [d for d in event.get("documents", []) if _key(d) not in known_keys]
                     event["new_document_count"] = len(added_documents)
-                    event["new_relevant_document_count"] = sum(
+                    event["new_gold_overlap_document_count"] = sum(
                         _matches_gold(document, example.passages) for document in added_documents
+                    )
+                    event["new_evidence_selected_count"] = sum(
+                        _key(document) in selected_keys for document in added_documents
                     )
                     recovered.extend(added_documents)
                     known_keys.update(_key(document) for document in added_documents)
-                selected_keys = {_key(d) for d in selected_docs}
                 omitted = [d for d in initial_docs if _key(d) not in selected_keys]
+                initial_decision = (
+                    (initial_selection or {}).get("confidence", {}).get("decision") if initial_selection else None
+                )
+                final_decision = (
+                    (final_selection or {}).get("confidence", {}).get("decision") if final_selection else None
+                )
+                recovered_to_answer = bool(
+                    initial_decision != "answer"
+                    and final_decision == "answer"
+                    and any(event.get("new_evidence_selected_count", 0) for event in search_events)
+                )
                 citation_ids = [c.citation_id for c in response.citations]
                 mentioned = list(dict.fromkeys(re.findall(r"\[(S\d+)\]", response.result)))
                 invalid = [identifier for identifier in mentioned if identifier not in citation_ids]
@@ -410,9 +467,13 @@ async def main() -> None:
                                 e.get("payload", {}).get("status") == "success" for e in search_events
                             ),
                             "new_document_count": len(recovered) if current.get("recovery_phase_invoked") else 0,
-                            "new_relevant_document_count": sum(
-                                e.get("new_relevant_document_count", 0) for e in search_events
+                            "new_gold_overlap_document_count": sum(
+                                e.get("new_gold_overlap_document_count", 0) for e in search_events
                             ),
+                            "new_evidence_selected_count": sum(
+                                e.get("new_evidence_selected_count", 0) for e in search_events
+                            ),
+                            "recovered_to_answer_decision": recovered_to_answer,
                             "new_documents": recovered,
                             "tool_events": tool_events,
                         },
@@ -476,24 +537,29 @@ async def main() -> None:
     finished_at = datetime.now(UTC)
     revision = _git_revision()
     try:
-        status = subprocess.run(
+        status_lines = subprocess.run(
             ["git", "status", "--porcelain", "--untracked-files=all"],
             cwd=ROOT,
             text=True,
             capture_output=True,
             check=True,
         ).stdout.splitlines()
-        tree_dirty: bool | None = bool(status)
+        tracked_and_untracked = [line[3:] for line in status_lines]
+        tree_dirty: bool | None = bool(status_lines)
     except FileNotFoundError:
-        status = []
-        tree_dirty = None
-    tracked_and_untracked = [line[3:] for line in status]
-    tree_hash = hashlib.sha256()
-    for relative_path in sorted(tracked_and_untracked):
-        path = ROOT / relative_path
-        if path.is_file():
-            tree_hash.update(relative_path.encode())
-            tree_hash.update(path.read_bytes())
+        injected_paths = os.getenv("PILOT_WORKING_TREE_PATHS_JSON")
+        tracked_and_untracked = json.loads(injected_paths) if injected_paths else []
+        tree_dirty = bool(tracked_and_untracked) if injected_paths is not None else None
+    if fingerprint := os.getenv("PILOT_SOURCE_FINGERPRINT_SHA256"):
+        tree_fingerprint = fingerprint
+    else:
+        tree_hash = hashlib.sha256()
+        for relative_path in sorted(tracked_and_untracked):
+            path = ROOT / relative_path
+            if path.is_file():
+                tree_hash.update(relative_path.encode())
+                tree_hash.update(path.read_bytes())
+        tree_fingerprint = tree_hash.hexdigest()
     versions = {}
     for package in ("local-rag-chatbot", "langchain", "langchain-core", "chromadb", "langchain-ollama", "ollama"):
         try:
@@ -508,7 +574,7 @@ async def main() -> None:
         "working_tree_dirty": tree_dirty,
         "working_tree_status_available": tree_dirty is not None,
         "working_tree_paths": tracked_and_untracked,
-        "working_tree_fingerprint_sha256": tree_hash.hexdigest(),
+        "working_tree_fingerprint_sha256": tree_fingerprint,
         "python_version": platform.python_version(),
         "runtime_dependencies": versions,
         "gpu": {

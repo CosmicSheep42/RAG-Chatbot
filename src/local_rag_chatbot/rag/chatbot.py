@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import re
 from typing import Any, Mapping, TYPE_CHECKING
 
 from local_rag_chatbot.app_errors import map_provider_error
@@ -220,13 +221,17 @@ class RAGChatbot:
                     for document in final_documents
                     if self._document_key(document) not in initial_document_keys
                 ]
-                final_documents, final_coverage, final_confidence = await self._run_blocking(
-                    self._reassess_documents,
-                    retrieval_query,
-                    final_documents,
-                    policy,
-                    preferred_documents=recovered_documents,
-                )
+                if recovered_documents:
+                    final_documents, final_coverage, final_confidence = await self._run_blocking(
+                        self._reassess_documents,
+                        retrieval_query,
+                        final_documents,
+                        policy,
+                        preferred_documents=recovered_documents,
+                    )
+                else:
+                    final_coverage = coverage
+                    final_confidence = confidence_assessment
                 final_partial = self._is_partial_enumeration_allowed(
                     RetrievalResult(
                         query=retrieval_query,
@@ -241,12 +246,12 @@ class RAGChatbot:
                     final_confidence.decision != RetrievalDecision.ANSWER and not final_partial
                 ):
                     searched_queries = {
-                        str(event.get("arguments", {}).get("query") or "").strip().casefold()
+                        self._normalize_tool_query(event.get("arguments", {}).get("query"))
                         for event in tool_events
                         if event.get("name") == "search_documents"
                         and event.get("payload", {}).get("status") in {"success", "success_empty"}
                     }
-                    if retrieval_query.casefold() not in searched_queries:
+                    if self._normalize_tool_query(retrieval_query) not in searched_queries:
                         try:
                             _, tool_documents, event = await self._run_blocking(
                                 self._run_recovery_search,
@@ -263,13 +268,14 @@ class RAGChatbot:
                                 for document in final_documents
                                 if self._document_key(document) not in initial_document_keys
                             ]
-                            final_documents, final_coverage, final_confidence = await self._run_blocking(
-                                self._reassess_documents,
-                                retrieval_query,
-                                final_documents,
-                                policy,
-                                preferred_documents=recovered_documents,
-                            )
+                            if recovered_documents:
+                                final_documents, final_coverage, final_confidence = await self._run_blocking(
+                                    self._reassess_documents,
+                                    retrieval_query,
+                                    final_documents,
+                                    policy,
+                                    preferred_documents=recovered_documents,
+                                )
                             final_partial = self._is_partial_enumeration_allowed(
                                 RetrievalResult(
                                     query=retrieval_query,
@@ -563,7 +569,7 @@ class RAGChatbot:
 
     @staticmethod
     def _needs_recovery_search(tool_events: list[dict[str, Any]], query: str) -> bool:
-        normalized_query = query.strip().casefold()
+        normalized_query = RAGChatbot._normalize_tool_query(query)
         if any(
             event["name"] == "search_documents"
             and event["payload"].get("status") == "success"
@@ -574,9 +580,13 @@ class RAGChatbot:
         return not any(
             event["name"] == "search_documents"
             and event["payload"].get("status") in {"success", "success_empty"}
-            and str(event["arguments"].get("query") or "").strip().casefold() == normalized_query
+            and RAGChatbot._normalize_tool_query(event["arguments"].get("query")) == normalized_query
             for event in tool_events
         )
+
+    @staticmethod
+    def _normalize_tool_query(query: Any) -> str:
+        return " ".join(re.sub(r"[^\w]+", " ", str(query or "").casefold()).split())
 
     def _generate_answer_with_optional_tools(
         self,
@@ -629,7 +639,7 @@ class RAGChatbot:
             {
                 "role": "system",
                 "content": self.answer_service.build_chat_system_prompt(
-                    standalone_query or query,
+                    query,
                     list(documents),
                     policy,
                     coverage=coverage,
@@ -679,7 +689,7 @@ class RAGChatbot:
                                 }
                             )
                             continue
-                        query_arg = str(tool_call.arguments.get("query") or "").strip().casefold()
+                        query_arg = self._normalize_tool_query(tool_call.arguments.get("query"))
                         if query_arg in executed_search_queries:
                             tool_event = {
                                 "id": tool_call.id,
@@ -827,7 +837,7 @@ class RAGChatbot:
             {
                 "role": "system",
                 "content": self.answer_service.build_chat_system_prompt(
-                    standalone_query or query,
+                    query,
                     list(documents),
                     policy,
                     coverage=coverage,
@@ -877,7 +887,7 @@ class RAGChatbot:
                                 }
                             )
                             continue
-                        query_arg = str(tool_call.arguments.get("query") or "").strip().casefold()
+                        query_arg = self._normalize_tool_query(tool_call.arguments.get("query"))
                         if query_arg in executed_search_queries:
                             tool_event = {
                                 "id": tool_call.id,

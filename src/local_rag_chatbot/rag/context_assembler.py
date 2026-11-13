@@ -45,6 +45,12 @@ class SourceCoverage:
 
 @dataclass(frozen=True)
 class CoverageReport:
+    """Structural context-distribution diagnostics, not semantic query coverage.
+
+    ``score`` is a corpus-relative structural index; only ``sufficient`` is the
+    intent-aware structural gate consumed by retrieval decisions.
+    """
+
     sufficient: bool
     score: float
     dominant_source: str | None
@@ -414,6 +420,11 @@ class DocumentContextAssembler:
         selected_sources = [source for source, _count in ranked_sources[: max(1, policy.max_sources)]]
         selected_chunks = len(documents)
         selected_units = sum(len(paths) for paths in selected_units_by_source.values())
+        evidence_units = {
+            self._unit_key(document)
+            for document in documents
+            if (document.metadata.get("context_role") == "hit" or not document.metadata.get("context_role"))
+        }
         total_units = sum(self._source_unit_counts.get(source, 0) for source in selected_sources)
         total_chunks = sum(len(self._documents_by_source.get(source, [])) for source in selected_sources)
         continuity_ratio = self._continuity_ratio(documents)
@@ -432,6 +443,7 @@ class DocumentContextAssembler:
         sufficient = self._is_coverage_sufficient(
             policy=policy,
             selected_chunks=selected_chunks,
+            evidence_units=len(evidence_units),
             chunk_ratio=chunk_ratio,
             unit_ratio=unit_ratio,
             continuity_ratio=continuity_ratio,
@@ -441,6 +453,7 @@ class DocumentContextAssembler:
             sufficient=sufficient,
             policy=policy,
             selected_chunks=selected_chunks,
+            evidence_units=len(evidence_units),
             chunk_ratio=chunk_ratio,
             unit_ratio=unit_ratio,
             continuity_ratio=continuity_ratio,
@@ -469,6 +482,7 @@ class DocumentContextAssembler:
         *,
         policy: RetrievalPolicy,
         selected_chunks: int,
+        evidence_units: int,
         chunk_ratio: float,
         unit_ratio: float,
         continuity_ratio: float,
@@ -481,7 +495,10 @@ class DocumentContextAssembler:
         if self._is_broad_intent(policy.intent):
             return chunk_ratio >= policy.coverage_min_ratio or selected_chunks >= policy.context_limit
         if policy.intent == QueryIntent.COMPARISON:
-            return unit_ratio >= min(policy.coverage_min_ratio, 0.4) or selected_chunks >= policy.coverage_min_chunks
+            return (
+                unit_ratio >= min(policy.coverage_min_ratio, 0.4)
+                or evidence_units >= policy.coverage_min_chunks
+            )
         return chunk_ratio >= policy.coverage_min_ratio or continuity_ratio > 0.0 or structural_ratio > 0.0
 
     def _coverage_reason(
@@ -490,6 +507,7 @@ class DocumentContextAssembler:
         sufficient: bool,
         policy: RetrievalPolicy,
         selected_chunks: int,
+        evidence_units: int,
         chunk_ratio: float,
         unit_ratio: float,
         continuity_ratio: float,
@@ -501,6 +519,8 @@ class DocumentContextAssembler:
             return "not_enough_chunks"
         if policy.intent in {QueryIntent.ENUMERATION, QueryIntent.AGGREGATION} and unit_ratio < policy.coverage_min_ratio:
             return "structural_unit_coverage_low"
+        if policy.intent == QueryIntent.COMPARISON and evidence_units < policy.coverage_min_chunks:
+            return "comparison_evidence_units_low"
         if self._is_broad_intent(policy.intent) and chunk_ratio < policy.coverage_min_ratio:
             return "document_coverage_low"
         if structural_ratio <= 0.0:
