@@ -7,3 +7,6 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
+  benchmark-full:
+    volumes:
+      - ./evaluation/smoke/gpu:/app/evaluation/smoke/gpu

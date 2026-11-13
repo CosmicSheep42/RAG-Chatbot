@@ -1,0 +1,28 @@
+{
+  "expected_questions": 12,
+  "completed": 0,
+  "failed_executions": 12,
+  "explicit_refusals": 0,
+  "textual_refusal_heuristic": 0,
+  "tool_calls": 0,
+  "valid_tool_calls": 0,
+  "tool_validation_failures": 0,
+  "tool_execution_failures": 0,
+  "empty_searches": 0,
+  "searches_returning_documents": 0,
+  "successful_recovery_searches": 0,
+  "questions_with_relevant_evidence_recovery": 0,
+  "additional_evidence_documents": 0,
+  "questions_requiring_recovery": 0,
+  "questions_requiring_recovery_percent": 0.0,
+  "tool_calls_per_question": null,
+  "citation_identifiers": 0,
+  "invalid_citation_identifiers": 0,
+  "valid_citation_identifier_rate": null,
+  "incomplete_responses": 0,
+  "latency_seconds": {
+    "p50": null,
+    "p95": null,
+    "max": null
+  }
+}

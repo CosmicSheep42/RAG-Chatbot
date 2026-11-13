@@ -1,0 +1,93 @@
+{
+  "status": "success",
+  "label": "single-question-smoke-test-not-benchmark",
+  "question_id": "datapizza-medium-014",
+  "split": "dev",
+  "question": "Ways to escape a Grapple?",
+  "answer": "To escape a Grapple, a creature can either succeed on a Strength (Athletics) or Dexterity (Acrobatics) check against the grapple's escape DC [S1], or if the grappler has the Incapacitated condition, or if the distance between the Grappled target and the grappler exceeds the grapple's range. Additionally, the grappler can release the target at any time without needing to make a check [S1].",
+  "refused": false,
+  "tool_calling_used": false,
+  "tool_calls": [],
+  "tool_smoke": {
+    "requested_top_k": "10",
+    "status": "success",
+    "result_count": 6,
+    "latency_seconds": 2.026
+  },
+  "citations": [
+    {
+      "citation_id": "S1",
+      "source_name": "DND5eSRD_176-191.md",
+      "snippet": "**Ending a Grapple.** A Grappled creature can use its action to make a Strength (Athletics) or Dexterity (Acrobatics) check against the grapple's escape DC, ending the condition on itself on a success. The condition also ends if the grappler has the Incapacitated condition or if the distance between",
+      "page_number": null,
+      "slide_number": null,
+      "sheet_name": null,
+      "section": "Rules Glossary > Rules Definitions > Grappling"
+    },
+    {
+      "citation_id": "S2",
+      "source_name": "DND5eSRD_176-191.md",
+      "snippet": "**Grapple.** The target must succeed on a Strength or Dexterity saving throw (it chooses which), or it has the Grappled condition. The DC for the saving throw and any escape attempts equals 8 plus your Strength modifier and Proficiency Bonus. This grapple is possible only if the target is no more th",
+      "page_number": null,
+      "slide_number": null,
+      "sheet_name": null,
+      "section": "Rules Glossary > Rules Definitions > Unarmed Strike"
+    },
+    {
+      "citation_id": "S3",
+      "source_name": "DND5eSRD_253-272.md",
+      "snippet": "> ### Bonus Actions\n> **Quick Grapple.** *Dexterity Saving Throw:* DC 13, one Medium or smaller creature the bugbear can see within 10 feet. *Failure:* The target has the Grappled condition (escape DC 13).",
+      "page_number": null,
+      "slide_number": null,
+      "sheet_name": null,
+      "section": "Page 19 > Bugbears"
+    },
+    {
+      "citation_id": "S4",
+      "source_name": "DND5eSRD_293-312.md",
+      "snippet": "### Traits\n**Adhesive (Object Form Only).** The mimic adheres to anything that touches it. A Huge or smaller creature adhered to the mimic has the Grappled condition (escape DC 13). Ability checks made to escape this grapple have Disadvantage.",
+      "page_number": null,
+      "slide_number": null,
+      "sheet_name": null,
+      "section": "Actions > Mimic > Traits"
+    },
+    {
+      "citation_id": "S5",
+      "source_name": "DND5eSRD_293-312.md",
+      "snippet": "**Pseudopod.** *Melee Attack Roll:* +5, reach 5 ft. *Hit:* 7 (1d8 + 3) Bludgeoning damage plus 4 (1d8) Acid damage. If the target is a Large or smaller creature, it has the Grappled condition (escape DC 13). Ability checks made to escape this grapple have Disadvantage.",
+      "page_number": null,
+      "slide_number": null,
+      "sheet_name": null,
+      "section": "Actions > Mimic > Actions"
+    }
+  ],
+  "sources": [
+    {
+      "source": "DND5eSRD_176-191.md",
+      "snippet": "**Ending a Grapple.** A Grappled creature can use its action to make a Strength (Athletics) or Dexterity (Acrobatics) check against the grapple's escape DC, ending the condition on itself on a success. The condition also ends if the grappler has the Incapacitated condition or if the distance between"
+    },
+    {
+      "source": "DND5eSRD_176-191.md",
+      "snippet": "**Grapple.** The target must succeed on a Strength or Dexterity saving throw (it chooses which), or it has the Grappled condition. The DC for the saving throw and any escape attempts equals 8 plus your Strength modifier and Proficiency Bonus. This grapple is possible only if the target is no more th"
+    },
+    {
+      "source": "DND5eSRD_253-272.md",
+      "snippet": "> ### Bonus Actions\n> **Quick Grapple.** *Dexterity Saving Throw:* DC 13, one Medium or smaller creature the bugbear can see within 10 feet. *Failure:* The target has the Grappled condition (escape DC 13)."
+    },
+    {
+      "source": "DND5eSRD_293-312.md",
+      "snippet": "### Traits\n**Adhesive (Object Form Only).** The mimic adheres to anything that touches it. A Huge or smaller creature adhered to the mimic has the Grappled condition (escape DC 13). Ability checks made to escape this grapple have Disadvantage."
+    },
+    {
+      "source": "DND5eSRD_293-312.md",
+      "snippet": "**Pseudopod.** *Melee Attack Roll:* +5, reach 5 ft. *Hit:* 7 (1d8 + 3) Bludgeoning damage plus 4 (1d8) Acid damage. If the target is a Large or smaller creature, it has the Grappled condition (escape DC 13). Ability checks made to escape this grapple have Disadvantage."
+    }
+  ],
+  "citation_sources_present": true,
+  "generation_model": "llama3.2:3b",
+  "embedding_provider": "ollama",
+  "embedding_model": "nomic-embed-text",
+  "initialization_seconds": 0.215,
+  "query_seconds": 4.736,
+  "finished_at_utc": "2026-11-13T00:43:35.623776+00:00"
+}

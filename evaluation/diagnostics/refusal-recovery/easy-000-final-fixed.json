@@ -1,0 +1,921 @@
+{
+  "question_id": "datapizza-easy-000",
+  "question": "Compare the restoration abilities of the Pit Fiend, Planetar, Rakshasa, and Solar. What are the key differences in how their bodies react upon death and where they are revived?",
+  "retrievals": [
+    {
+      "query": "compare the restoration abilities of the pit fiend, planetar, rakshasa, and solar. what are the key differences in how their bodies react upon death and where they are revived?",
+      "latency_seconds": 0.1932683700006237,
+      "candidate_documents": [
+        {
+          "source": "DND5eSRD_313-332.md",
+          "chunk_id": "a74776b9a7918e14",
+          "source_char_start": 8866,
+          "source_char_end": 9087,
+          "dense_score": 0.635818,
+          "dense_rank": 2,
+          "sparse_score": 27.372845047409267,
+          "sparse_rank": 4,
+          "content": "### Traits\n**Diabolical Restoration.** If the pit fiend dies outside the Nine Hells, its body disappears in sulfurous smoke, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells."
+        },
+        {
+          "source": "DND5eSRD_313-332.md",
+          "chunk_id": "518ffe574b16d974",
+          "source_char_start": 21449,
+          "source_char_end": 21641,
+          "dense_score": 0.698175,
+          "dense_rank": 1,
+          "sparse_score": 21.60100254913512,
+          "sparse_rank": 9,
+          "content": "**Fiendish Restoration.** If the rakshasa dies outside the Nine Hells, its body turns to ichor, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells."
+        },
+        {
+          "source": "DND5eSRD_313-332.md",
+          "chunk_id": "09bc9d8c8fddb450",
+          "source_char_start": 11464,
+          "source_char_end": 11832,
+          "dense_score": 0.627775,
+          "dense_rank": 3,
+          "sparse_score": 21.594204134821787,
+          "sparse_rank": 10,
+          "content": "### Traits\n**Divine Awareness.** The planetar knows if it hears a lie.\n\n**Exalted Restoration.** If the planetar dies outside Mount Celestia, its body disappears, and it gains a new body instantly, reviving with all its Hit Points somewhere in Mount Celestia.\n\n**Magic Resistance.** The planetar has Advantage on saving throws against spells and other magical effects."
+        },
+        {
+          "source": "DND5eSRD_313-332.md",
+          "chunk_id": "c78c9a6c1d2bff67",
+          "source_char_start": 9548,
+          "source_char_end": 9656,
+          "dense_score": 0.540477,
+          "dense_rank": 17,
+          "sparse_score": 22.53748950278034,
+          "sparse_rank": 6,
+          "content": "**Magic Resistance.** The pit fiend has Advantage on saving throws against spells and other magical effects."
+        },
+        {
+          "source": "DND5eSRD_001-018.md",
+          "chunk_id": "585c4ac88e7c228b",
+          "source_char_start": 10315,
+          "source_char_end": 10500,
+          "dense_score": null,
+          "dense_rank": null,
+          "sparse_score": 30.9328332111022,
+          "sparse_rank": 1,
+          "content": "1.  **The Game Master Describes a Scene.** The GM tells the players where their adventurers are and what's around them (how many doors lead out of a room, what's on a table, and so on)."
+        },
+        {
+          "source": "DND5eSRD_001-018.md",
+          "chunk_id": "436e48d4891c2836",
+          "source_char_start": 45268,
+          "source_char_end": 45677,
+          "dense_score": null,
+          "dense_rank": null,
+          "sparse_score": 29.760832204563048,
+          "sparse_rank": 2,
+          "content": "**1: Establish Positions.** The Game Master determines where all the characters and monsters are located. Given the adventurers' marching order or their stated positions in the room or other location, the GM figures out where the adversaries are—how far away and in what direction.\n**2: Roll Initiative.** Everyone involved in the combat encounter rolls Initiative, determining the order of combatants' turns."
+        },
+        {
+          "source": "DND5eSRD_019-035.md",
+          "chunk_id": "df0fa4ff97218c90",
+          "source_char_start": 21393,
+          "source_char_end": 21711,
+          "dense_score": null,
+          "dense_rank": null,
+          "sparse_score": 27.472715616564475,
+          "sparse_rank": 3,
+          "content": "### Tier 1 (Levels 1–4)\nIn tier 1, characters are apprentice adventurers, though they are already set apart from the broader populace by virtue of their extraordinary abilities. They learn their starting class features and choose a subclass. The threats they face usually pose a danger to local farmsteads or villages."
+        },
+        {
+          "source": "DND5eSRD_176-191.md",
+          "chunk_id": "07111b56bbe3199a",
+          "source_char_start": 21162,
+          "source_char_end": 21621,
+          "dense_score": 0.594424,
+          "dense_rank": 4,
+          "sparse_score": null,
+          "sparse_rank": null,
+          "content": "If the creature returns to life, the revival effect determines the creature's current Hit Points. Unless otherwise stated, the creature returns to life with any conditions, magical contagions, or curses that were affecting it at death if the durations of those effects are still ongoing. If the creature died with any Exhaustion levels, it returns with 1 fewer level. If the creature had Attunement to one or more magic items, it is no longer attuned to them."
+        },
+        {
+          "source": "DND5eSRD_313-332.md",
+          "chunk_id": "aee4fb0879f18975",
+          "source_char_start": 59912,
+          "source_char_end": 60375,
+          "dense_score": 0.584073,
+          "dense_rank": 5,
+          "sparse_score": null,
+          "sparse_rank": null,
+          "content": "### Traits\n**Divine Awareness.** The solar knows if it hears a lie.\n\n**Exalted Restoration.** If the solar dies outside Mount Celestia, its body disappears, and it gains a new body instantly, reviving with all its Hit Points somewhere in Mount Celestia.\n\n**Legendary Resistance (4/Day).** If the solar fails a saving throw, it can choose to succeed instead.\n\n**Magic Resistance.** The solar has Advantage on saving throws against spells and other magical effects."
+        },
+        {
+          "source": "DND5eSRD_192-203.md",
+          "chunk_id": "2ef6e437b3193421",
+          "source_char_start": 26209,
+          "source_char_end": 26655,
+          "dense_score": null,
+          "dense_rank": null,
+          "sparse_score": 23.228888961301,
+          "sparse_rank": 5,
+          "content": "## Traps\nTraps should be used sparingly, lest they lose their charm. A hidden pit can be a fun surprise, but too many traps in an adventure can lead players to become overly cautious, which slows down the game.\nThe best traps are fleeting distractions that skilled characters can overcome in a short amount of time or deadly puzzles that require quick thinking and teamwork to overcome. Traps that are undetectable and inescapable are rarely fun."
+        },
+        {
+          "source": "DND5eSRD_273-292.md",
+          "chunk_id": "be3d62df4b8c5887",
+          "source_char_start": 31937,
+          "source_char_end": 32415,
+          "dense_score": 0.583611,
+          "dense_rank": 6,
+          "sparse_score": null,
+          "sparse_rank": null,
+          "content": "> | :--- | :---: | :---: |\n> | **CON** 22 | +6 | +6 |\n> | **CHA** 20 | +5 | +5 |\n> ___\n> **Immunities** Lightning, Thunder\n> **Senses** Darkvision 120 ft.; Passive Perception 13\n> **Languages** Primordial (Auran)\n> **CR** 11 (XP 7,200; PB +4)\n> ___\n> ### Traits\n> **Elemental Restoration.** If the djinni dies outside the Elemental Plane of Air, its body dissolves into mist, and it gains a new body in 1d4 days, reviving with all its Hit Points somewhere on the Plane of Air.\n>"
+        },
+        {
+          "source": "DND5eSRD_001-018.md",
+          "chunk_id": "cfae2dbf4c0a7597",
+          "source_char_start": 8110,
+          "source_char_end": 8606,
+          "dense_score": null,
+          "dense_rank": null,
+          "sparse_score": 22.291189988102452,
+          "sparse_rank": 7,
+          "content": "*   Minotaur of Baphomet\n*   Minotaur Skeleton\n*   Mule\n*   Mummy\n*   Mummy Lord\n*   Nalfeshnee\n*   Night Hag\n*   Nightmare\n*   Noble\n*   Ochre Jelly\n*   Octopus\n*   Ogre\n*   Ogre Zombie\n*   Oni\n*   Otyugh\n*   Owl\n*   Owlbear\n*   Panther\n*   Pegasus\n*   Phase Spider\n*   Piranha\n*   Pirate\n*   Pirate Captain\n*   Pit Fiend\n*   Planetar\n*   Plesiosaurus\n*   Polar Bear\n*   Pony\n*   Priest\n*   Priest Acolyte\n*   Pseudodragon\n*   Pteranodon\n*   Purple Worm\n*   Quasit\n*   Rakshasa\n*   Rat\n*   Raven"
+        }
+      ],
+      "retrieved_documents": [
+        {
+          "source": "DND5eSRD_313-332.md",
+          "chunk_id": "a74776b9a7918e14",
+          "source_char_start": 8866,
+          "source_char_end": 9087,
+          "dense_score": 0.635818,
+          "dense_rank": 2,
+          "sparse_score": 27.372845047409267,
+          "sparse_rank": 4,
+          "content": "### Traits\n**Diabolical Restoration.** If the pit fiend dies outside the Nine Hells, its body disappears in sulfurous smoke, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells."
+        },
+        {
+          "source": "DND5eSRD_001-018.md",
+          "chunk_id": "585c4ac88e7c228b",
+          "source_char_start": 10315,
+          "source_char_end": 10500,
+          "dense_score": null,
+          "dense_rank": null,
+          "sparse_score": 30.9328332111022,
+          "sparse_rank": 1,
+          "content": "1.  **The Game Master Describes a Scene.** The GM tells the players where their adventurers are and what's around them (how many doors lead out of a room, what's on a table, and so on)."
+        },
+        {
+          "source": "DND5eSRD_019-035.md",
+          "chunk_id": "df0fa4ff97218c90",
+          "source_char_start": 21393,
+          "source_char_end": 21711,
+          "dense_score": null,
+          "dense_rank": null,
+          "sparse_score": 27.472715616564475,
+          "sparse_rank": 3,
+          "content": "### Tier 1 (Levels 1–4)\nIn tier 1, characters are apprentice adventurers, though they are already set apart from the broader populace by virtue of their extraordinary abilities. They learn their starting class features and choose a subclass. The threats they face usually pose a danger to local farmsteads or villages."
+        },
+        {
+          "source": "DND5eSRD_313-332.md",
+          "chunk_id": "518ffe574b16d974",
+          "source_char_start": 21449,
+          "source_char_end": 21641,
+          "dense_score": 0.698175,
+          "dense_rank": 1,
+          "sparse_score": 21.60100254913512,
+          "sparse_rank": 9,
+          "content": "**Fiendish Restoration.** If the rakshasa dies outside the Nine Hells, its body turns to ichor, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells."
+        },
+        {
+          "source": "DND5eSRD_001-018.md",
+          "chunk_id": "436e48d4891c2836",
+          "source_char_start": 45268,
+          "source_char_end": 45677,
+          "dense_score": null,
+          "dense_rank": null,
+          "sparse_score": 29.760832204563048,
+          "sparse_rank": 2,
+          "content": "**1: Establish Positions.** The Game Master determines where all the characters and monsters are located. Given the adventurers' marching order or their stated positions in the room or other location, the GM figures out where the adversaries are—how far away and in what direction.\n**2: Roll Initiative.** Everyone involved in the combat encounter rolls Initiative, determining the order of combatants' turns."
+        },
+        {
+          "source": "DND5eSRD_019-035.md",
+          "chunk_id": "c621cd174b0b6910",
+          "source_char_start": 21129,
+          "source_char_end": 21391,
+          "dense_score": null,
+          "dense_rank": null,
+          "sparse_score": null,
+          "sparse_rank": null,
+          "content": "---\n24\ndescribing the journey from a level 1 character just beginning an adventuring career to the epic heights of level 20. These tiers don't have any rules associated with them; they point to the fact that the play experience evolves as characters gain levels."
+        },
+        {
+          "source": "DND5eSRD_313-332.md",
+          "chunk_id": "09bc9d8c8fddb450",
+          "source_char_start": 11464,
+          "source_char_end": 11832,
+          "dense_score": 0.627775,
+          "dense_rank": 3,
+          "sparse_score": 21.594204134821787,
+          "sparse_rank": 10,
+          "content": "### Traits\n**Divine Awareness.** The planetar knows if it hears a lie.\n\n**Exalted Restoration.** If the planetar dies outside Mount Celestia, its body disappears, and it gains a new body instantly, reviving with all its Hit Points somewhere in Mount Celestia.\n\n**Magic Resistance.** The planetar has Advantage on saving throws against spells and other magical effects."
+        },
+        {
+          "source": "DND5eSRD_001-018.md",
+          "chunk_id": "cfae2dbf4c0a7597",
+          "source_char_start": 8110,
+          "source_char_end": 8606,
+          "dense_score": null,
+          "dense_rank": null,
+          "sparse_score": 22.291189988102452,
+          "sparse_rank": 7,
+          "content": "*   Minotaur of Baphomet\n*   Minotaur Skeleton\n*   Mule\n*   Mummy\n*   Mummy Lord\n*   Nalfeshnee\n*   Night Hag\n*   Nightmare\n*   Noble\n*   Ochre Jelly\n*   Octopus\n*   Ogre\n*   Ogre Zombie\n*   Oni\n*   Otyugh\n*   Owl\n*   Owlbear\n*   Panther\n*   Pegasus\n*   Phase Spider\n*   Piranha\n*   Pirate\n*   Pirate Captain\n*   Pit Fiend\n*   Planetar\n*   Plesiosaurus\n*   Polar Bear\n*   Pony\n*   Priest\n*   Priest Acolyte\n*   Pseudodragon\n*   Pteranodon\n*   Purple Worm\n*   Quasit\n*   Rakshasa\n*   Rat\n*   Raven"
+        },
+        {
+          "source": "DND5eSRD_019-035.md",
+          "chunk_id": "af1c785f9853df76",
+          "source_char_start": 21713,
+          "source_char_end": 22026,
+          "dense_score": null,
+          "dense_rank": null,
+          "sparse_score": null,
+          "sparse_rank": null,
+          "content": "### Tier 2 (Levels 5–10)\nIn tier 2, characters are full-fledged adventurers. Spellcasters gain iconic spells such as *Fireball*, *Lightning Bolt*, and *Raise Dead*. Most weapon-focused classes gain the ability to make multiple attacks in a round. The characters now face dangers that threaten cities and kingdoms."
+        },
+        {
+          "source": "DND5eSRD_313-332.md",
+          "chunk_id": "c78c9a6c1d2bff67",
+          "source_char_start": 9548,
+          "source_char_end": 9656,
+          "dense_score": 0.540477,
+          "dense_rank": 17,
+          "sparse_score": 22.53748950278034,
+          "sparse_rank": 6,
+          "content": "**Magic Resistance.** The pit fiend has Advantage on saving throws against spells and other magical effects."
+        },
+        {
+          "source": "DND5eSRD_001-018.md",
+          "chunk_id": "9d3dec338b7ac1d6",
+          "source_char_start": 10127,
+          "source_char_end": 10313,
+          "dense_score": null,
+          "dense_rank": null,
+          "sparse_score": null,
+          "sparse_rank": null,
+          "content": "## Rhythm of Play\nThe three main pillars of D&D play are social interaction, exploration, and combat. Whichever one you're experiencing, the game unfolds according to this basic pattern:"
+        },
+        {
+          "source": "DND5eSRD_019-035.md",
+          "chunk_id": "2b39329c500ac1bb",
+          "source_char_start": 22028,
+          "source_char_end": 22389,
+          "dense_score": null,
+          "dense_rank": null,
+          "sparse_score": null,
+          "sparse_rank": null,
+          "content": "### Tier 3 (Levels 11–16)\nIn tier 3, characters have reached a level of power that makes them special among adventurers. At level 11, many spellcasters learn reality-altering spells. Other characters gain features that allow them to make more attacks or to do more impressive things with those attacks. These adventurers often confront threats to whole regions."
+        }
+      ],
+      "confidence": {
+        "confidence": 0.873213,
+        "decision": "answer",
+        "reason_codes": [
+          "RERANKER_UNAVAILABLE",
+          "STRONG_MULTI_SIGNAL_EVIDENCE"
+        ],
+        "signals": {
+          "top_candidate": {
+            "dense_score": 0.635818,
+            "dense_rank": 2,
+            "sparse_score": 27.372845047409267,
+            "sparse_rank": 4,
+            "reranker_score": null,
+            "metadata_boost": 0.12,
+            "final_ranking_score": 0.912,
+            "exact_lexical_match": false
+          },
+          "reranker_evidence": null,
+          "lexical_evidence": 1.0,
+          "dense_evidence": 0.635818,
+          "retriever_agreement": 0.09333333333333334,
+          "independent_evidence_count": 2,
+          "reranker_margin": null,
+          "coverage_score": 0.250924,
+          "coverage_sufficient": true,
+          "coverage_reason": "coverage_ok",
+          "intent": "comparison",
+          "candidate_count": 8
+        }
+      },
+      "coverage": {
+        "sufficient": true,
+        "score": 0.2509237765792009,
+        "dominant_source": "DND5eSRD_313-332.md",
+        "selected_sources": [
+          "DND5eSRD_313-332.md",
+          "DND5eSRD_019-035.md",
+          "DND5eSRD_001-018.md"
+        ],
+        "dominant_source_chunks": 4,
+        "selected_chunks": 12,
+        "total_available_chunks": 776,
+        "selected_units": 10,
+        "total_available_units": 453,
+        "continuity_ratio": 0.4444444444444444,
+        "structural_ratio": 1.0,
+        "source_concentration": 0.3333333333333333,
+        "source_reports": [
+          {
+            "source": "DND5eSRD_313-332.md",
+            "selected_chunks": 4,
+            "total_chunks": 344,
+            "selected_units": 3,
+            "total_units": 229,
+            "continuity_ratio": 0.0,
+            "structural_ratio": 1.0
+          },
+          {
+            "source": "DND5eSRD_019-035.md",
+            "selected_chunks": 4,
+            "total_chunks": 210,
+            "selected_units": 4,
+            "total_units": 115,
+            "continuity_ratio": 1.0,
+            "structural_ratio": 1.0
+          },
+          {
+            "source": "DND5eSRD_001-018.md",
+            "selected_chunks": 4,
+            "total_chunks": 222,
+            "selected_units": 3,
+            "total_units": 109,
+            "continuity_ratio": 0.3333333333333333,
+            "structural_ratio": 1.0
+          }
+        ],
+        "reason": "coverage_ok"
+      }
+    }
+  ],
+  "context_selections": [
+    {
+      "input_documents": [
+        {
+          "source": "DND5eSRD_313-332.md",
+          "chunk_id": "a74776b9a7918e14",
+          "source_char_start": 8866,
+          "source_char_end": 9087,
+          "dense_score": 0.635818,
+          "dense_rank": 2,
+          "sparse_score": 27.372845047409267,
+          "sparse_rank": 4,
+          "content": "### Traits\n**Diabolical Restoration.** If the pit fiend dies outside the Nine Hells, its body disappears in sulfurous smoke, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells."
+        },
+        {
+          "source": "DND5eSRD_001-018.md",
+          "chunk_id": "585c4ac88e7c228b",
+          "source_char_start": 10315,
+          "source_char_end": 10500,
+          "dense_score": null,
+          "dense_rank": null,
+          "sparse_score": 30.9328332111022,
+          "sparse_rank": 1,
+          "content": "1.  **The Game Master Describes a Scene.** The GM tells the players where their adventurers are and what's around them (how many doors lead out of a room, what's on a table, and so on)."
+        },
+        {
+          "source": "DND5eSRD_019-035.md",
+          "chunk_id": "df0fa4ff97218c90",
+          "source_char_start": 21393,
+          "source_char_end": 21711,
+          "dense_score": null,
+          "dense_rank": null,
+          "sparse_score": 27.472715616564475,
+          "sparse_rank": 3,
+          "content": "### Tier 1 (Levels 1–4)\nIn tier 1, characters are apprentice adventurers, though they are already set apart from the broader populace by virtue of their extraordinary abilities. They learn their starting class features and choose a subclass. The threats they face usually pose a danger to local farmsteads or villages."
+        },
+        {
+          "source": "DND5eSRD_313-332.md",
+          "chunk_id": "518ffe574b16d974",
+          "source_char_start": 21449,
+          "source_char_end": 21641,
+          "dense_score": 0.698175,
+          "dense_rank": 1,
+          "sparse_score": 21.60100254913512,
+          "sparse_rank": 9,
+          "content": "**Fiendish Restoration.** If the rakshasa dies outside the Nine Hells, its body turns to ichor, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells."
+        },
+        {
+          "source": "DND5eSRD_001-018.md",
+          "chunk_id": "436e48d4891c2836",
+          "source_char_start": 45268,
+          "source_char_end": 45677,
+          "dense_score": null,
+          "dense_rank": null,
+          "sparse_score": 29.760832204563048,
+          "sparse_rank": 2,
+          "content": "**1: Establish Positions.** The Game Master determines where all the characters and monsters are located. Given the adventurers' marching order or their stated positions in the room or other location, the GM figures out where the adversaries are—how far away and in what direction.\n**2: Roll Initiative.** Everyone involved in the combat encounter rolls Initiative, determining the order of combatants' turns."
+        },
+        {
+          "source": "DND5eSRD_019-035.md",
+          "chunk_id": "c621cd174b0b6910",
+          "source_char_start": 21129,
+          "source_char_end": 21391,
+          "dense_score": null,
+          "dense_rank": null,
+          "sparse_score": null,
+          "sparse_rank": null,
+          "content": "---\n24\ndescribing the journey from a level 1 character just beginning an adventuring career to the epic heights of level 20. These tiers don't have any rules associated with them; they point to the fact that the play experience evolves as characters gain levels."
+        },
+        {
+          "source": "DND5eSRD_313-332.md",
+          "chunk_id": "09bc9d8c8fddb450",
+          "source_char_start": 11464,
+          "source_char_end": 11832,
+          "dense_score": 0.627775,
+          "dense_rank": 3,
+          "sparse_score": 21.594204134821787,
+          "sparse_rank": 10,
+          "content": "### Traits\n**Divine Awareness.** The planetar knows if it hears a lie.\n\n**Exalted Restoration.** If the planetar dies outside Mount Celestia, its body disappears, and it gains a new body instantly, reviving with all its Hit Points somewhere in Mount Celestia.\n\n**Magic Resistance.** The planetar has Advantage on saving throws against spells and other magical effects."
+        },
+        {
+          "source": "DND5eSRD_001-018.md",
+          "chunk_id": "cfae2dbf4c0a7597",
+          "source_char_start": 8110,
+          "source_char_end": 8606,
+          "dense_score": null,
+          "dense_rank": null,
+          "sparse_score": 22.291189988102452,
+          "sparse_rank": 7,
+          "content": "*   Minotaur of Baphomet\n*   Minotaur Skeleton\n*   Mule\n*   Mummy\n*   Mummy Lord\n*   Nalfeshnee\n*   Night Hag\n*   Nightmare\n*   Noble\n*   Ochre Jelly\n*   Octopus\n*   Ogre\n*   Ogre Zombie\n*   Oni\n*   Otyugh\n*   Owl\n*   Owlbear\n*   Panther\n*   Pegasus\n*   Phase Spider\n*   Piranha\n*   Pirate\n*   Pirate Captain\n*   Pit Fiend\n*   Planetar\n*   Plesiosaurus\n*   Polar Bear\n*   Pony\n*   Priest\n*   Priest Acolyte\n*   Pseudodragon\n*   Pteranodon\n*   Purple Worm\n*   Quasit\n*   Rakshasa\n*   Rat\n*   Raven"
+        },
+        {
+          "source": "DND5eSRD_019-035.md",
+          "chunk_id": "af1c785f9853df76",
+          "source_char_start": 21713,
+          "source_char_end": 22026,
+          "dense_score": null,
+          "dense_rank": null,
+          "sparse_score": null,
+          "sparse_rank": null,
+          "content": "### Tier 2 (Levels 5–10)\nIn tier 2, characters are full-fledged adventurers. Spellcasters gain iconic spells such as *Fireball*, *Lightning Bolt*, and *Raise Dead*. Most weapon-focused classes gain the ability to make multiple attacks in a round. The characters now face dangers that threaten cities and kingdoms."
+        },
+        {
+          "source": "DND5eSRD_313-332.md",
+          "chunk_id": "c78c9a6c1d2bff67",
+          "source_char_start": 9548,
+          "source_char_end": 9656,
+          "dense_score": 0.540477,
+          "dense_rank": 17,
+          "sparse_score": 22.53748950278034,
+          "sparse_rank": 6,
+          "content": "**Magic Resistance.** The pit fiend has Advantage on saving throws against spells and other magical effects."
+        },
+        {
+          "source": "DND5eSRD_001-018.md",
+          "chunk_id": "9d3dec338b7ac1d6",
+          "source_char_start": 10127,
+          "source_char_end": 10313,
+          "dense_score": null,
+          "dense_rank": null,
+          "sparse_score": null,
+          "sparse_rank": null,
+          "content": "## Rhythm of Play\nThe three main pillars of D&D play are social interaction, exploration, and combat. Whichever one you're experiencing, the game unfolds according to this basic pattern:"
+        },
+        {
+          "source": "DND5eSRD_019-035.md",
+          "chunk_id": "2b39329c500ac1bb",
+          "source_char_start": 22028,
+          "source_char_end": 22389,
+          "dense_score": null,
+          "dense_rank": null,
+          "sparse_score": null,
+          "sparse_rank": null,
+          "content": "### Tier 3 (Levels 11–16)\nIn tier 3, characters have reached a level of power that makes them special among adventurers. At level 11, many spellcasters learn reality-altering spells. Other characters gain features that allow them to make more attacks or to do more impressive things with those attacks. These adventurers often confront threats to whole regions."
+        }
+      ],
+      "selected_documents": [
+        {
+          "source": "DND5eSRD_313-332.md",
+          "chunk_id": "a74776b9a7918e14",
+          "source_char_start": 8866,
+          "source_char_end": 9087,
+          "dense_score": 0.635818,
+          "dense_rank": 2,
+          "sparse_score": 27.372845047409267,
+          "sparse_rank": 4,
+          "content": "### Traits\n**Diabolical Restoration.** If the pit fiend dies outside the Nine Hells, its body disappears in sulfurous smoke, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells."
+        },
+        {
+          "source": "DND5eSRD_001-018.md",
+          "chunk_id": "585c4ac88e7c228b",
+          "source_char_start": 10315,
+          "source_char_end": 10500,
+          "dense_score": null,
+          "dense_rank": null,
+          "sparse_score": 30.9328332111022,
+          "sparse_rank": 1,
+          "content": "1.  **The Game Master Describes a Scene.** The GM tells the players where their adventurers are and what's around them (how many doors lead out of a room, what's on a table, and so on)."
+        },
+        {
+          "source": "DND5eSRD_019-035.md",
+          "chunk_id": "df0fa4ff97218c90",
+          "source_char_start": 21393,
+          "source_char_end": 21711,
+          "dense_score": null,
+          "dense_rank": null,
+          "sparse_score": 27.472715616564475,
+          "sparse_rank": 3,
+          "content": "### Tier 1 (Levels 1–4)\nIn tier 1, characters are apprentice adventurers, though they are already set apart from the broader populace by virtue of their extraordinary abilities. They learn their starting class features and choose a subclass. The threats they face usually pose a danger to local farmsteads or villages."
+        },
+        {
+          "source": "DND5eSRD_313-332.md",
+          "chunk_id": "518ffe574b16d974",
+          "source_char_start": 21449,
+          "source_char_end": 21641,
+          "dense_score": 0.698175,
+          "dense_rank": 1,
+          "sparse_score": 21.60100254913512,
+          "sparse_rank": 9,
+          "content": "**Fiendish Restoration.** If the rakshasa dies outside the Nine Hells, its body turns to ichor, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells."
+        },
+        {
+          "source": "DND5eSRD_001-018.md",
+          "chunk_id": "436e48d4891c2836",
+          "source_char_start": 45268,
+          "source_char_end": 45677,
+          "dense_score": null,
+          "dense_rank": null,
+          "sparse_score": 29.760832204563048,
+          "sparse_rank": 2,
+          "content": "**1: Establish Positions.** The Game Master determines where all the characters and monsters are located. Given the adventurers' marching order or their stated positions in the room or other location, the GM figures out where the adversaries are—how far away and in what direction.\n**2: Roll Initiative.** Everyone involved in the combat encounter rolls Initiative, determining the order of combatants' turns."
+        },
+        {
+          "source": "DND5eSRD_019-035.md",
+          "chunk_id": "c621cd174b0b6910",
+          "source_char_start": 21129,
+          "source_char_end": 21391,
+          "dense_score": null,
+          "dense_rank": null,
+          "sparse_score": null,
+          "sparse_rank": null,
+          "content": "---\n24\ndescribing the journey from a level 1 character just beginning an adventuring career to the epic heights of level 20. These tiers don't have any rules associated with them; they point to the fact that the play experience evolves as characters gain levels."
+        },
+        {
+          "source": "DND5eSRD_313-332.md",
+          "chunk_id": "09bc9d8c8fddb450",
+          "source_char_start": 11464,
+          "source_char_end": 11832,
+          "dense_score": 0.627775,
+          "dense_rank": 3,
+          "sparse_score": 21.594204134821787,
+          "sparse_rank": 10,
+          "content": "### Traits\n**Divine Awareness.** The planetar knows if it hears a lie.\n\n**Exalted Restoration.** If the planetar dies outside Mount Celestia, its body disappears, and it gains a new body instantly, reviving with all its Hit Points somewhere in Mount Celestia.\n\n**Magic Resistance.** The planetar has Advantage on saving throws against spells and other magical effects."
+        },
+        {
+          "source": "DND5eSRD_001-018.md",
+          "chunk_id": "cfae2dbf4c0a7597",
+          "source_char_start": 8110,
+          "source_char_end": 8606,
+          "dense_score": null,
+          "dense_rank": null,
+          "sparse_score": 22.291189988102452,
+          "sparse_rank": 7,
+          "content": "*   Minotaur of Baphomet\n*   Minotaur Skeleton\n*   Mule\n*   Mummy\n*   Mummy Lord\n*   Nalfeshnee\n*   Night Hag\n*   Nightmare\n*   Noble\n*   Ochre Jelly\n*   Octopus\n*   Ogre\n*   Ogre Zombie\n*   Oni\n*   Otyugh\n*   Owl\n*   Owlbear\n*   Panther\n*   Pegasus\n*   Phase Spider\n*   Piranha\n*   Pirate\n*   Pirate Captain\n*   Pit Fiend\n*   Planetar\n*   Plesiosaurus\n*   Polar Bear\n*   Pony\n*   Priest\n*   Priest Acolyte\n*   Pseudodragon\n*   Pteranodon\n*   Purple Worm\n*   Quasit\n*   Rakshasa\n*   Rat\n*   Raven"
+        },
+        {
+          "source": "DND5eSRD_019-035.md",
+          "chunk_id": "af1c785f9853df76",
+          "source_char_start": 21713,
+          "source_char_end": 22026,
+          "dense_score": null,
+          "dense_rank": null,
+          "sparse_score": null,
+          "sparse_rank": null,
+          "content": "### Tier 2 (Levels 5–10)\nIn tier 2, characters are full-fledged adventurers. Spellcasters gain iconic spells such as *Fireball*, *Lightning Bolt*, and *Raise Dead*. Most weapon-focused classes gain the ability to make multiple attacks in a round. The characters now face dangers that threaten cities and kingdoms."
+        },
+        {
+          "source": "DND5eSRD_313-332.md",
+          "chunk_id": "c78c9a6c1d2bff67",
+          "source_char_start": 9548,
+          "source_char_end": 9656,
+          "dense_score": 0.540477,
+          "dense_rank": 17,
+          "sparse_score": 22.53748950278034,
+          "sparse_rank": 6,
+          "content": "**Magic Resistance.** The pit fiend has Advantage on saving throws against spells and other magical effects."
+        },
+        {
+          "source": "DND5eSRD_001-018.md",
+          "chunk_id": "9d3dec338b7ac1d6",
+          "source_char_start": 10127,
+          "source_char_end": 10313,
+          "dense_score": null,
+          "dense_rank": null,
+          "sparse_score": null,
+          "sparse_rank": null,
+          "content": "## Rhythm of Play\nThe three main pillars of D&D play are social interaction, exploration, and combat. Whichever one you're experiencing, the game unfolds according to this basic pattern:"
+        },
+        {
+          "source": "DND5eSRD_019-035.md",
+          "chunk_id": "2b39329c500ac1bb",
+          "source_char_start": 22028,
+          "source_char_end": 22389,
+          "dense_score": null,
+          "dense_rank": null,
+          "sparse_score": null,
+          "sparse_rank": null,
+          "content": "### Tier 3 (Levels 11–16)\nIn tier 3, characters have reached a level of power that makes them special among adventurers. At level 11, many spellcasters learn reality-altering spells. Other characters gain features that allow them to make more attacks or to do more impressive things with those attacks. These adventurers often confront threats to whole regions."
+        }
+      ],
+      "coverage": {
+        "sufficient": true,
+        "score": 0.2509237765792009,
+        "dominant_source": "DND5eSRD_313-332.md",
+        "selected_sources": [
+          "DND5eSRD_313-332.md",
+          "DND5eSRD_019-035.md",
+          "DND5eSRD_001-018.md"
+        ],
+        "dominant_source_chunks": 4,
+        "selected_chunks": 12,
+        "total_available_chunks": 776,
+        "selected_units": 10,
+        "total_available_units": 453,
+        "continuity_ratio": 0.4444444444444444,
+        "structural_ratio": 1.0,
+        "source_concentration": 0.3333333333333333,
+        "source_reports": [
+          {
+            "source": "DND5eSRD_313-332.md",
+            "selected_chunks": 4,
+            "total_chunks": 344,
+            "selected_units": 3,
+            "total_units": 229,
+            "continuity_ratio": 0.0,
+            "structural_ratio": 1.0
+          },
+          {
+            "source": "DND5eSRD_019-035.md",
+            "selected_chunks": 4,
+            "total_chunks": 210,
+            "selected_units": 4,
+            "total_units": 115,
+            "continuity_ratio": 1.0,
+            "structural_ratio": 1.0
+          },
+          {
+            "source": "DND5eSRD_001-018.md",
+            "selected_chunks": 4,
+            "total_chunks": 222,
+            "selected_units": 3,
+            "total_units": 109,
+            "continuity_ratio": 0.3333333333333333,
+            "structural_ratio": 1.0
+          }
+        ],
+        "reason": "coverage_ok"
+      },
+      "confidence": {
+        "confidence": 0.873213,
+        "decision": "answer",
+        "reason_codes": [
+          "RERANKER_UNAVAILABLE",
+          "STRONG_MULTI_SIGNAL_EVIDENCE"
+        ],
+        "signals": {
+          "top_candidate": {
+            "dense_score": 0.635818,
+            "dense_rank": 2,
+            "sparse_score": 27.372845047409267,
+            "sparse_rank": 4,
+            "reranker_score": null,
+            "metadata_boost": 0.12,
+            "final_ranking_score": 0.912,
+            "exact_lexical_match": false
+          },
+          "reranker_evidence": null,
+          "lexical_evidence": 1.0,
+          "dense_evidence": 0.635818,
+          "retriever_agreement": 0.09333333333333334,
+          "independent_evidence_count": 2,
+          "reranker_margin": null,
+          "coverage_score": 0.250924,
+          "coverage_sufficient": true,
+          "coverage_reason": "coverage_ok",
+          "intent": "comparison",
+          "candidate_count": 8
+        }
+      }
+    }
+  ],
+  "pipeline_result": {
+    "result": "Based on the provided context, here's a comparison of the restoration abilities of the Pit Fiend, Planetar, Rakshasa, and Solar:\n\nSimilarities: None.\n\nDifferences:\n- The Pit Fiend and Rakshasa share the trait \"Diabolical Restoration\" or \"Fiendish Restoration,\" respectively. If they die outside their respective domains (Nine Hells for the Pit Fiend and somewhere in the Nine Hells for both), their bodies disappear, and they gain a new body instantly, reviving with all their Hit Points.\n- The Planetar has the trait \"Exalted Restoration.\" If it dies outside Mount Celestia, its body disappears, and it gains a new body instantly, reviving with all its Hit Points somewhere in Mount Celestia.\n- There is no information about the Solar's restoration ability.\n\nLack of evidence: The Solar's restoration ability cannot be compared to that of the other three creatures because there is no mention of it in the provided context.",
+    "retrieval_confidence": 0.8732132933333334,
+    "retrieval_confidence_assessment": {
+      "confidence": 0.873213,
+      "decision": "answer",
+      "reason_codes": [
+        "RERANKER_UNAVAILABLE",
+        "STRONG_MULTI_SIGNAL_EVIDENCE"
+      ],
+      "signals": {
+        "top_candidate": {
+          "dense_score": 0.635818,
+          "dense_rank": 2,
+          "sparse_score": 27.372845047409267,
+          "sparse_rank": 4,
+          "reranker_score": null,
+          "metadata_boost": 0.12,
+          "final_ranking_score": 0.912,
+          "exact_lexical_match": false
+        },
+        "reranker_evidence": null,
+        "lexical_evidence": 1.0,
+        "dense_evidence": 0.635818,
+        "retriever_agreement": 0.09333333333333334,
+        "independent_evidence_count": 2,
+        "reranker_margin": null,
+        "coverage_score": 0.250924,
+        "coverage_sufficient": true,
+        "coverage_reason": "coverage_ok",
+        "intent": "comparison",
+        "candidate_count": 8
+      }
+    },
+    "retrieval_coverage": 0.2509237765792009,
+    "retrieval_intent": "comparison",
+    "retrieval_dominant_source": "DND5eSRD_313-332.md",
+    "retrieval_coverage_reason": "coverage_ok",
+    "partial_context": false,
+    "tool_calls": [],
+    "tool_calling_used": false,
+    "refused": false,
+    "original_query": "Compare the restoration abilities of the Pit Fiend, Planetar, Rakshasa, and Solar. What are the key differences in how their bodies react upon death and where they are revived?",
+    "standalone_query": "compare the restoration abilities of the pit fiend, planetar, rakshasa, and solar. what are the key differences in how their bodies react upon death and where they are revived?",
+    "query_rewritten": true
+  },
+  "response": {
+    "answer": "Based on the provided context, here's a comparison of the restoration abilities of the Pit Fiend, Planetar, Rakshasa, and Solar:\n\nSimilarities: None.\n\nDifferences:\n- The Pit Fiend and Rakshasa share the trait \"Diabolical Restoration\" or \"Fiendish Restoration,\" respectively. If they die outside their respective domains (Nine Hells for the Pit Fiend and somewhere in the Nine Hells for both), their bodies disappear, and they gain a new body instantly, reviving with all their Hit Points.\n- The Planetar has the trait \"Exalted Restoration.\" If it dies outside Mount Celestia, its body disappears, and it gains a new body instantly, reviving with all its Hit Points somewhere in Mount Celestia.\n- There is no information about the Solar's restoration ability.\n\nLack of evidence: The Solar's restoration ability cannot be compared to that of the other three creatures because there is no mention of it in the provided context.",
+    "refused": false,
+    "citations": [
+      {
+        "citation_id": "S1",
+        "source_name": "DND5eSRD_313-332.md",
+        "snippet": "### Traits\n**Diabolical Restoration.** If the pit fiend dies outside the Nine Hells, its body disappears in sulfurous smoke, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells.",
+        "page_number": null,
+        "slide_number": null,
+        "sheet_name": null,
+        "section": "Pit Fiend > Pit Fiend > Traits"
+      },
+      {
+        "citation_id": "S2",
+        "source_name": "DND5eSRD_001-018.md",
+        "snippet": "1.  **The Game Master Describes a Scene.** The GM tells the players where their adventurers are and what's around them (how many doors lead out of a room, what's on a table, and so on).",
+        "page_number": null,
+        "slide_number": null,
+        "sheet_name": null,
+        "section": "Playing the Game > Rhythm of Play"
+      },
+      {
+        "citation_id": "S3",
+        "source_name": "DND5eSRD_019-035.md",
+        "snippet": "### Tier 1 (Levels 1–4)\nIn tier 1, characters are apprentice adventurers, though they are already set apart from the broader populace by virtue of their extraordinary abilities. They learn their starting class features and choose a subclass. The threats they face usually pose a danger to local farms",
+        "page_number": null,
+        "slide_number": null,
+        "sheet_name": null,
+        "section": "Character Creation > Tiers of Play > Tier 1 (Levels 1–4)"
+      },
+      {
+        "citation_id": "S4",
+        "source_name": "DND5eSRD_313-332.md",
+        "snippet": "**Fiendish Restoration.** If the rakshasa dies outside the Nine Hells, its body turns to ichor, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells.",
+        "page_number": null,
+        "slide_number": null,
+        "sheet_name": null,
+        "section": "Rakshasa > Rakshasa > Traits"
+      },
+      {
+        "citation_id": "S5",
+        "source_name": "DND5eSRD_001-018.md",
+        "snippet": "**1: Establish Positions.** The Game Master determines where all the characters and monsters are located. Given the adventurers' marching order or their stated positions in the room or other location, the GM figures out where the adversaries are—how far away and in what direction.\n**2: Roll Initiati",
+        "page_number": null,
+        "slide_number": null,
+        "sheet_name": null,
+        "section": "Combat > The Order of Combat > Combat Step by Step"
+      },
+      {
+        "citation_id": "S6",
+        "source_name": "DND5eSRD_019-035.md",
+        "snippet": "---\n24\ndescribing the journey from a level 1 character just beginning an adventuring career to the epic heights of level 20. These tiers don't have any rules associated with them; they point to the fact that the play experience evolves as characters gain levels.",
+        "page_number": null,
+        "slide_number": null,
+        "sheet_name": null,
+        "section": "Character Creation > Tiers of Play"
+      },
+      {
+        "citation_id": "S7",
+        "source_name": "DND5eSRD_313-332.md",
+        "snippet": "### Traits\n**Divine Awareness.** The planetar knows if it hears a lie.\n\n**Exalted Restoration.** If the planetar dies outside Mount Celestia, its body disappears, and it gains a new body instantly, reviving with all its Hit Points somewhere in Mount Celestia.\n\n**Magic Resistance.** The planetar has ",
+        "page_number": null,
+        "slide_number": null,
+        "sheet_name": null,
+        "section": "Planetar > Planetar > Traits"
+      },
+      {
+        "citation_id": "S8",
+        "source_name": "DND5eSRD_001-018.md",
+        "snippet": "*   Minotaur of Baphomet\n*   Minotaur Skeleton\n*   Mule\n*   Mummy\n*   Mummy Lord\n*   Nalfeshnee\n*   Night Hag\n*   Nightmare\n*   Noble\n*   Ochre Jelly\n*   Octopus\n*   Ogre\n*   Ogre Zombie\n*   Oni\n*   Otyugh\n*   Owl\n*   Owlbear\n*   Panther\n*   Pegasus\n*   Phase Spider\n*   Piranha\n*   Pirate\n*   Pirate",
+        "page_number": null,
+        "slide_number": null,
+        "sheet_name": null,
+        "section": "Contents > Index of Stat Blocks"
+      },
+      {
+        "citation_id": "S9",
+        "source_name": "DND5eSRD_019-035.md",
+        "snippet": "### Tier 2 (Levels 5–10)\nIn tier 2, characters are full-fledged adventurers. Spellcasters gain iconic spells such as *Fireball*, *Lightning Bolt*, and *Raise Dead*. Most weapon-focused classes gain the ability to make multiple attacks in a round. The characters now face dangers that threaten cities ",
+        "page_number": null,
+        "slide_number": null,
+        "sheet_name": null,
+        "section": "Character Creation > Tiers of Play > Tier 2 (Levels 5–10)"
+      },
+      {
+        "citation_id": "S10",
+        "source_name": "DND5eSRD_313-332.md",
+        "snippet": "**Magic Resistance.** The pit fiend has Advantage on saving throws against spells and other magical effects.",
+        "page_number": null,
+        "slide_number": null,
+        "sheet_name": null,
+        "section": "Pit Fiend > Pit Fiend > Traits"
+      },
+      {
+        "citation_id": "S11",
+        "source_name": "DND5eSRD_001-018.md",
+        "snippet": "## Rhythm of Play\nThe three main pillars of D&D play are social interaction, exploration, and combat. Whichever one you're experiencing, the game unfolds according to this basic pattern:",
+        "page_number": null,
+        "slide_number": null,
+        "sheet_name": null,
+        "section": "Playing the Game > Rhythm of Play"
+      },
+      {
+        "citation_id": "S12",
+        "source_name": "DND5eSRD_019-035.md",
+        "snippet": "### Tier 3 (Levels 11–16)\nIn tier 3, characters have reached a level of power that makes them special among adventurers. At level 11, many spellcasters learn reality-altering spells. Other characters gain features that allow them to make more attacks or to do more impressive things with those attack",
+        "page_number": null,
+        "slide_number": null,
+        "sheet_name": null,
+        "section": "Character Creation > Tiers of Play > Tier 3 (Levels 11–16)"
+      }
+    ],
+    "sources": [
+      {
+        "source": "DND5eSRD_313-332.md",
+        "snippet": "### Traits\n**Diabolical Restoration.** If the pit fiend dies outside the Nine Hells, its body disappears in sulfurous smoke, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells."
+      },
+      {
+        "source": "DND5eSRD_001-018.md",
+        "snippet": "1.  **The Game Master Describes a Scene.** The GM tells the players where their adventurers are and what's around them (how many doors lead out of a room, what's on a table, and so on)."
+      },
+      {
+        "source": "DND5eSRD_019-035.md",
+        "snippet": "### Tier 1 (Levels 1–4)\nIn tier 1, characters are apprentice adventurers, though they are already set apart from the broader populace by virtue of their extraordinary abilities. They learn their starting class features and choose a subclass. The threats they face usually pose a danger to local farms"
+      },
+      {
+        "source": "DND5eSRD_313-332.md",
+        "snippet": "**Fiendish Restoration.** If the rakshasa dies outside the Nine Hells, its body turns to ichor, and it gains a new body instantly, reviving with all its Hit Points somewhere in the Nine Hells."
+      },
+      {
+        "source": "DND5eSRD_001-018.md",
+        "snippet": "**1: Establish Positions.** The Game Master determines where all the characters and monsters are located. Given the adventurers' marching order or their stated positions in the room or other location, the GM figures out where the adversaries are—how far away and in what direction.\n**2: Roll Initiati"
+      },
+      {
+        "source": "DND5eSRD_019-035.md",
+        "snippet": "---\n24\ndescribing the journey from a level 1 character just beginning an adventuring career to the epic heights of level 20. These tiers don't have any rules associated with them; they point to the fact that the play experience evolves as characters gain levels."
+      },
+      {
+        "source": "DND5eSRD_313-332.md",
+        "snippet": "### Traits\n**Divine Awareness.** The planetar knows if it hears a lie.\n\n**Exalted Restoration.** If the planetar dies outside Mount Celestia, its body disappears, and it gains a new body instantly, reviving with all its Hit Points somewhere in Mount Celestia.\n\n**Magic Resistance.** The planetar has "
+      },
+      {
+        "source": "DND5eSRD_001-018.md",
+        "snippet": "*   Minotaur of Baphomet\n*   Minotaur Skeleton\n*   Mule\n*   Mummy\n*   Mummy Lord\n*   Nalfeshnee\n*   Night Hag\n*   Nightmare\n*   Noble\n*   Ochre Jelly\n*   Octopus\n*   Ogre\n*   Ogre Zombie\n*   Oni\n*   Otyugh\n*   Owl\n*   Owlbear\n*   Panther\n*   Pegasus\n*   Phase Spider\n*   Piranha\n*   Pirate\n*   Pirate"
+      },
+      {
+        "source": "DND5eSRD_019-035.md",
+        "snippet": "### Tier 2 (Levels 5–10)\nIn tier 2, characters are full-fledged adventurers. Spellcasters gain iconic spells such as *Fireball*, *Lightning Bolt*, and *Raise Dead*. Most weapon-focused classes gain the ability to make multiple attacks in a round. The characters now face dangers that threaten cities "
+      },
+      {
+        "source": "DND5eSRD_313-332.md",
+        "snippet": "**Magic Resistance.** The pit fiend has Advantage on saving throws against spells and other magical effects."
+      },
+      {
+        "source": "DND5eSRD_001-018.md",
+        "snippet": "## Rhythm of Play\nThe three main pillars of D&D play are social interaction, exploration, and combat. Whichever one you're experiencing, the game unfolds according to this basic pattern:"
+      },
+      {
+        "source": "DND5eSRD_019-035.md",
+        "snippet": "### Tier 3 (Levels 11–16)\nIn tier 3, characters have reached a level of power that makes them special among adventurers. At level 11, many spellcasters learn reality-altering spells. Other characters gain features that allow them to make more attacks or to do more impressive things with those attack"
+      }
+    ],
+    "tool_calls": [],
+    "tool_calling_used": false
+  },
+  "latency_seconds": 13.9262683930001
+}
