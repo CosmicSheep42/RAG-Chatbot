@@ -4,7 +4,7 @@ from typing import Any
 
 
 class ContextBuilder:
-    def __init__(self, *, max_context_tokens: int = 6000, reserved_prompt_tokens: int = 2048) -> None:
+    def __init__(self, *, max_context_tokens: int = 4096, reserved_prompt_tokens: int = 2048) -> None:
         self.max_context_tokens = max(1, max_context_tokens)
         self.reserved_prompt_tokens = max(0, reserved_prompt_tokens)
 
