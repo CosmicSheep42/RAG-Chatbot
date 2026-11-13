@@ -1,0 +1,28 @@
+{
+  "expected_questions": 12,
+  "completed": 12,
+  "failed_executions": 0,
+  "explicit_refusals": 4,
+  "textual_refusal_heuristic": 4,
+  "tool_calls": 13,
+  "valid_tool_calls": 10,
+  "tool_validation_failures": 0,
+  "tool_execution_failures": 0,
+  "empty_searches": 0,
+  "searches_returning_documents": 10,
+  "successful_recovery_searches": 1,
+  "questions_with_relevant_evidence_recovery": 1,
+  "additional_evidence_documents": 11,
+  "questions_requiring_recovery": 5,
+  "questions_requiring_recovery_percent": 41.66666666666667,
+  "tool_calls_per_question": 1.0833333333333333,
+  "citation_identifiers": 10,
+  "invalid_citation_identifiers": 0,
+  "valid_citation_identifier_rate": 1.0,
+  "incomplete_responses": 1,
+  "latency_seconds": {
+    "p50": 9.869417329500266,
+    "p95": 22.010774804150508,
+    "max": 28.755374989000302
+  }
+}

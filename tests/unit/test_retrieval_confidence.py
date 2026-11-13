@@ -35,6 +35,36 @@ def test_strong_multi_signal_evidence_is_answerable(document):
     assert assessment.confidence >= 0.62
 
 
+def test_confidence_uses_best_supported_evidence_independent_of_context_order(document):
+    sparse_only = document("Sparse only", context_role="hit", retrieval_sparse_score=20, retrieval_sparse_rank=3)
+    candidate = document(
+        "Retrieved evidence",
+        context_role="hit",
+        retrieval_sparse_score=20,
+        retrieval_dense_score=0.8,
+        retrieval_dense_rank=1,
+        retrieval_sparse_rank=1,
+    )
+
+    assessment = RetrievalConfidenceEstimator().assess(
+        [sparse_only, candidate],
+        SimpleNamespace(sufficient=True, score=0.5),
+        policy(QueryIntent.COMPARISON),
+    )
+
+    assert assessment.decision is RetrievalDecision.ANSWER
+    assert "INSUFFICIENT_COVERAGE" not in assessment.reason_codes
+
+    insufficient = RetrievalConfidenceEstimator().assess(
+        [sparse_only, candidate],
+        SimpleNamespace(sufficient=False, score=1.0),
+        policy(QueryIntent.COMPARISON),
+    )
+
+    assert insufficient.decision is RetrievalDecision.RETRY
+    assert "INSUFFICIENT_COVERAGE" in insufficient.reason_codes
+
+
 def test_dense_rank_alone_is_not_semantic_relevance(document):
     candidate = document("unrelated", context_role="hit", retrieval_dense_rank=1)
 

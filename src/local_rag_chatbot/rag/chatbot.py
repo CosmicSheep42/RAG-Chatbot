@@ -214,11 +214,18 @@ class RAGChatbot:
                 request_context=request_context,
             )
             if recovery_only:
+                initial_document_keys = {self._document_key(document) for document in documents}
+                recovered_documents = [
+                    document
+                    for document in final_documents
+                    if self._document_key(document) not in initial_document_keys
+                ]
                 final_documents, final_coverage, final_confidence = await self._run_blocking(
                     self._reassess_documents,
                     retrieval_query,
                     final_documents,
                     policy,
+                    preferred_documents=recovered_documents,
                 )
                 final_partial = self._is_partial_enumeration_allowed(
                     RetrievalResult(
@@ -233,8 +240,64 @@ class RAGChatbot:
                 if final_confidence is None or (
                     final_confidence.decision != RetrievalDecision.ANSWER and not final_partial
                 ):
+                    searched_queries = {
+                        str(event.get("arguments", {}).get("query") or "").strip().casefold()
+                        for event in tool_events
+                        if event.get("name") == "search_documents"
+                        and event.get("payload", {}).get("status") in {"success", "success_empty"}
+                    }
+                    if retrieval_query.casefold() not in searched_queries:
+                        try:
+                            _, tool_documents, event = await self._run_blocking(
+                                self._run_recovery_search,
+                                retrieval_query,
+                                request_context,
+                            )
+                            previous_count = len(final_documents)
+                            final_documents = self._merge_documents(final_documents, tool_documents)
+                            event["new_document_count"] = len(final_documents) - previous_count
+                            tool_events.append(event)
+                            tool_used = True
+                            recovered_documents = [
+                                document
+                                for document in final_documents
+                                if self._document_key(document) not in initial_document_keys
+                            ]
+                            final_documents, final_coverage, final_confidence = await self._run_blocking(
+                                self._reassess_documents,
+                                retrieval_query,
+                                final_documents,
+                                policy,
+                                preferred_documents=recovered_documents,
+                            )
+                            final_partial = self._is_partial_enumeration_allowed(
+                                RetrievalResult(
+                                    query=retrieval_query,
+                                    documents=tuple(final_documents),
+                                    candidates=tuple(final_documents),
+                                    confidence=final_confidence,
+                                    policy=policy,
+                                    coverage=final_coverage,
+                                )
+                            )
+                        except asyncio.CancelledError:
+                            raise
+                        except Exception:
+                            logger.warning(
+                                "Final recovery search failed",
+                                extra=self._request_log_extra(request_context),
+                            )
+                if final_confidence is None or (
+                    final_confidence.decision != RetrievalDecision.ANSWER and not final_partial
+                ):
                     return self._refusal_response(
-                        generation_query, retrieval_query, policy, final_confidence, final_coverage
+                        generation_query,
+                        retrieval_query,
+                        policy,
+                        final_confidence,
+                        final_coverage,
+                        tool_calls=tool_events,
+                        tool_calling_used=tool_used,
                     )
                 result_text = await self.answer_service.agenerate(
                     generation_query,
@@ -285,7 +348,11 @@ class RAGChatbot:
     def _register_tools(self) -> None:
         for tool in self.tool_calling_config.tools:
             if tool.executor == "search_documents" and self.tool_registry.get(tool.name) is None:
-                self.tool_registry.register(tool, self._execute_search_documents_tool)
+                self.tool_registry.register(
+                    tool,
+                    self._execute_search_documents_tool,
+                    normalized_integer_fields=frozenset({"top_k"}),
+                )
 
     def _empty_corpus_response(self, generation_query: str, retrieval_query: str) -> dict[str, Any]:
         return {
@@ -322,6 +389,9 @@ class RAGChatbot:
         policy: RetrievalPolicy,
         assessment: RetrievalConfidenceAssessment | None,
         coverage: CoverageReport,
+        *,
+        tool_calls: list[dict[str, Any]] | None = None,
+        tool_calling_used: bool = False,
     ) -> dict[str, Any]:
         return {
             "result": (
@@ -335,6 +405,8 @@ class RAGChatbot:
             "retrieval_intent": policy.intent.value,
             "retrieval_dominant_source": coverage.dominant_source,
             "retrieval_coverage_reason": coverage.reason,
+            "tool_calls": tool_calls or [],
+            "tool_calling_used": tool_calling_used,
             "refused": True,
             "original_query": generation_query,
             "standalone_query": retrieval_query,
@@ -346,6 +418,8 @@ class RAGChatbot:
         query: str,
         documents: list[Any],
         policy: RetrievalPolicy,
+        *,
+        preferred_documents: list[Any] | None = None,
     ) -> tuple[list[Any], CoverageReport, RetrievalConfidenceAssessment | None]:
         if self.index_manager.context_assembler is None:
             raise RuntimeError("RAG context assembler is not initialized.")
@@ -354,6 +428,7 @@ class RAGChatbot:
             documents,
             policy,
         )
+        expanded = self._merge_documents(preferred_documents or [], expanded)
         return self._select_and_assess_final_context(query, expanded, policy)
 
     def _select_and_assess_final_context(
@@ -372,10 +447,7 @@ class RAGChatbot:
 
     @staticmethod
     def _is_recoverable_assessment(assessment: RetrievalConfidenceAssessment) -> bool:
-        return (
-            assessment.score >= 0.20
-            and RetrievalReason.NO_EVIDENCE.value not in assessment.reason_codes
-        )
+        return assessment.score >= 0.20 and RetrievalReason.NO_EVIDENCE.value not in assessment.reason_codes
 
     def _should_refuse_retrieval(self, retrieval_result: RetrievalResult) -> bool:
         assessment = retrieval_result.confidence
@@ -412,18 +484,10 @@ class RAGChatbot:
     ) -> tuple[str, list[Any], dict[str, Any]]:
         query = str(arguments.get("query") or "").strip()
         if not query:
-            payload = {"error": "Missing required argument 'query'."}
+            payload = {"status": "validation_error", "error": "Missing required argument 'query'."}
             return json.dumps(payload, ensure_ascii=True), [], payload
 
-        maximum_top_k = self._tool_integer_property(tool_definition, "top_k", "maximum", fallback=6)
-        default_top_k = self._tool_integer_property(tool_definition, "top_k", "default", fallback=maximum_top_k)
-        raw_top_k = arguments.get("top_k", default_top_k)
-        try:
-            top_k = int(raw_top_k)
-        except (TypeError, ValueError):
-            top_k = default_top_k
-
-        top_k = max(1, min(top_k, maximum_top_k))
+        top_k = arguments["top_k"]
         policy = self.policy_resolver.resolve(query)
         tool_policy = RetrievalPolicy(
             intent=policy.intent,
@@ -443,7 +507,7 @@ class RAGChatbot:
             scope=policy.scope,
         )
         if self.index_manager.retrieval_service is None:
-            payload = {"error": "Retriever is not initialized."}
+            payload = {"status": "execution_error", "error": "Retriever is not initialized."}
             return json.dumps(payload, ensure_ascii=True), [], payload
         retrieval_result = self.index_manager.retrieval_service.retrieve(
             query,
@@ -474,6 +538,46 @@ class RAGChatbot:
         }
         return json.dumps(payload, ensure_ascii=True), limited_documents, payload
 
+    def _run_recovery_search(
+        self,
+        query: str,
+        request_context: RequestContext | None,
+    ) -> tuple[str, list[Any], dict[str, Any]]:
+        arguments = {"query": query}
+        content, documents, payload = self.tool_registry.execute(
+            "search_documents",
+            arguments,
+            request_context=request_context,
+        )
+        return (
+            content,
+            documents,
+            {
+                "id": "recovery-fallback",
+                "name": "search_documents",
+                "arguments": arguments,
+                "result_count": len(documents),
+                "payload": payload,
+            },
+        )
+
+    @staticmethod
+    def _needs_recovery_search(tool_events: list[dict[str, Any]], query: str) -> bool:
+        normalized_query = query.strip().casefold()
+        if any(
+            event["name"] == "search_documents"
+            and event["payload"].get("status") == "success"
+            and event.get("new_document_count", 0) > 0
+            for event in tool_events
+        ):
+            return False
+        return not any(
+            event["name"] == "search_documents"
+            and event["payload"].get("status") in {"success", "success_empty"}
+            and str(event["arguments"].get("query") or "").strip().casefold() == normalized_query
+            for event in tool_events
+        )
+
     def _generate_answer_with_optional_tools(
         self,
         query: str,
@@ -491,7 +595,9 @@ class RAGChatbot:
             return "", list(documents), [], False
         if not self.settings.tool_calling_enabled:
             return (
-                self.answer_service.generate(query, list(documents), policy, coverage=coverage, partial_context=partial_context),
+                self.answer_service.generate(
+                    query, list(documents), policy, coverage=coverage, partial_context=partial_context
+                ),
                 list(documents),
                 [],
                 False,
@@ -503,7 +609,9 @@ class RAGChatbot:
             and not partial_context
         ):
             return (
-                self.answer_service.generate(query, list(documents), policy, coverage=coverage, partial_context=partial_context),
+                self.answer_service.generate(
+                    query, list(documents), policy, coverage=coverage, partial_context=partial_context
+                ),
                 list(documents),
                 [],
                 False,
@@ -552,6 +660,25 @@ class RAGChatbot:
                 tool_used = True
                 for tool_call in response.tool_calls:
                     if tool_call.name == "search_documents":
+                        if recovery_only and any(event.get("name") == "search_documents" for event in tool_events):
+                            tool_event = {
+                                "id": tool_call.id,
+                                "name": tool_call.name,
+                                "arguments": tool_call.arguments,
+                                "result_count": 0,
+                                "new_document_count": 0,
+                                "payload": {"skipped": True, "reason": "recovery_search_limit"},
+                            }
+                            tool_events.append(tool_event)
+                            messages.append(
+                                {
+                                    "role": "tool",
+                                    "name": tool_call.name,
+                                    "tool_call_id": tool_call.id,
+                                    "content": json.dumps(tool_event["payload"], ensure_ascii=True),
+                                }
+                            )
+                            continue
                         query_arg = str(tool_call.arguments.get("query") or "").strip().casefold()
                         if query_arg in executed_search_queries:
                             tool_event = {
@@ -579,12 +706,14 @@ class RAGChatbot:
                             tool_call.arguments,
                             request_context=request_context,
                         )
+                    previous_count = len(collected_documents)
                     collected_documents = self._merge_documents(collected_documents, tool_documents)
                     tool_event = {
                         "id": tool_call.id,
                         "name": tool_call.name,
                         "arguments": tool_call.arguments,
                         "result_count": len(tool_documents),
+                        "new_document_count": len(collected_documents) - previous_count,
                         "payload": tool_payload,
                     }
                     tool_events.append(tool_event)
@@ -597,12 +726,29 @@ class RAGChatbot:
                         }
                     )
         except Exception:
-            logger.warning(
+            logger.exception(
                 "Tool-calling flow failed; falling back to plain generation",
                 extra=self._request_log_extra(request_context),
             )
 
         if recovery_only:
+            if self._needs_recovery_search(tool_events, standalone_query or query):
+                try:
+                    with metrics.timer("tool_execution_seconds", tool="search_documents"):
+                        _, tool_documents, event = self._run_recovery_search(
+                            standalone_query or query,
+                            request_context,
+                        )
+                    previous_count = len(collected_documents)
+                    collected_documents = self._merge_documents(collected_documents, tool_documents)
+                    event["new_document_count"] = len(collected_documents) - previous_count
+                    tool_events.append(event)
+                    tool_used = True
+                except Exception:
+                    logger.warning(
+                        "Fallback recovery search failed",
+                        extra=self._request_log_extra(request_context),
+                    )
             return "", collected_documents, tool_events, tool_used
 
         if final_tool_answer is not None:
@@ -712,6 +858,25 @@ class RAGChatbot:
                 tool_used = True
                 for tool_call in response.tool_calls:
                     if tool_call.name == "search_documents":
+                        if recovery_only and any(event.get("name") == "search_documents" for event in tool_events):
+                            tool_event = {
+                                "id": tool_call.id,
+                                "name": tool_call.name,
+                                "arguments": tool_call.arguments,
+                                "result_count": 0,
+                                "new_document_count": 0,
+                                "payload": {"skipped": True, "reason": "recovery_search_limit"},
+                            }
+                            tool_events.append(tool_event)
+                            messages.append(
+                                {
+                                    "role": "tool",
+                                    "name": tool_call.name,
+                                    "tool_call_id": tool_call.id,
+                                    "content": json.dumps(tool_event["payload"], ensure_ascii=True),
+                                }
+                            )
+                            continue
                         query_arg = str(tool_call.arguments.get("query") or "").strip().casefold()
                         if query_arg in executed_search_queries:
                             tool_event = {
@@ -740,12 +905,14 @@ class RAGChatbot:
                             tool_call.arguments,
                             request_context=request_context,
                         )
+                    previous_count = len(collected_documents)
                     collected_documents = self._merge_documents(collected_documents, tool_documents)
                     tool_event = {
                         "id": tool_call.id,
                         "name": tool_call.name,
                         "arguments": tool_call.arguments,
                         "result_count": len(tool_documents),
+                        "new_document_count": len(collected_documents) - previous_count,
                         "payload": tool_payload,
                     }
                     tool_events.append(tool_event)
@@ -760,12 +927,31 @@ class RAGChatbot:
         except asyncio.CancelledError:
             raise
         except Exception:
-            logger.warning(
+            logger.exception(
                 "Tool-calling flow failed; falling back to plain generation",
                 extra=self._request_log_extra(request_context),
             )
 
         if recovery_only:
+            if self._needs_recovery_search(tool_events, standalone_query or query):
+                try:
+                    _, tool_documents, event = await self._run_blocking(
+                        self._run_recovery_search,
+                        standalone_query or query,
+                        request_context,
+                    )
+                    previous_count = len(collected_documents)
+                    collected_documents = self._merge_documents(collected_documents, tool_documents)
+                    event["new_document_count"] = len(collected_documents) - previous_count
+                    tool_events.append(event)
+                    tool_used = True
+                except asyncio.CancelledError:
+                    raise
+                except Exception:
+                    logger.warning(
+                        "Fallback recovery search failed",
+                        extra=self._request_log_extra(request_context),
+                    )
             return "", collected_documents, tool_events, tool_used
 
         if final_tool_answer is not None:
@@ -828,28 +1014,6 @@ class RAGChatbot:
                 for tool_call in tool_calls
             ]
         messages.append(message)
-
-    def _tool_integer_property(
-        self,
-        tool_definition: ToolDefinition,
-        property_name: str,
-        config_key: str,
-        *,
-        fallback: int,
-    ) -> int:
-        properties = tool_definition.parameters.get("properties")
-        if not isinstance(properties, dict):
-            return fallback
-
-        property_config = properties.get(property_name)
-        if not isinstance(property_config, dict):
-            return fallback
-
-        raw_value = property_config.get(config_key)
-        try:
-            return int(raw_value)
-        except (TypeError, ValueError):
-            return fallback
 
     def _document_key(self, document: Any) -> tuple[str, str]:
         source = str(document.metadata.get("source", "unknown"))

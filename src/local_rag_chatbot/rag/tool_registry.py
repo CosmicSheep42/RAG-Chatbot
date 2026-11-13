@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import inspect
 import json
 import logging
+import re
 from typing import Any, Callable, Mapping
 
 from local_rag_chatbot.documents.tool_config_repository import ToolDefinition
@@ -22,17 +23,28 @@ logger = logging.getLogger(__name__)
 class RegisteredTool:
     definition: ToolDefinition
     handler: ToolHandler
+    normalized_integer_fields: frozenset[str] = frozenset()
 
 
 class ToolRegistry:
     def __init__(self) -> None:
         self._tools: dict[str, RegisteredTool] = {}
 
-    def register(self, definition: ToolDefinition, handler: ToolHandler) -> None:
+    def register(
+        self,
+        definition: ToolDefinition,
+        handler: ToolHandler,
+        *,
+        normalized_integer_fields: frozenset[str] = frozenset(),
+    ) -> None:
         if definition.name in self._tools:
             raise ValueError(f"Tool '{definition.name}' is already registered.")
         self._validate_handler_signature(definition.name, handler)
-        self._tools[definition.name] = RegisteredTool(definition=definition, handler=handler)
+        self._tools[definition.name] = RegisteredTool(
+            definition=definition,
+            handler=handler,
+            normalized_integer_fields=normalized_integer_fields,
+        )
 
     def available(self) -> list[ToolDefinition]:
         return [tool.definition for tool in self._tools.values()]
@@ -49,18 +61,53 @@ class ToolRegistry:
     ) -> tuple[str, list[Any], dict[str, Any]]:
         tool = self.get(name)
         if tool is None:
-            payload = {"error": f"Unknown tool '{name}'."}
+            payload = {"status": "validation_error", "error": f"Unknown tool '{name}'."}
             return json.dumps(payload, ensure_ascii=True), [], payload
-        validation_error = self._validate_arguments(tool.definition, arguments)
+        normalized_arguments = self._normalize_arguments(tool, arguments)
+        validation_error = self._validate_arguments(tool.definition, normalized_arguments)
         if validation_error is not None:
-            payload = {"error": validation_error}
+            payload = {"status": "validation_error", "error": validation_error}
             return json.dumps(payload, ensure_ascii=True), [], payload
         try:
-            return tool.handler(tool.definition, arguments, request_context=request_context)
+            content, documents, payload = tool.handler(
+                tool.definition,
+                normalized_arguments,
+                request_context=request_context,
+            )
+            status = payload.get("status")
+            if status not in {"validation_error", "execution_error"}:
+                status = "execution_error" if "error" in payload else "success" if documents else "success_empty"
+            payload = {**payload, "status": status}
+            return json.dumps(payload, ensure_ascii=True), documents, payload
         except Exception:
             logger.exception("Tool execution failed", extra={"tool_name": name})
-            payload = {"error": f"Tool '{name}' failed."}
+            payload = {"status": "execution_error", "error": f"Tool '{name}' failed."}
             return json.dumps(payload, ensure_ascii=True), [], payload
+
+    def _normalize_arguments(
+        self,
+        tool: RegisteredTool,
+        arguments: dict[str, Any],
+    ) -> dict[str, Any]:
+        if not isinstance(arguments, dict):
+            return arguments
+        normalized = dict(arguments)
+        properties = tool.definition.parameters.get("properties", {})
+        for field_name in tool.normalized_integer_fields:
+            schema = properties.get(field_name) if isinstance(properties, dict) else None
+            if not isinstance(schema, dict) or schema.get("type") != "integer":
+                continue
+            if field_name not in normalized and "default" in schema:
+                normalized[field_name] = schema["default"]
+            value = normalized.get(field_name)
+            if isinstance(value, str) and re.fullmatch(r"-?(?:0|[1-9]\d*)", value.strip()):
+                value = int(value.strip())
+            if isinstance(value, int) and not isinstance(value, bool):
+                maximum = schema.get("maximum")
+                if isinstance(maximum, int) and not isinstance(maximum, bool):
+                    value = min(value, maximum)
+                normalized[field_name] = value
+        return normalized
 
     def _validate_handler_signature(self, name: str, handler: ToolHandler) -> None:
         try:
@@ -72,29 +119,17 @@ class ToolRegistry:
         positional = [
             parameter
             for parameter in parameters.values()
-            if parameter.kind
-            in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+            if parameter.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
         ]
         has_var_positional = any(
-            parameter.kind == inspect.Parameter.VAR_POSITIONAL
-            for parameter in parameters.values()
+            parameter.kind == inspect.Parameter.VAR_POSITIONAL for parameter in parameters.values()
         )
-        has_var_keyword = any(
-            parameter.kind == inspect.Parameter.VAR_KEYWORD
-            for parameter in parameters.values()
-        )
-        accepts_request_context = (
-            "request_context" in parameters
-            or has_var_keyword
-        )
+        has_var_keyword = any(parameter.kind == inspect.Parameter.VAR_KEYWORD for parameter in parameters.values())
+        accepts_request_context = "request_context" in parameters or has_var_keyword
         if len(positional) < 2 and not has_var_positional:
-            raise ValueError(
-                f"Tool '{name}' handler must accept definition and arguments parameters."
-            )
+            raise ValueError(f"Tool '{name}' handler must accept definition and arguments parameters.")
         if not accepts_request_context:
-            raise ValueError(
-                f"Tool '{name}' handler must accept a request_context keyword argument."
-            )
+            raise ValueError(f"Tool '{name}' handler must accept a request_context keyword argument.")
 
     def _validate_arguments(self, definition: ToolDefinition, arguments: dict[str, Any]) -> str | None:
         if not isinstance(arguments, dict):
@@ -124,6 +159,9 @@ class ToolRegistry:
             expected_type = property_schema.get("type")
             if expected_type and not self._matches_type(value, expected_type):
                 return f"Argument '{field_name}' must be of type {expected_type}."
+            minimum_length = property_schema.get("minLength")
+            if isinstance(value, str) and isinstance(minimum_length, int) and len(value) < minimum_length:
+                return f"Argument '{field_name}' must contain at least {minimum_length} character(s)."
             if isinstance(value, (int, float)) and not isinstance(value, bool):
                 minimum = property_schema.get("minimum")
                 maximum = property_schema.get("maximum")

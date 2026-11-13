@@ -58,7 +58,9 @@ class CandidateRetrievalEvidence:
             metadata_boost=_float_metadata(metadata, "retrieval_metadata_boost") or 0.0,
             final_ranking_score=_float_metadata(metadata, "retrieval_final_ranking_score")
             or _float_metadata(metadata, "retrieval_score"),
-            exact_lexical_match=bool(metadata.get("retrieval_exact_match") or metadata.get("retrieval_exact_code_match")),
+            exact_lexical_match=bool(
+                metadata.get("retrieval_exact_match") or metadata.get("retrieval_exact_code_match")
+            ),
         )
 
 
@@ -178,7 +180,11 @@ class RetrievalConfidenceEstimator:
             reason_codes.append(RetrievalReason.DENSE_ONLY_WEAK)
         if lexical_evidence > 0 and dense_evidence <= 0 and reranker_evidence is None:
             reason_codes.append(RetrievalReason.SPARSE_ONLY_WEAK)
-        if dense_evidence > 0 and lexical_evidence <= 0 and (reranker_evidence is None or reranker_evidence < profile.strong_reranker_threshold):
+        if (
+            dense_evidence > 0
+            and lexical_evidence <= 0
+            and (reranker_evidence is None or reranker_evidence < profile.strong_reranker_threshold)
+        ):
             reason_codes.append(RetrievalReason.RETRIEVERS_DISAGREE)
         if margin is not None and margin < profile.low_margin_threshold and confidence >= profile.retry_threshold:
             reason_codes.append(RetrievalReason.AMBIGUOUS_EVIDENCE)
@@ -201,8 +207,6 @@ class RetrievalConfidenceEstimator:
             profile=profile,
             policy=policy,
             coverage_required=coverage_required,
-            coverage_sufficient=coverage_sufficient,
-            coverage_score=coverage_score,
             reason_codes=reason_codes,
         )
         return self._assessment(confidence, decision, reason_codes, evidence, coverage, policy)
@@ -243,8 +247,6 @@ class RetrievalConfidenceEstimator:
         profile: RetrievalConfidenceProfile,
         policy: RetrievalPolicy,
         coverage_required: bool,
-        coverage_sufficient: bool,
-        coverage_score: float,
         reason_codes: list[RetrievalReason],
     ) -> RetrievalDecision:
         has_insufficient_coverage = RetrievalReason.INSUFFICIENT_COVERAGE in reason_codes
@@ -261,7 +263,10 @@ class RetrievalConfidenceEstimator:
             if self.minimum_confidence is not None and confidence < self.minimum_confidence:
                 return RetrievalDecision.RETRY
             if has_insufficient_coverage:
-                if policy.partial_when_incomplete and policy.intent in {QueryIntent.ENUMERATION, QueryIntent.AGGREGATION}:
+                if policy.partial_when_incomplete and policy.intent in {
+                    QueryIntent.ENUMERATION,
+                    QueryIntent.AGGREGATION,
+                }:
                     reason_codes.append(RetrievalReason.PARTIAL_ENUMERATION_EVIDENCE)
                     return RetrievalDecision.ANSWER
                 return RetrievalDecision.RETRY
@@ -276,7 +281,7 @@ class RetrievalConfidenceEstimator:
         if has_dense_only and not has_strong_signal:
             return RetrievalDecision.REFUSE
 
-        if coverage_required and (not coverage_sufficient or coverage_score < profile.min_coverage_score):
+        if coverage_required and has_insufficient_coverage:
             return RetrievalDecision.RETRY
 
         return RetrievalDecision.RETRY
@@ -342,17 +347,22 @@ def _coverage_required(policy: RetrievalPolicy) -> bool:
 
 def _retrieval_evidence_documents(candidates: list[Any]) -> list[Any]:
     hits = [
-        candidate
-        for candidate in candidates
-        if (getattr(candidate, "metadata", {}) or {}).get("context_role") == "hit"
+        candidate for candidate in candidates if (getattr(candidate, "metadata", {}) or {}).get("context_role") == "hit"
     ]
-    if hits:
-        return hits
-    return [
-        candidate
-        for candidate in candidates
-        if _has_retrieval_metadata(getattr(candidate, "metadata", {}) or {})
-    ]
+    if not hits:
+        hits = [
+            candidate for candidate in candidates if _has_retrieval_metadata(getattr(candidate, "metadata", {}) or {})
+        ]
+
+    def priority(candidate: Any) -> tuple[int, int]:
+        item = CandidateRetrievalEvidence.from_document(candidate)
+        signal_count = sum(
+            value is not None for value in (item.dense_score, item.sparse_score, item.reranker_score)
+        ) + int(item.exact_lexical_match)
+        rank_sum = sum(rank for rank in (item.dense_rank, item.sparse_rank) if rank is not None)
+        return -signal_count, rank_sum
+
+    return sorted(hits, key=priority)
 
 
 def _has_retrieval_metadata(metadata: dict[str, Any]) -> bool:
