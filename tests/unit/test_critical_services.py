@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+from dataclasses import replace
 
 from langchain_core.documents import Document
 
@@ -112,6 +113,26 @@ def test_invalid_citation_references_are_removed():
     assert service.validate_citations("Fact [S1]. Fake [S99].", [document]) == "Fact [S1]. Fake ."
 
 
+def test_answer_system_prompt_uses_original_question_and_limits_cross_passage_inference():
+    service = AnswerService(
+        chat_model=object(),
+        generation_model="test",
+        prompt_loader=lambda: "master",
+        answer_prompt_template="{question} {context} {master_prompt} {policy_instruction}",
+        system_prompt_template="{master_prompt}\n{user_question}\n{current_context}\n{retrieval_guidance}",
+        context_builder=ContextBuilder(),
+    )
+    selected = Document("Only this fact is supported.", metadata={"source": "rules.md", "chunk_id": "1"})
+
+    prompt = service.build_chat_system_prompt("Original user question", [selected], _policy())
+
+    assert "Original user question" in prompt
+    assert "Only this fact is supported." in prompt
+    assert "do not use prior knowledge or combine unrelated passages to infer a rule" in prompt
+    assert "If any part is missing, say so plainly and leave it unanswered." in prompt
+    assert "S99" not in prompt
+
+
 def test_retrieval_service_retries_and_keeps_the_better_result():
     first = Document("weak", metadata={"retrieval_score": 0.1})
     second = Document("strong", metadata={"retrieval_score": 0.9})
@@ -178,6 +199,53 @@ def test_context_assembler_preserves_order_and_reports_coverage():
     assert [document.page_content for document in selected] == ["answer"]
     assert coverage.selected_chunks == 1
     assert coverage.dominant_source == "guide.md"
+
+
+def test_comparison_coverage_counts_distinct_retrieved_evidence_units_only():
+    corpus = [
+        Document(
+            f"section {index}",
+            metadata={"source": "guide.md", "header_path": f"section-{index}", "chunk_index": index},
+        )
+        for index in range(20)
+    ]
+    policy = replace(_policy(), intent=QueryIntent.COMPARISON, coverage_min_chunks=2, coverage_min_ratio=0.4)
+    assembler = DocumentContextAssembler(corpus)
+    one_unit = [
+        Document("same fact one", metadata={"source": "guide.md", "header_path": "same", "context_role": "hit"}),
+        Document("same fact two", metadata={"source": "guide.md", "header_path": "same", "context_role": "hit"}),
+    ]
+    two_units = [
+        Document(
+            f"fact {index}",
+            metadata={
+                "source": "guide.md",
+                "header_path": f"section-{index}",
+                "chunk_index": index,
+                "context_role": "hit",
+            },
+        )
+        for index in range(2)
+    ]
+    neighbors = [
+        Document(
+            f"neighbor {index}",
+            metadata={
+                "source": "guide.md",
+                "header_path": f"neighbor-{index}",
+                "chunk_index": index * 4 + 4,
+                "context_role": "neighbor",
+            },
+        )
+        for index in range(3)
+    ]
+
+    duplicate_coverage = assembler.evaluate_coverage(one_unit, policy)
+    complete_coverage = assembler.evaluate_coverage(two_units + neighbors, policy)
+
+    assert duplicate_coverage.sufficient is False
+    assert complete_coverage.sufficient is True
+    assert complete_coverage.score < 0.45
 
 
 def test_index_manager_marks_empty_corpus_and_failures_without_partial_state():

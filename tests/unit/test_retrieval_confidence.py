@@ -48,12 +48,12 @@ def test_confidence_uses_best_supported_evidence_independent_of_context_order(do
 
     assessment = RetrievalConfidenceEstimator().assess(
         [sparse_only, candidate],
-        SimpleNamespace(sufficient=True, score=0.5),
+        SimpleNamespace(sufficient=True, score=0.01),
         policy(QueryIntent.COMPARISON),
     )
 
     assert assessment.decision is RetrievalDecision.ANSWER
-    assert "INSUFFICIENT_COVERAGE" not in assessment.reason_codes
+    assert "INSUFFICIENT_STRUCTURAL_COVERAGE" not in assessment.reason_codes
 
     insufficient = RetrievalConfidenceEstimator().assess(
         [sparse_only, candidate],
@@ -62,7 +62,39 @@ def test_confidence_uses_best_supported_evidence_independent_of_context_order(do
     )
 
     assert insufficient.decision is RetrievalDecision.RETRY
-    assert "INSUFFICIENT_COVERAGE" in insufficient.reason_codes
+    assert "INSUFFICIENT_STRUCTURAL_COVERAGE" in insufficient.reason_codes
+
+
+def test_low_structural_score_does_not_override_sufficient_coverage(document):
+    candidate = document(
+        "Evidence that answers the question",
+        context_role="hit",
+        retrieval_dense_score=0.8,
+        retrieval_sparse_score=4,
+    )
+
+    assessment = RetrievalConfidenceEstimator().assess(
+        [candidate], SimpleNamespace(sufficient=True, score=0.01), policy(QueryIntent.COMPARISON)
+    )
+
+    assert assessment.decision is RetrievalDecision.ANSWER
+    assert assessment.signals["structural_coverage_score"] == 0.01
+
+
+def test_strong_retrieval_cannot_override_structurally_incomplete_coverage(document):
+    candidate = document(
+        "Evidence for only one side",
+        context_role="hit",
+        retrieval_dense_score=0.95,
+        retrieval_sparse_score=20,
+    )
+
+    assessment = RetrievalConfidenceEstimator().assess(
+        [candidate], SimpleNamespace(sufficient=False, score=0.99), policy(QueryIntent.COMPARISON)
+    )
+
+    assert assessment.decision is RetrievalDecision.RETRY
+    assert "INSUFFICIENT_STRUCTURAL_COVERAGE" in assessment.reason_codes
 
 
 def test_dense_rank_alone_is_not_semantic_relevance(document):

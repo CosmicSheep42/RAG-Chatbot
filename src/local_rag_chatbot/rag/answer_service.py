@@ -41,7 +41,11 @@ class AnswerService:
         from langchain_core.prompts import PromptTemplate
 
         instruction = self.policy_instruction(policy, coverage=coverage, partial_context=partial_context) or ""
-        instruction += " Cite factual claims with only valid evidence references such as [S1]; never invent a reference."
+        instruction += (
+            " Use only facts stated in the selected context; do not use prior knowledge or combine unrelated passages to infer a rule. "
+            "For each requested part, verify that the selected text directly supports the response. If any part is missing, say so plainly and leave it unanswered. "
+            "Cite each factual claim with the directly supporting valid reference such as [S1]; never invent a reference."
+        )
         return PromptTemplate.from_template(self.answer_prompt_template).partial(
             master_prompt=self.prompt_loader(),
             policy_instruction=instruction,
@@ -57,7 +61,11 @@ class AnswerService:
         partial_context: bool = False,
     ) -> str:
         instruction = self.policy_instruction(policy, coverage=coverage, partial_context=partial_context) or ""
-        instruction += " Cite factual claims with only valid evidence references such as [S1]; never invent a reference."
+        instruction += (
+            " Use only facts stated in the selected context; do not use prior knowledge or combine unrelated passages to infer a rule. "
+            "For each requested part, verify that the selected text directly supports the response. If any part is missing, say so plainly and leave it unanswered. "
+            "Cite each factual claim with the directly supporting valid reference such as [S1]; never invent a reference."
+        )
         return self.system_prompt_template.format(
             master_prompt=self.prompt_loader(),
             user_question=query,

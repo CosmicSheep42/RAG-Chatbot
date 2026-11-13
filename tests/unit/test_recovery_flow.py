@@ -127,6 +127,20 @@ async def test_failed_recovery_refuses_without_generation():
     assert generated is False
     assert result["tool_calls"][0]["payload"]["status"] == "success_empty"
     assert result["tool_calling_used"] is True
+    assert chatbot.index_manager.confidence_estimator.calls == 2
+
+
+def test_equivalent_punctuation_and_whitespace_queries_do_not_repeat_search():
+    assert not RAGChatbot._needs_recovery_search(
+        [
+            {
+                "name": "search_documents",
+                "arguments": {"query": "  mass-cure   wounds? "},
+                "payload": {"status": "success_empty"},
+            }
+        ],
+        "mass cure wounds",
+    )
 
 
 @pytest.mark.asyncio

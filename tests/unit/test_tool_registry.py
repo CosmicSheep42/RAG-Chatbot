@@ -141,6 +141,7 @@ async def test_recovery_falls_back_to_actual_search_when_model_skips_tool(tool, 
 
     document = SimpleNamespace(metadata={"source": "rules.md"}, page_content="recovered evidence")
     seen = []
+    prompt_queries = []
 
     def handler(_definition, arguments, *, request_context=None):
         seen.append(dict(arguments))
@@ -161,18 +162,21 @@ async def test_recovery_falls_back_to_actual_search_when_model_skips_tool(tool, 
     )
     chatbot.tool_registry = _registry(tool, handler)
     chatbot.chat_model = Model()
-    chatbot.answer_service = SimpleNamespace(build_chat_system_prompt=lambda *_args, **_kwargs: "prompt")
+    chatbot.answer_service = SimpleNamespace(
+        build_chat_system_prompt=lambda query, *_args, **_kwargs: prompt_queries.append(query) or "prompt"
+    )
 
     kwargs = {"standalone_query": "targeted question", "recovery_only": True}
     if asynchronous:
-        result = await chatbot._agenerate_answer_with_optional_tools("question", (), object(), **kwargs)
+        result = await chatbot._agenerate_answer_with_optional_tools("Original user question", (), object(), **kwargs)
     else:
-        result = chatbot._generate_answer_with_optional_tools("question", (), object(), **kwargs)
+        result = chatbot._generate_answer_with_optional_tools("Original user question", (), object(), **kwargs)
 
     answer, documents, events, tool_used = result
     assert answer == ""
     assert documents == [document]
     assert seen == [{"query": "targeted question", "top_k": 4}]
+    assert prompt_queries == ["Original user question"]
     assert events[0]["payload"]["status"] == "success"
     assert tool_used is True
 
