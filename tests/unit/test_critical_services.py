@@ -75,6 +75,20 @@ def test_context_budget_skips_oversized_document_and_keeps_later_evidence():
     assert [citation["source"] for citation in citations] == ["small.md"]
 
 
+def test_default_context_fits_ollama_4096_token_window_with_prompt_reserve():
+    builder = ContextBuilder()
+    documents = [
+        Document("evidence " * 600, metadata={"source": f"source-{index}.md", "chunk_id": str(index)})
+        for index in range(4)
+    ]
+
+    selected_context = builder.format_context(documents)
+
+    assert builder.max_context_tokens == 4096
+    assert builder._estimate_tokens(selected_context) <= 2048
+    assert len(builder.build_citations(documents)) < len(documents)
+
+
 def test_confidence_is_based_on_context_that_generation_receives():
     large = Document(
         "x" * 1000,
@@ -128,9 +142,63 @@ def test_answer_system_prompt_uses_original_question_and_limits_cross_passage_in
 
     assert "Original user question" in prompt
     assert "Only this fact is supported." in prompt
-    assert "do not use prior knowledge or combine unrelated passages to infer a rule" in prompt
-    assert "If any part is missing, say so plainly and leave it unanswered." in prompt
+    assert "Extract requested facts faithfully" in prompt
+    assert "Do not use prior knowledge, infer missing rules, or calculate unstated values." in prompt
+    assert "leave it unanswered" in service.build_prompt(_policy()).format(
+        question="Original user question", context="selected context"
+    )
     assert "S99" not in prompt
+
+
+def test_answer_generation_sends_grounding_policy_as_system_message():
+    class ChatModel:
+        messages = None
+
+        def chat(self, messages, *, model):
+            self.messages = messages
+            return SimpleNamespace(content="Supported fact [S1].")
+
+    chat_model = ChatModel()
+    document = Document("Supported fact.", metadata={"source": "guide.md", "chunk_id": "1"})
+    service = AnswerService(
+        chat_model=chat_model,
+        generation_model="test",
+        prompt_loader=lambda: "Only answer from selected evidence.",
+        answer_prompt_template="{master_prompt}\n{context}\n{question}\n{policy_instruction}",
+        system_prompt_template="{master_prompt}\n{user_question}\n{current_context}\n{retrieval_guidance}",
+        context_builder=ContextBuilder(),
+    )
+
+    service.generate("Question", [document], _policy())
+
+    assert [message["role"] for message in chat_model.messages] == ["system", "user"]
+    assert chat_model.messages[0]["content"] == "Only answer from selected evidence."
+    assert "Question" in chat_model.messages[1]["content"]
+
+
+async def test_async_answer_generation_sends_the_same_system_policy():
+    class ChatModel:
+        messages = None
+
+        async def achat(self, messages, *, tools=None, model=None):
+            self.messages = messages
+            return SimpleNamespace(content="Supported fact [S1].")
+
+    chat_model = ChatModel()
+    document = Document("Supported fact.", metadata={"source": "guide.md", "chunk_id": "1"})
+    service = AnswerService(
+        chat_model=chat_model,
+        generation_model="test",
+        prompt_loader=lambda: "Only answer from selected evidence.",
+        answer_prompt_template="{master_prompt}\n{context}\n{question}\n{policy_instruction}",
+        system_prompt_template="{master_prompt}\n{user_question}\n{current_context}\n{retrieval_guidance}",
+        context_builder=ContextBuilder(),
+    )
+
+    await service.agenerate("Question", [document], _policy())
+
+    assert [message["role"] for message in chat_model.messages] == ["system", "user"]
+    assert chat_model.messages[0]["content"] == "Only answer from selected evidence."
 
 
 def test_retrieval_service_retries_and_keeps_the_better_result():

@@ -42,8 +42,9 @@ class AnswerService:
 
         instruction = self.policy_instruction(policy, coverage=coverage, partial_context=partial_context) or ""
         instruction += (
-            " Use only facts stated in the selected context; do not use prior knowledge or combine unrelated passages to infer a rule. "
-            "For each requested part, verify that the selected text directly supports the response. If any part is missing, say so plainly and leave it unanswered. "
+            " Extract requested facts faithfully from the selected context; preserve exact names, numbers, and rules. "
+            "Do not use prior knowledge, infer missing rules, or calculate unstated values. "
+            "If any requested fact is not directly supported, say the documents do not establish it and leave it unanswered. "
             "Cite each factual claim with the directly supporting valid reference such as [S1]; never invent a reference."
         )
         return PromptTemplate.from_template(self.answer_prompt_template).partial(
@@ -62,8 +63,9 @@ class AnswerService:
     ) -> str:
         instruction = self.policy_instruction(policy, coverage=coverage, partial_context=partial_context) or ""
         instruction += (
-            " Use only facts stated in the selected context; do not use prior knowledge or combine unrelated passages to infer a rule. "
-            "For each requested part, verify that the selected text directly supports the response. If any part is missing, say so plainly and leave it unanswered. "
+            " Extract requested facts faithfully from the selected context; preserve exact names, numbers, and rules. "
+            "Do not use prior knowledge, infer missing rules, or calculate unstated values. "
+            "If any requested fact is not directly supported, say the documents do not establish it and leave it unanswered. "
             "Cite each factual claim with the directly supporting valid reference such as [S1]; never invent a reference."
         )
         return self.system_prompt_template.format(
@@ -86,9 +88,10 @@ class AnswerService:
             context=self.context_builder.format_context(documents),
             question=query,
         )
+        messages = [{"role": "system", "content": self.prompt_loader()}, {"role": "user", "content": prompt}]
         with metrics.timer("final_generation_seconds"):
             response = self.chat_model.chat(
-                [{"role": "user", "content": prompt}],
+                messages,
                 model=self.generation_model,
             )
         return self.validate_citations(response.content.strip(), documents)
@@ -106,9 +109,10 @@ class AnswerService:
             context=self.context_builder.format_context(documents),
             question=query,
         )
+        messages = [{"role": "system", "content": self.prompt_loader()}, {"role": "user", "content": prompt}]
         with metrics.timer("final_generation_seconds"):
             response = await self._achat(
-                [{"role": "user", "content": prompt}],
+                messages,
                 model=self.generation_model,
             )
         return self.validate_citations(response.content.strip(), documents)

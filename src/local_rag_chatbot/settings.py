@@ -425,7 +425,7 @@ def get_settings() -> AppSettings:
         rate_limit_requests=int(os.getenv("RATE_LIMIT_REQUESTS", "60" if prod_defaults else "20")),
         rate_limit_window_seconds=int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60")),
         inference_timeout_seconds=inference_timeout_seconds,
-        context_budget_tokens=int(os.getenv("CONTEXT_BUDGET_TOKENS", "6000")),
+        context_budget_tokens=int(os.getenv("CONTEXT_BUDGET_TOKENS", "4096")),
         hybrid_dense_k=int(os.getenv("HYBRID_DENSE_K", "10")),
         hybrid_dense_fetch_k=int(os.getenv("HYBRID_DENSE_FETCH_K", "20")),
         hybrid_sparse_k=int(os.getenv("HYBRID_SPARSE_K", "10")),

@@ -52,3 +52,46 @@ New recovery counters deliberately distinguish documents added to the candidate 
 The new code eliminates the numeric structural-score contradiction and reduces repeated tool work. It also changes three prior engine refusals to answers (`easy-006`, `easy-012`, `easy-019`); at least two of those new answers contain clear factual defects. The remaining `easy-016` output is a safety-style refusal from the model despite absent evidence and an engine status of not-refused. `medium-016` continues to produce an unsupported answer. These results show fewer engine refusals do not demonstrate improved correctness.
 
 No LLM judge was used. The answer review is a compact qualitative inspection, not a verified accuracy metric. The 12-question pilot completed on GPU with no tool failures and valid citation identifiers, but grounding/completeness remains a blocker. **Do not run the full benchmark yet.**
+
+## Final reliability follow-up
+
+The earlier pilot exposed a runtime mismatch: Ollama's active context window was 4096 tokens while the application allowed a 6000-token total budget, of which up to 3952 tokens could be document context before the system prompt, question, and generated response. Ollama logs showed a 4076-token prompt followed by context shifting during generation. The application default is now 4096 total tokens, reserving 2048 for prompt and output. Generation also sends the grounding policy as a real `system` message in both sync and async paths. This is a bounded improvement, not a factuality guarantee.
+
+The final pilot used source fingerprint `3324197f1a3d06fe982866468db33f271701e3b668d0ffa3e4f918f28393f37a` at base revision `7a36b56020ee4f98b3b1cd4726fea952b21b10c6`. Exact records and metrics are in [`run-20261113T034432Z`](run-20261113T034432Z/manifest.json). Two intervening runs (`032918Z` and `033825Z`) tested prompt-only and context-budget iterations; neither is the final code state.
+
+| Metric | Prior canonical `024514Z` | Final `034432Z` | Change |
+|---|---:|---:|---:|
+| Completed | 12/12 | 12/12 | — |
+| Engine refusals / textual heuristic | 0 / 1 | 0 / 0 | heuristic -1 |
+| Tool calls / valid calls | 1 / 1 | 1 / 1 | — |
+| Validation / execution failures | 0 / 0 | 0 / 0 | — |
+| Duplicate-only searches | 1 | 1 | — |
+| New documents / useful recovered evidence selected | 0 / 0 | 0 / 0 | — |
+| Citation IDs / invalid IDs | 15 / 0 | 8 / 0 | -7 / — |
+| Latency p50 / p95 / max | 8.90 / 14.57 / 16.13 s | 11.00 / 20.45 / 20.67 s | +2.10 / +5.88 / +4.54 s |
+| Selected context documents, per question | see prior run records | 12, 5, 12, 12, 5, 10, 5, 5, 5, 5, 8, 13 | medium-023: 24 → 13; others unchanged |
+
+### Per-question review
+
+The quality labels below are manual inspection against the answer/reference and stored selected evidence. They are not judge scores, and gold-passage overlap alone is not treated as correctness.
+
+| Question | Final assessment |
+|---|---|
+| `easy-006` | Incorrect: conflates Sorcerer and Warlock recovery features and assigns Arcane Recovery to Sorcerers. |
+| `easy-009` | Partial: component basics and Material hand rule are supported; specific Verbal and Somatic requirements are missing. |
+| `easy-012` | Partly correct: casting/healing details are largely supported, but Mass Heal is incorrectly limited to six targets; its reference says any number within range. |
+| `easy-016` | Conservative but incomplete: admits no direct comparison, while making a few unsupported generic resistance/save statements. |
+| `easy-018` | Incorrect: invents “Create Explosive Elemental Effects”; the supported damage feature is Empowered Evocation. |
+| `easy-019` | Incorrect/incomplete: says Sight Rot excludes Beasts and misstates its initial transmission; also omits major effects/details. |
+| `medium-011` | Correct and supported: gives the score cap of 20. |
+| `medium-014` | Incorrect: assigns the Athletics/Acrobatics escape check to the grappler instead of the grappled creature. |
+| `medium-015` | Conservative but indirect: says the documents do not establish a way to improve Counterspell odds, then adds unrelated Wish details. |
+| `medium-016` | Safer abstention: no longer invents the Acid Arrow/Remorhaz damage calculation, but does not provide the requested best method. |
+| `medium-020` | Incomplete and over-interprets the one-slot rule as preventing two same-level spells; does not answer the documented slot-free second-spell cases in the reference. |
+| `medium-023` | Incomplete: reports the general cantrip scaling rule but does not enumerate supported class features. |
+
+GPU execution was confirmed live on the RTX 3050; models and parameters match the prior pilot. The final run had 12/12 completions, no tool failures, no new recovery evidence, and no invalid citation identifiers. Latency regressed against `024514Z`. The earlier `003857Z` baseline had four engine refusals; the immediate prior canonical run already had zero, so this final run did not reduce engine refusals relative to the latest code. Fewer refusals are not a correctness result. No LLM judge was used. The answer review confirms remaining factual and completeness problems; benchmark readiness remains **NOT_READY**.
+
+The full automated suite subsequently passed **136/136** in the pilot Docker Python 3.12.16 environment. The local Python 3.12.13 environment timed out during `asyncio.to_thread` tests; this did not reproduce in the Docker test run.
+
+The sync/async test-parity assertion was added after this final inference run and is included in the 136-test suite. No production source changed after `034432Z`; the manifest's working-tree fingerprint captures the test file before that additional assertion, while the production source fingerprint remains applicable.
