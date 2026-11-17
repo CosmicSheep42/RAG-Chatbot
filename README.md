@@ -1,168 +1,76 @@
 # Local RAG Chatbot
 
+**A modular, document-grounded Q&A system built with Python, FastAPI, and hybrid retrieval.**
+
+[![CI](https://github.com/CosmicSheep42/RAG-Chatbot/actions/workflows/ci.yml/badge.svg)](https://github.com/CosmicSheep42/RAG-Chatbot/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.139.2-009688?logo=fastapi&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg)
-![Status](https://img.shields.io/badge/status-prototype-orange)
+![Status](https://img.shields.io/badge/Status-Research%20prototype-orange)
 
-A locally executable, modular RAG system with pluggable providers, hybrid retrieval, optional reranking, API integration, and reproducible experimental evaluation. It is both an AI Engineering portfolio project and a reusable Python package.
+This is a **software engineering and AI engineering portfolio project** exploring how to build, test, and evaluate a retrieval-augmented generation (RAG) application. The focus is not just calling an LLM: it is organizing a maintainable retrieval pipeline, supporting interchangeable infrastructure, tracing failures, and measuring what actually works.
 
-The project demonstrates a complete RAG workflow with pluggable generation, embedding, and vector-storage providers, hybrid retrieval, citations, optional reranking, temporary conversation memory, query rewriting, and tool calling. It can run as a standalone FastAPI application or be embedded into another Python system.
+The application runs locally with **Ollama** or uses the **OpenAI API** for generation; generation and embeddings are independently configurable. It provides a standalone web/API application and a reusable Python engine.
 
-> This is a learning-oriented prototype for local demonstrations and trusted environments. It is not a production-ready hosted service.
+> **Project status:** Functional research/learning prototype, **not a production-ready hosted service**. Retrieval and infrastructure have been tested; factual answer reliability remains an active limitation. See [Evaluation and limitations](#evaluation-and-limitations).
 
-## Features
+## At a glance
 
-- Pluggable generation and embedding providers: Ollama (fully local) or OpenAI (server-side API).
-- Hybrid retrieval with dense vector search and lexical matching.
-- Pluggable vector storage with local Chroma or PostgreSQL/pgvector.
-- Citations linked to retrieved document passages.
-- Optional cross-encoder reranking.
-- Temporary conversation memory and follow-up query rewriting.
-- Configurable tool calling.
-- Standalone FastAPI application.
-- Embeddable FastAPI router.
-- Programmatic asynchronous Python API.
-- Docker Compose benchmark scenarios and deterministic offline evaluation tools.
-- Unit and integration tests covering providers, indexing, retrieval, and orchestration.
-- Support for TXT, Markdown, PDF, DOCX, XLSX, CSV, JSON, HTML, and PPTX files.
+| Area | Implemented |
+| --- | --- |
+| Retrieval | BM25, dense vector retrieval, hybrid retrieval, optional cross-encoder reranking |
+| Knowledge base | Document ingestion, chunking, metadata, Chroma or PostgreSQL/pgvector |
+| Generation | Ollama or OpenAI API, configurable independently of embeddings |
+| Answering | Source citations, context selection, confidence/coverage checks, bounded document-search tool calls |
+| Interfaces | FastAPI application, embeddable router, asynchronous Python API |
+| Quality & tooling | Automated tests, GitHub Actions CI, Docker Compose, reproducible evaluation records |
 
-## Architecture
+Supported document formats include **TXT, Markdown, PDF, DOCX, XLSX, CSV, JSON, HTML, and PPTX**.
+
+## How it works
 
 ```mermaid
 flowchart TD
-    U[User or API client] --> E[ChatbotEngine]
-    E --> R[Routing and query rewriting]
-    R --> Q[Retrieval and context assembly]
-    Q --> B[BM25]
-    Q --> D[Dense vector search]
-    Q --> H[Hybrid fusion]
-    H --> X[Optional cross-encoder reranker]
-    Q --> G[LLM generation]
-    G --> A[Answer and citations]
+    Q[User question] --> E[ChatbotEngine]
+    E --> N[Input processing and optional query rewriting]
+    N --> R[Retrieval policy]
+    R --> BM[BM25 lexical search]
+    R --> DE[Dense vector search]
+    BM --> F[Candidate fusion and ranking]
+    DE --> F
+    F --> RR[Optional reranking]
+    RR --> C[Context assembly and selection]
+    C --> G[Coverage and confidence checks]
+    G -->|More evidence needed| T[Bounded search_documents recovery]
+    T --> C
+    G -->|Answer permitted| L[LLM generation]
+    G -->|Insufficient evidence| A[Abstention]
+    L --> S[Answer with source references]
 ```
 
-The production path is policy-driven: a request does not necessarily execute every retrieval branch or the optional reranker.
+The diagram describes the available stages, **not a claim that every query executes all of them**. The engine chooses a retrieval policy and may bypass optional operations.
 
-```text
-Python caller or FastAPI adapter
-            |
-            v
-      ChatbotEngine
-            |
-            +--> input cleaning and routing
-            +--> memory and query rewriting
-            +--> retrieval and context assembly
-            +--> answer generation and tool calling
-            +--> ChatResponse with citations
-```
+The key design decision is to keep the application engine separate from its integrations:
 
-`ChatbotEngine` is the main public entry point. The FastAPI layer acts as an adapter around the engine.
+- `ChatbotEngine` orchestrates requests and exposes a reusable Python interface.
+- LLM, embedding, and vector-store providers are selected through configuration and provider interfaces.
+- FastAPI is an adapter over the engine, not the place where retrieval logic lives.
+- Tests and evaluation tools live alongside the implementation, with run metadata and per-question records.
 
-The installed package contains the reusable chatbot code and its default prompt, routing, and tool-calling resources. The demo frontend, knowledge base, generated indexes, Docker configuration, and documentation remain repository resources.
+Further reading: [Architecture](docs/architecture.md) · [Retrieval pipeline](docs/retrieval-pipeline.md) · [Security model](docs/security-model.md).
 
-Generation, embeddings, and vector storage are three independent, swappable boundaries:
+## Quick start
 
-```text
-AppSettings
-    |
-    +--> create_chat_model()        --> Ollama or OpenAI      (LLM_PROVIDER)
-    +--> create_embeddings()        --> Ollama or OpenAI       (EMBEDDING_PROVIDER)
-    +--> create_vector_store_backend() --> Chroma or PGVector  (VECTOR_STORE_PROVIDER)
-            |
-            v
-    create_application_services() --> ChatModel + Embeddings + VectorStoreBackend
-            |
-            v
-        ChatbotEngine
-```
+### Run locally with Ollama
 
-`local_rag_chatbot/providers/llm/` and `local_rag_chatbot/providers/embeddings/` hold the provider contracts, factories, and adapters (`ollama.py`, `openai.py`). Domain code (`RAGChatbot`, `AnswerService`, `QueryRewriter`, `IndexManager`, the vector-store backends) only depends on the provider-neutral `ChatModel`/`Embeddings` contracts — it never imports an Ollama or OpenAI type directly. `ChatbotEngine(config=..., chat_model=..., embeddings=...)` still accepts explicit dependency injection, which always takes precedence over the provider selected by configuration.
-
-## Requirements
-
-- Python 3.11 or newer.
-- Either Ollama installed and running locally, or an OpenAI API key — see [LLM & Embedding Providers](#llm--embedding-providers).
-- Enough local memory for the selected models when running Ollama.
-
-## Testing
-
-Install the test dependencies and run the checks from the repository root:
+**Requirements:** Python 3.11+, [Ollama](https://ollama.com/), and sufficient RAM for the models you select. A dedicated GPU is helpful but not mandatory.
 
 ```bash
-python -m pip install -e ".[test]"
-pytest --cov=local_rag_chatbot --cov-report=term-missing
-ruff check .
-```
-
-## Evaluation dataset
-
-The Datapizza AI Lab D&D 5e corpus contains 20 Markdown documents in `knowledge-base/` and 56 preserved QA examples in `evaluation/dataset/datapizza/`. Its deterministic manifest has 12 development examples and 44 held-out test examples. Validate it offline with:
-
-```bash
-python evaluation/validate_dataset.py
-```
-
-Run the offline BM25 retrieval benchmark with:
-
-```bash
-python -m evaluation.benchmark --configuration bm25 --split dev --output evaluation/results/datapizza/bm25-dev.json
-```
-
-The runner records per-question retrieval metrics and reproducibility metadata. The deterministic BM25 mode is CI-safe. When providers and a vector-store extra are configured, run a real configuration explicitly with `--live`; add `--end-to-end` for answer generation:
-
-```bash
-python -m evaluation.benchmark --live --configuration hybrid --split dev --end-to-end \
-  --output /tmp/hybrid-dev.json
-```
-
-Standalone, dense, hybrid, reranking, and full-pipeline modes initialize their requested providers explicitly and fail when a required component is unavailable. Live experiments are never run by default in CI.
-End-to-end records keep factual coverage, source-level citation support, abstention outcomes, and a manual-review payload separate; retrieved evidence presence is not treated as automatic groundedness.
-The Docker scenario preparation and execution commands are in [docs/datapizza-benchmark.md](docs/datapizza-benchmark.md). The current CPU-only execution and comparison are summarized in [evaluation/RESULTS.md](evaluation/RESULTS.md), with current records in [evaluation/published/datapizza-current/](evaluation/published/datapizza-current/). The earlier GPU measurements remain the historical baseline in [evaluation/published/datapizza/](evaluation/published/datapizza/).
-
-### Experimental Evaluation
-
-The historical Datapizza evaluation used 20 D&D 5e Markdown documents and 56 questions (12 development, 44 held-out test) on an RTX 3050 Laptop GPU. A later run used the same data and models on CPU because no NVIDIA driver was available. On the held-out split, the current retrieval results were:
-
-| Method | Recall@5 | nDCG@5 | Weighted passage coverage |
-|---|---:|---:|---:|
-| BM25 | 0.6936 | 0.6734 | 0.3002 |
-| Dense | 0.6760 | 0.6793 | 0.2937 |
-| Hybrid | 0.7311 | 0.7267 | 0.3314 |
-| Hybrid + rerank | Not measured | Not measured | Not measured |
-
-The current reranker could not initialize because its optional dependency was unavailable. The historical reranker results remain in the historical publication and are not current measurements. These are measurements on this fixed corpus, not universal performance claims. End-to-end latency and limitations are documented in the [results report](evaluation/RESULTS.md) and [baseline comparison](evaluation/comparisons/baseline-vs-current/REPORT.md).
-
-#### Answer Quality: LLM-as-a-Judge
-
-A separate, single-pass blinded evaluation by OpenAI GPT-6 via ChatGPT scored correctness and completeness on the same 336 generated answers. It is not a human evaluation, and evidence support was not scored:
-
-| Configuration | Correctness mean / 2 | Completeness mean / 2 | Correctness 2/2 |
-|---|---:|---:|---:|
-| Standalone | 0.091 | 0.091 | 0/44 |
-| BM25 RAG | 0.614 | 0.500 | 8/44 |
-| Dense RAG | 0.795 | 0.636 | 10/44 |
-| Hybrid RAG | 0.705 | 0.500 | 10/44 |
-| Hybrid + Rerank | 0.886 | 0.705 | 11/44 |
-| Full RAG | 0.727 | 0.614 | 10/44 |
-
-Hybrid + Rerank had the highest retrieval metrics and the highest average correctness in this exploratory evaluation. The scores are ordinal 0–2 judgments, not accuracy percentages; one judge, no human adjudication, a single D&D 5e domain, and ambiguous reference criteria limit the conclusion. Groundedness and claim-level citation support remain unavailable. See the [judge report](evaluation/judge/datapizza/report.md), [published benchmark records](evaluation/published/datapizza/), and [benchmark protocol](docs/datapizza-benchmark.md). Datapizza attribution and licensing details are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-
-Default models (Ollama):
-
-```text
-llama3.2:3b
-nomic-embed-text
-```
-
-## Quick Start
-
-From the repository root:
-
-```bash
+git clone https://github.com/CosmicSheep42/RAG-Chatbot.git
+cd RAG-Chatbot
 cp .env.sample .env
-# Set DOCUMENTS_DIR=./knowledge-base in .env to use the Datapizza demonstration corpus.
 
+# Start Ollama separately if it is not already running.
 ollama pull llama3.2:3b
 ollama pull nomic-embed-text
 
@@ -170,77 +78,29 @@ chmod +x run.sh
 ./run.sh
 ```
 
-Open `http://127.0.0.1:8000`.
+Open **http://127.0.0.1:8000**. The sample configuration points `DOCUMENTS_DIR` at the bundled demonstration corpus (`./knowledge-base`). `run.sh` prepares the Python environment and starts the FastAPI application.
 
-`run.sh` creates a virtual environment when necessary, installs the package in editable mode, loads `.env`, and starts the standalone FastAPI application.
-
-### Windows PowerShell
-
-```powershell
-py -m venv .venv
-.venv\Scripts\python.exe -m pip install -e ".[chroma,ollama]"
-Copy-Item .env.sample .env
-
-ollama pull llama3.2:3b
-ollama pull nomic-embed-text
-
-.venv\Scripts\python.exe -m uvicorn local_rag_chatbot.server:app --host 127.0.0.1 --port 8000
-```
-
-### Docker
+**Docker alternative:**
 
 ```bash
 cp .env.sample .env
 docker compose up --build
 ```
 
-By default (`.env.sample`'s `COMPOSE_PROFILES=ollama` and `COMPOSE_FILE=docker-compose.yml:docker-compose.ollama.yml`), this is unchanged from before: Compose starts Ollama, downloads the configured models, waits for the pull to finish, then starts `app`. The published port is bound to `127.0.0.1` by default.
+The default Compose configuration starts the Ollama stack. See the existing [benchmark and GPU setup guide](docs/datapizza-benchmark.md) for reproducible experimental environments.
 
-Ollama is optional in Docker. To run with `LLM_PROVIDER=openai`/`EMBEDDING_PROVIDER=openai` and skip the Ollama containers entirely, clear the two Compose-only variables so the Ollama override file and profile aren't activated:
-
-```bash
-COMPOSE_PROFILES= COMPOSE_FILE=docker-compose.yml \
-LLM_PROVIDER=openai EMBEDDING_PROVIDER=openai \
-docker compose up --build app
-```
-
-`COMPOSE_PROFILES` and `COMPOSE_FILE` are read by the Compose CLI itself (not by the application) — they control which compose files are merged and which profiles are active, so the `ollama`/`ollama-init` services are skipped and `app` no longer waits on them.
-
-For PGVector with Docker Compose (works with either LLM/embedding provider). Note that once `COMPOSE_FILE` is
-overridden on the command line, `COMPOSE_PROFILES` must be passed explicitly too — Compose stops reading it from
-`.env` as soon as `COMPOSE_FILE` comes from the shell environment instead:
-
-```bash
-VECTOR_STORE_PROVIDER=pgvector COMPOSE_PROFILES=ollama \
-COMPOSE_FILE=docker-compose.yml:docker-compose.pgvector.yml:docker-compose.ollama.yml \
-docker compose up --build
-```
-
-Or, PGVector + OpenAI, no Ollama at all:
-
-```bash
-VECTOR_STORE_PROVIDER=pgvector LLM_PROVIDER=openai EMBEDDING_PROVIDER=openai \
-COMPOSE_PROFILES= COMPOSE_FILE=docker-compose.yml:docker-compose.pgvector.yml \
-docker compose up --build app
-```
-
-Changing `VECTOR_STORE_PROVIDER`, `LLM_PROVIDER`, or `EMBEDDING_PROVIDER` requires rebuilding the image, because the corresponding optional dependency extras are installed at build time (see [LLM & Embedding Providers](#llm--embedding-providers)).
-
-## Python Usage
+### Use it from Python
 
 ```python
 import asyncio
-
 from local_rag_chatbot import ChatbotConfig, ChatbotEngine
 
 
-async def main() -> None:
+async def main():
     engine = ChatbotEngine(config=ChatbotConfig.from_env())
-
     try:
         await engine.initialize()
-        response = await engine.chat("What does the knowledge base say about billing?")
-
+        response = await engine.chat("What do the documents say about this topic?")
         print(response.result)
         print(response.citations)
     finally:
@@ -250,189 +110,100 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
-Calls without a `conversation_id` are stateless. Supply an identifier when temporary conversation memory is needed:
-
-```python
-response = await engine.chat(
-    "What did it say about the deadline?",
-    conversation_id="user-42:conversation-7",
-)
-```
-
-A conversation identifier is only a memory key. It is not authentication or authorization.
-
-## FastAPI Integration
-
-```python
-from contextlib import asynccontextmanager
-
-from fastapi import FastAPI
-
-from local_rag_chatbot import ChatbotConfig, ChatbotEngine
-from local_rag_chatbot.fastapi import create_chat_router
-
-
-engine = ChatbotEngine(config=ChatbotConfig.from_env())
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    await engine.initialize()
-    try:
-        yield
-    finally:
-        await engine.shutdown()
-
-
-app = FastAPI(lifespan=lifespan)
-app.include_router(
-    create_chat_router(engine),
-    prefix="/api/assistant",
-)
-```
-
-The host application should provide authentication, authorization, tenant isolation, rate limiting, and deployment-specific middleware.
+The engine can also be mounted into an existing FastAPI application through `create_chat_router`. See [the current integration and configuration details](docs/architecture.md).
 
 ## Configuration
 
-Copy `.env.sample` to `.env` and change only the settings required by your environment.
+Copy `.env.sample` to `.env`. The defaults use a fully local configuration:
 
-| Variable | Purpose | Default |
-| --- | --- | --- |
-| `LLM_PROVIDER` | Generation provider: `ollama` or `openai`. | `ollama` |
-| `EMBEDDING_PROVIDER` | Embedding provider: `ollama` or `openai`. Independent of `LLM_PROVIDER`. | `ollama` |
-| `GENERATION_MODEL` | Answer generation model name for the selected `LLM_PROVIDER`. | `llama3.2:3b` |
-| `EMBEDDING_MODEL` | Embedding model name for the selected `EMBEDDING_PROVIDER`. | `nomic-embed-text` |
-| `OLLAMA_BASE_URL` | Ollama server URL. Only used when a provider is set to `ollama`. | `http://localhost:11434` |
-| `OPENAI_API_KEY` | OpenAI API key. Required when `LLM_PROVIDER` or `EMBEDDING_PROVIDER` is `openai`. Never logged, never returned by `/status`. | empty |
-| `OPENAI_BASE_URL` | Optional custom endpoint compatible with the OpenAI Responses API and/or Embeddings API used by the provider (not a generic OpenAI-compatible/Chat Completions endpoint). | empty (SDK default) |
-| `DOCUMENTS_DIR` | Knowledge-base directory | demo: `./knowledge-base` |
-| `DATA_DIR` | Generated indexes and runtime data | demo: `./data` |
-| `VECTOR_STORE_PROVIDER` | Vector-store backend provider: `chroma` or `pgvector`. | `chroma` |
-| `PGVECTOR_DSN` | SQLAlchemy-style PostgreSQL DSN for PGVector. Required only for `pgvector`. | empty |
-| `PGVECTOR_SCHEMA` | PostgreSQL schema for vector tables. | `rag` |
-| `PGVECTOR_TABLE` | Shared document table for PGVector namespaces. | `vector_documents` |
-| `PGVECTOR_COLLECTION_TABLE` | PGVector namespace/generation table. | `vector_collections` |
-| `PGVECTOR_DISTANCE_STRATEGY` | PGVector distance metric: `cosine`, `l2`, or `inner_product`. | `cosine` |
-| `PGVECTOR_INDEX_TYPE` | Optional PGVector index: `hnsw`, `ivfflat`, or `none`. | `hnsw` |
-| `PGVECTOR_CREATE_EXTENSION` | Whether the app tries `CREATE EXTENSION IF NOT EXISTS vector`. | `true` |
-| `PGVECTOR_CONNECT_MAX_ATTEMPTS` | Maximum PGVector connection attempts for transient startup failures. | `12` |
-| `PGVECTOR_CONNECT_RETRY_SECONDS` | Delay between transient PGVector connection attempts. | `2` |
-| `PGVECTOR_CONNECT_TIMEOUT_SECONDS` | Timeout for each PGVector connection attempt. | `5` |
-| `WEB_DIR` | Optional static frontend | demo: `./web` |
-| `SERVER_HOST` | Standalone server host | `127.0.0.1` |
-| `SERVER_PORT` | Standalone server port | `8000` |
-| `RERANKING_MODE` | `auto`, `true`, or `false` | `auto` |
-| `AUTO_INDEX_ON_STARTUP` | Load or build the index on startup | `true` |
-| `REPLY_TIMEOUT_SECONDS` | Full response timeout | `60` |
-
-`CHROMA_DB_DIR` and `ROUTER_STORE_DIR` are derived from `DATA_DIR` unless overridden.
-
-`TOOL_CALLING_MODEL` and `QUERY_REWRITING_MODEL` use `GENERATION_MODEL` unless configured separately.
-
-## LLM & Embedding Providers
-
-Generation and embeddings are selected independently through `LLM_PROVIDER` and `EMBEDDING_PROVIDER`. Both extras must be installed for the providers you use:
-
-```bash
-# Ollama (fully local)
-pip install -e ".[chroma,ollama]"
-
-# OpenAI (server-side API)
-pip install -e ".[chroma,openai]"
-```
-
-"OpenAI" here means the OpenAI **API**, called server-side with the official `openai` Python SDK — it is not a dependency on the ChatGPT web app, and no request ever reaches the browser directly; the API key stays server-side and is never sent to the frontend, logged, or returned by `/status`/`/ready`.
-
-Example combinations:
-
-```env
-# Fully local
+```dotenv
 LLM_PROVIDER=ollama
 EMBEDDING_PROVIDER=ollama
+GENERATION_MODEL=llama3.2:3b
+EMBEDDING_MODEL=nomic-embed-text
 VECTOR_STORE_PROVIDER=chroma
+DOCUMENTS_DIR=./knowledge-base
 ```
 
-```env
-# OpenAI generation + embeddings, local vector storage
-LLM_PROVIDER=openai
-EMBEDDING_PROVIDER=openai
-VECTOR_STORE_PROVIDER=chroma
-OPENAI_API_KEY=sk-...
-```
+The application currently supports `ollama` and `openai` as generation and embedding providers. You can mix local embeddings with API-based generation without changing the retrieval implementation. The API provider requires separate API credentials and may incur usage charges.
 
-```env
-# OpenAI generation, local embeddings, PGVector storage
+```dotenv
+# Example: API generation, local embeddings
 LLM_PROVIDER=openai
 EMBEDDING_PROVIDER=ollama
-VECTOR_STORE_PROVIDER=pgvector
-OPENAI_API_KEY=sk-...
+OPENAI_API_KEY=your_key_here
 ```
 
-`./run.sh` and the Docker build read `LLM_PROVIDER`/`EMBEDDING_PROVIDER` and install the matching optional extras automatically. Switching `EMBEDDING_PROVIDER` (or `EMBEDDING_MODEL`) changes the index fingerprint, so the next startup or reindex safely rebuilds incompatible indexes instead of serving mismatched vectors.
+The OpenAI integration requires the corresponding optional dependency (`pip install -e ".[chroma,ollama,openai]"`). Keep real keys in `.env` or a secret manager, never in commits. An integration for another provider should only be considered available once implemented and tested.
 
-## Vector Store Backends
+Other options include `RERANKING_MODE`, `VECTOR_STORE_PROVIDER=pgvector`, tool calling, memory, query rewriting, and runtime limits. Refer to `.env.sample` and the architecture documentation for the full configuration surface.
 
-The project supports two optional vector-store backends:
+## Evaluation and limitations
+
+The project includes the **Datapizza AI Lab D&D 5e** evaluation corpus: 20 Markdown documents and 56 questions, split into **12 development** and **44 held-out test** examples. It records retrieval metrics separately from generated-answer quality.
+
+### Measured retrieval results
+
+These are the **published held-out retrieval-only results** from an earlier recorded evaluation (not measurements rerun after the latest generation changes):
+
+| Retrieval method | Recall@5 | nDCG@5 |
+| --- | ---: | ---: |
+| BM25 | 0.6936 | 0.6734 |
+| Dense | 0.6760 | 0.6793 |
+| **Hybrid** | **0.7311** | **0.7267** |
+
+The optional **Hybrid + Rerank** configuration was not measured in that run because its dependency was unavailable. The separate historical GPU publication contains older results, which should not be merged with this table. The metrics characterize retrieval on this small, fixed dataset; they do not measure answer accuracy.
+
+Sources: [Published evaluation](evaluation/RESULTS.md) · [Recorded runs](evaluation/published/datapizza-current/) · [Comparison and caveats](evaluation/comparisons/baseline-vs-current/REPORT.md).
+
+### What has been validated
+
+- **136 automated tests passed** in the documented Docker environment used for the latest GPU pilot. The repository also has GitHub Actions CI.
+- The latest **12-question development pilot completed 12/12** using an RTX 3050 Laptop GPU (4 GB VRAM), `llama3.2:3b`, and `nomic-embed-text`.
+- That pilot recorded **zero tool validation/execution failures** and **zero invalid citation identifiers** among those emitted.
+- Tool arguments, bounded recovery, provider orchestration, and evaluation output are covered by automated tests and diagnostic traces.
+
+These checks establish that important software components execute and return structurally consistent results. **They do not prove that every retrieved passage supports the final answer.**
+
+### Known limitation: factual answer quality
+
+The last development pilot still contained **incorrect, incomplete, or unsupported answers**, including confusion between similarly named game rules, numeric details, and which entity performs an action. Its benchmark readiness report explicitly marked the project **`NOT_READY`** for a new full end-to-end benchmark at that point.
+
+Most local generation experiments used **Llama 3.2 3B**, selected in part because the available machine has a **4 GB RTX 3050**. A small model and the observed **4,096-token Ollama context window** are plausible contributors to these errors. During development, context-budget and prompt-role issues were also identified and corrected.
+
+**This is a hypothesis, not a proven root cause.** A controlled comparison against a stronger generator, using the same retrieved evidence, has not yet isolated model limitations from remaining retrieval, context-selection, or grounding issues. The project should **not** be described as hallucination-free or as having achieved production-grade answer accuracy.
+
+See the [benchmark readiness report](evaluation/BENCHMARK_READINESS.md), [latest GPU pilot comparison](evaluation/pilots/full-rag-gpu-dev/PRE_BENCHMARK_COMPARISON.md), and [evaluation reproduction guide](docs/datapizza-benchmark.md) for the evidence and remaining work. Historical LLM-judge results are archived separately and do not represent the latest pilot.
+
+## Testing and reproducibility
 
 ```bash
-# Local Chroma
-pip install -e ".[chroma]"
-
-# PostgreSQL with pgvector
-pip install -e ".[pgvector]"
+python -m pip install -e ".[test]"
+pytest --cov=local_rag_chatbot --cov-report=term-missing
+ruff check .
+python evaluation/validate_dataset.py
 ```
 
-Select the backend in `.env`:
-
-```env
-VECTOR_STORE_PROVIDER=chroma
-```
-
-Use `pgvector` instead of `chroma` to connect to PostgreSQL. In that case, configure `PGVECTOR_DSN` and ensure the PostgreSQL `vector` extension is available.
-
-`./run.sh` reads `VECTOR_STORE_PROVIDER` (and `LLM_PROVIDER`/`EMBEDDING_PROVIDER`) and installs the corresponding optional dependencies. When using Docker, follow the commands in the Docker section above.
-
-## Optional Reranking
-
-The base installation works without reranking.
+To reproduce a **small offline retrieval evaluation** without starting an LLM:
 
 ```bash
-pip install -e ".[rerank]"
+python -m evaluation.benchmark \
+  --configuration bm25 --split dev \
+  --output evaluation/results/datapizza/bm25-dev.json
 ```
 
-```env
-RERANKING_MODE=auto
-RERANKER_MODEL=BAAI/bge-reranker-base
-```
+Live evaluation, GPU-specific instructions, model preparation, and published-record validation are documented in [docs/datapizza-benchmark.md](docs/datapizza-benchmark.md). Full runs are explicit, never part of normal CI.
 
-Reranking may improve difficult searches, but it increases installation size, memory usage, startup time, and response latency.
+## What I would improve next
 
-## Security and Limitations
+- Compare local small models with stronger API-based generators while keeping retrieval fixed, to isolate model versus pipeline errors.
+- Assess **claim-level evidence support**, completeness, and appropriate abstention rather than relying on citation IDs or refusal counts alone.
+- Complete the reranking experiment and review dependency/security advisories before considering a publicly hosted deployment.
 
-- Do not expose the standalone application directly to the public internet.
-- The standalone demo does not include chatbot-managed authentication.
-- Embedded deployments must use the host application's security model.
-- Do not expose Ollama, ChromaDB files, or PostgreSQL/pgvector directly to untrusted networks.
-- Do not log or commit real PostgreSQL DSNs or `OPENAI_API_KEY` values with credentials. `.env` is git-ignored; only empty placeholders belong in `.env.sample`.
-- All OpenAI API calls happen server-side (inside the LLM/embedding adapters); the API key is never sent to the frontend.
-- Conversation history is temporary and stored in memory.
-- The demo frontend renders responses as plain text.
-- Ollama and OpenAI are the currently included model providers.
-- Retrieval quality depends on the selected models, source documents, and tuning.
+## Project scope and credits
 
-## Documentation
+This is an **educational prototype and portfolio project**. The standalone demo is intended for local or trusted environments; it does not provide production authentication or tenant isolation. A host application must supply the necessary security controls when embedding the engine.
 
-- [`docs/architecture.md`](docs/architecture.md): architecture and index lifecycle.
-- [`docs/retrieval-pipeline.md`](docs/retrieval-pipeline.md): retrieval and context selection.
-- [`docs/security-model.md`](docs/security-model.md): deployment and security boundaries.
-- [`docs/datapizza-benchmark.md`](docs/datapizza-benchmark.md): benchmark protocol and reproduction commands.
-- [`evaluation/RESULTS.md`](evaluation/RESULTS.md): measured retrieval, latency, and evaluation results.
-- [`evaluation/judge/datapizza/report.md`](evaluation/judge/datapizza/report.md): LLM-as-a-Judge summary and limitations.
-- [`evaluation/published/datapizza/`](evaluation/published/datapizza/): auditable per-question benchmark records.
-- [`evaluation/published/datapizza-current/`](evaluation/published/datapizza-current/): current CPU benchmark records and blinded review inputs.
-- [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md): Datapizza attribution and third-party notices.
+The application is licensed under **MIT**. The bundled Datapizza dataset has separate **CC BY 4.0** attribution requirements; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-## License
-
-This project is licensed under the MIT License. See [`LICENSE`](LICENSE).
+**Documentation:** [Architecture](docs/architecture.md) · [Retrieval details](docs/retrieval-pipeline.md) · [Security](docs/security-model.md) · [Benchmark protocol](docs/datapizza-benchmark.md) · [Evaluation results](evaluation/RESULTS.md).
