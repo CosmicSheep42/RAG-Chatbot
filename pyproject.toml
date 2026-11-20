@@ -62,7 +62,7 @@ rerank = [
   "sentence-transformers==3.4.1",
 ]
 linux-cpu = [
-  "torch==2.13.0",
+  "torch==2.13.0+cpu",
 ]
 
 [project.scripts]
